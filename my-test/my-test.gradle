@@ -1,0 +1,9 @@
+description = "My Test"
+
+apply plugin: "java-library"
+
+dependencies {
+	api(project(":spring-context"))
+	testImplementation(testFixtures(project(":spring-context")))
+	testFixturesImplementation(testFixtures(project(":spring-context")))
+}
