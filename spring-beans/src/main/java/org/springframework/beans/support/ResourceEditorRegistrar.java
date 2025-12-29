@@ -67,6 +67,7 @@ public class ResourceEditorRegistrar implements PropertyEditorRegistrar {
 	private final ResourceLoader resourceLoader;
 
 
+	// 创建一个属性编辑器对象
 	/**
 	 * Create a new ResourceEditorRegistrar for the given {@link ResourceLoader}
 	 * and {@link PropertyResolver}.
