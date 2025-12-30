@@ -111,6 +111,7 @@ final class PostProcessorRegistrationDelegate {
 
 			// First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
 			// 获取此时beanFactory中所有的 BeanDefinitionRegistryPostProcessor 对象名称
+			// 如果开启了注解 Component-scan，则这里会扫到 ConfigurationClassPostProcessor，这个类是核心，会在里边进行一系列的注解处理
 			String[] postProcessorNames =
 					beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 			for (String ppName : postProcessorNames) {
@@ -136,6 +137,9 @@ final class PostProcessorRegistrationDelegate {
 
 			// Next, invoke the BeanDefinitionRegistryPostProcessors that implement Ordered.
 			// 和上边的一样，找到此时 beanFactory 中的所有 BeanDefinitionRegistryPostProcessor 对象，且是 Ordered 类型的bd
+			// 这里重新通过 beanFactory.getBeanNamesForType 方法获取，是因为：
+			//		在前边执行的过程中，可能会通过 postProcessBeanDefinitionRegistry 注册了新的 bdrpp 或者 bfpp，所以这里需要重新获取
+			//		避免遗漏了新加进去的
 			postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 			for (String ppName : postProcessorNames) {
 				if (!processedBeans.contains(ppName) && beanFactory.isTypeMatch(ppName, Ordered.class)) {
