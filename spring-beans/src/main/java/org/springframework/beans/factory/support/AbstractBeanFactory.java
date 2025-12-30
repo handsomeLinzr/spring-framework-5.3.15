@@ -148,6 +148,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 	// 自定义属性编辑注册器
 	// 在refresh的prepareBeanFactory的时候，添加进来一个 ResourceEditorRegistrar
+	// todo 后边创建bw的时候应该是需要用到的
 	/** Custom PropertyEditorRegistrars to apply to the beans of this factory. */
 	private final Set<PropertyEditorRegistrar> propertyEditorRegistrars = new LinkedHashSet<>(4);
 

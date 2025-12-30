@@ -565,7 +565,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			StartupStep contextRefresh = this.applicationStartup.start("spring.context.refresh");
 
 			// Prepare this context for refreshing.
-			// 步骤一：准备阶段
+			// 一：准备阶段
 			// 1.记录时间
 			// 2.设置 closed=false，active=true两个标志
 			// 3.常见 environment=StandardEnvironment=>>记录系统变量到environment
@@ -573,7 +573,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
-			// 步骤二：创建 beanFactory = DefaultListableBeanFactory
+			// 二：创建 beanFactory = DefaultListableBeanFactory
 			//    1.销毁旧的beanFactory的bean(有的话)
 			//    2.销毁旧的beanFactory(有的话)
 			//    3.创建beanFactory = DefaultListableBeanFactory，设置唯一id
@@ -600,12 +600,17 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 			try {
 				// Allows post-processing of the bean factory in context subclasses.
-				// 子类实现，可以进行扩展，这里默认是空实现
+				// 四：子类实现，可以进行扩展，这里默认是空实现
 				postProcessBeanFactory(beanFactory);
 
 				StartupStep beanPostProcess = this.applicationStartup.start("spring.context.beans.post-process");
 				// Invoke factory processors registered as beans in the context.
-				// 开始执行 BFPP
+				// 五: 执行 beanFactoryPostProcessor
+				//		1.获取通过 addBeanFactoryPostProcessor 添加进去的 bfpp，如果属于 bdrpp，则执行 postProcessBeanDefinitionRegistry 方法
+				//		2.将上一步的所有 bfpp 执行 postProcessBeanFactory 方法
+				//		3.获取beanFactory 中的所有 bdrpp，按照排序执行 postProcessBeanDefinitionRegistry 方法
+				//		4.获取上一步的所有 bdrpp, 按照排序执行 postProcessBeanFactory 方法
+				// 		5.获取 beanFactory 中的所有 bfpp(前边没有执行过的)，按照排序执行 postProcessBeanFactory 方法
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
@@ -821,7 +826,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * <p>Must be called before singleton instantiation.
 	 */
 	protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
-		PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors()); // 核心处理
+		// 真正的操作
+		// getBeanFactoryPostProcessors() 这里是一个空列表，这里子类可以通过调用 addBeanFactoryPostProcessor 方法传进来 bfpp 做扩展
+		PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
 
 		// Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
 		// (e.g. through an @Bean method registered by ConfigurationClassPostProcessor)
