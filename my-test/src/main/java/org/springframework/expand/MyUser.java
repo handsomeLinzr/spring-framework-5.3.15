@@ -1,5 +1,8 @@
 package org.springframework.expand;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author linzherong
  * @date 2025/12/28 22:28
@@ -8,7 +11,6 @@ public class MyUser {
 
 	private String username;
 	private String password;
-
 
 	public String getUsername() {
 		return username;
@@ -25,6 +27,7 @@ public class MyUser {
 	public void setPassword(String password) {
 		this.password = password;
 	}
+
 
 	@Override
 	public String toString() {

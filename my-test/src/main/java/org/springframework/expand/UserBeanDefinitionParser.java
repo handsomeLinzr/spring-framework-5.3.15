@@ -1,10 +1,15 @@
 package org.springframework.expand;
 
+import org.springframework.beans.factory.config.MapFactoryBean;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.ManagedMap;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.context.config.AbstractPropertyLoadingBeanDefinitionParser;
 import org.springframework.util.StringUtils;
+import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
+
+import java.util.List;
 
 /**
  * @author linzherong
@@ -19,9 +24,18 @@ public class UserBeanDefinitionParser extends AbstractPropertyLoadingBeanDefinit
 
 	@Override
 	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
+		// 解析 username 和 password 属性
 		String username = element.getAttribute("username");
 		builder.addPropertyValue("username", username);
 		String password = element.getAttribute("password");
 		builder.addPropertyValue("password", password);
+
+		// 解析 property 子标签
+		List<Element> propertyElements = DomUtils.getChildElementsByTagName(element, "property");
+		if (!propertyElements.isEmpty()) {
+			for (Element propertyElement : propertyElements) {
+				builder.addPropertyValue(propertyElement.getAttribute("key"), propertyElement.getAttribute("value"));
+			}
+		}
 	}
 }

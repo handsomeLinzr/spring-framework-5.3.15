@@ -41,6 +41,10 @@
 	<!-- Property Placeholder -->
 	<context:property-placeholder location="classpath:application.properties" />
 
-	<my-user:user username="azhe" password="12345612"/>
+	<my-user:user>
+		<my-user:property key="username" value="azhe"/>
+		<my-user:property key="password" value="1234qwerQWER"/>
+	</my-user:user>
+
 
 </beans>

@@ -566,10 +566,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 			// Prepare this context for refreshing.
 			// 一：准备阶段
-			// 1.记录时间
-			// 2.设置 closed=false，active=true两个标志
-			// 3.常见 environment=StandardEnvironment=>>记录系统变量到environment
-			// 4.监听器的重置和存储，如存储此时的监听器，待下次调用时重置进去
+			// 	  1.记录时间
+			//    2.设置 closed=false，active=true两个标志
+			//    3.常见 environment=StandardEnvironment=>>记录系统变量到environment
+			//    4.监听器的重置和存储，如存储此时的监听器，待下次调用时重置进去
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.

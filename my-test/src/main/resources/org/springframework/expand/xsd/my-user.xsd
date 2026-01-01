@@ -21,6 +21,22 @@
 
 	<xsd:element name="user">
 		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="property" minOccurs="0" maxOccurs="unbounded">
+					<xsd:complexType>
+						<xsd:attribute name="key" type="xsd:string" use="required">
+							<xsd:annotation>
+								<xsd:documentation><![CDATA[属性的键名]]></xsd:documentation>
+							</xsd:annotation>
+						</xsd:attribute>
+						<xsd:attribute name="value" type="xsd:string" use="required">
+							<xsd:annotation>
+								<xsd:documentation><![CDATA[属性的值]]></xsd:documentation>
+							</xsd:annotation>
+						</xsd:attribute>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:sequence>
 			<xsd:attribute name="username" type="xsd:string" />
 			<xsd:attribute name="password" type="xsd:string" />
 		</xsd:complexType>
