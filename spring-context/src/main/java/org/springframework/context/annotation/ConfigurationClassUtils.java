@@ -55,6 +55,7 @@ abstract class ConfigurationClassUtils {
 
 	public static final String CONFIGURATION_CLASS_LITE = "lite";
 
+	// todo processConfigBeanDefinitions 方法中，会先拿到 bd 对象，查询对应的这个属性 是否为空，空不处理
 	public static final String CONFIGURATION_CLASS_ATTRIBUTE =
 			Conventions.getQualifiedAttributeName(ConfigurationClassPostProcessor.class, "configurationClass");
 
@@ -81,15 +82,27 @@ abstract class ConfigurationClassUtils {
 	 * @param beanDef the bean definition to check
 	 * @param metadataReaderFactory the current factory in use by the caller
 	 * @return whether the candidate qualifies as (any kind of) configuration class
+	 *
+	 * <p>
+	 *     检查给定额 bd 是否是一个配置类，或者是一个在 configuration 或 component 类内部声明的组件，
+	 *     即检查这个 bd 是否有可能是一个配置
+	 * </p>
+	 *
 	 */
-	public static boolean checkConfigurationClassCandidate(  // 是否可能含有配置
+	public static boolean checkConfigurationClassCandidate(
 			BeanDefinition beanDef, MetadataReaderFactory metadataReaderFactory) {
 
+		// 获取bd对应的类名
 		String className = beanDef.getBeanClassName();
+		// 空的情况，则不可能是配置类，返回 false
 		if (className == null || beanDef.getFactoryMethodName() != null) {
 			return false;
 		}
 
+		// 是否是通过注解来的，这里要注意的是
+		// AnnotatedBeanDefinition ----> BeanDefinition，AnnotatedBeanDefinition 接口直接实现了 BeanDefinition 接口，在 xxx 的时候进行扫描创建
+		// AbstractBeanDefinition  ----> BeanDefinition，AbstractBeanDefinition 抽象类直接实现了 BeanDefinition 接口，下边的实现类有
+		//		RootBeanDefinition 和 GenericBeanDefinition
 		AnnotationMetadata metadata;
 		if (beanDef instanceof AnnotatedBeanDefinition &&
 				className.equals(((AnnotatedBeanDefinition) beanDef).getMetadata().getClassName())) {

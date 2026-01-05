@@ -126,12 +126,15 @@ public class DefaultNamespaceHandlerResolver implements NamespaceHandlerResolver
 			return null;
 		}
 		else if (handlerOrClassName instanceof NamespaceHandler) {
+			// handlerOrClassName 已经是一个 NamespaceHandler 对象，则直接返回
 			return (NamespaceHandler) handlerOrClassName;
 		}
 		else {
+			// handlerOrClassName 还只是个字符串，则表示这个 handlerOrClassName 是被第一次使用，刚被从配置文件夹在进来，还未
+			// 进行实例化
 			String className = (String) handlerOrClassName;
 			try {
-				// 创建该 handler 的类对象
+				// 利用反射，获取该 handler 的类对象
 				Class<?> handlerClass = ClassUtils.forName(className, this.classLoader);
 				if (!NamespaceHandler.class.isAssignableFrom(handlerClass)) {
 					throw new FatalBeanException("Class [" + className + "] for namespace [" + namespaceUri +
@@ -139,11 +142,11 @@ public class DefaultNamespaceHandlerResolver implements NamespaceHandlerResolver
 				}
 				// 通过反射实例化
 				NamespaceHandler namespaceHandler = (NamespaceHandler) BeanUtils.instantiateClass(handlerClass);
-				// 调用该对象的 init 方法
+				// 调用该对象的 init 方法，这个 init 方法一般都是直接实现在具体的 NamespaceHandler 对象上
 				// 比如 ContextNamespaceHandler 的 init 方法，会进行初始化，将各个标签的解析先放到map中
 				namespaceHandler.init();
-				// 设置对应的 uri 映射到被创建的对象，下次就不需要重新创建
-				// 这里设置后，就会设置到 handlerMappings 这个属性中
+				// 将实例化后的 NamespaceHandler 对象存放到 handlerMappings 中，把原本的 字符串 类型的 namespaceHandler 覆盖掉
+				// 下次需要解析，在获取的时候就会在上边 else if (handlerOrClassName instanceof NamespaceHandler)  这一步返回了，不会再重新实例化
 				handlerMappings.put(namespaceUri, namespaceHandler);
 				// 返回映射
 				return namespaceHandler;

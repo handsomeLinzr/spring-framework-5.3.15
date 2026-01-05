@@ -135,7 +135,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		// 创建一个 BeanDefinitionParserDelegate，将原先的 delegate 作为parent和当前新建的关联
 		BeanDefinitionParserDelegate parent = this.delegate;
 		// getReaderContext = XmlReaderContext，前边已经设置过了
-		// 创建一个委派delegate
+		// 创建一个委派delegate，设置默认属性
 		this.delegate = createDelegate(getReaderContext(), root, parent);
 
 		// 判断是否是默认的命名空间，即 http://www.springframework.org/schema/beans 的，这里是的，会跑进去这个分支
@@ -189,6 +189,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 */
 	protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) {
 		// 判读是否属于默认的命名空间解析，即 http://www.springframework.org/schema/beans
+		// 在 <beans /> 标签下的都是
 		if (delegate.isDefaultNamespace(root)) {
 			// 获取子节点
 			NodeList nl = root.getChildNodes();
@@ -202,13 +203,14 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 						parseDefaultElement(ele, delegate);
 					}
 					else {
-						// 解析自定义配置
+						// 解析自定义配置，比如 <context:component-scan> 这种，
 						delegate.parseCustomElement(ele);
 					}
 				}
 			}
 		}
 		else {
+			// 其他的命名空间，不在 <beans /> 标签下，走自定义的解析过程，
 			delegate.parseCustomElement(root);
 		}
 	}

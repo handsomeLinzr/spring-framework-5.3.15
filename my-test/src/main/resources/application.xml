@@ -42,8 +42,8 @@
 	<context:property-placeholder location="classpath:application.properties" />
 
 	<my-user:user>
-		<my-user:property key="username" value="azhe"/>
-		<my-user:property key="password" value="1234qwerQWER"/>
+		<my-user:property key="username" value="${username}"/>
+		<my-user:property key="password" value="${password}"/>
 	</my-user:user>
 
 

@@ -72,15 +72,24 @@ import org.springframework.util.ClassUtils;
 /**
  * {@link BeanFactoryPostProcessor} used for bootstrapping processing of
  * {@link Configuration @Configuration} classes.
+ * <p>BFPP 用来扩展并自动处理 Configuration 配置类
  *
  * <p>Registered by default when using {@code <context:annotation-config/>} or
  * {@code <context:component-scan/>}. Otherwise, may be declared manually as
  * with any other {@link BeanFactoryPostProcessor}.
+ * <p> 默认当声明了 <context:annotation-config/> 或 <context:component-scan/>，这个 BFPP 会自动注册进 beanFactory，
+ * 或者，可以通过其他 BFPP 手动声明注册
  *
  * <p>This post processor is priority-ordered as it is important that any
  * {@link Bean @Bean} methods declared in {@code @Configuration} classes have
  * their corresponding bean definitions registered before any other
  * {@code BeanFactoryPostProcessor} executes.
+ * <p>
+ *
+ * <p>
+ * 这个 post processor 是最优先处理的，因为所有在 Configuration 类中声明的 Bean 方法都会在其他的
+ * BeanFactoryPostProcessor 之前就已经注册注册存在了
+ * </p>
  *
  * @author Chris Beams
  * @author Juergen Hoeller
@@ -125,8 +134,10 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 
 	private boolean setMetadataReaderFactoryCalled = false;
 
+	// 保存已经处理过的 BeanDefinitionRegistry
 	private final Set<Integer> registriesPostProcessed = new HashSet<>();
 
+	// 保存当前正在执行的 factoryPostProcessor
 	private final Set<Integer> factoriesPostProcessed = new HashSet<>();
 
 	@Nullable
@@ -230,20 +241,25 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 
 	/**
 	 * Derive further bean definitions from the configuration classes in the registry.
+	 * <p>从 configuration 类中获取并注册 BD
 	 */
 	@Override
-	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {  // 这里的BDRPP跑
+	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
+		// 获取当前 registry 的唯一 id，其实这里的 registry 就是 defaultListableBeanFactory
 		int registryId = System.identityHashCode(registry);
 		if (this.registriesPostProcessed.contains(registryId)) {
+			// 存在，说明已经执行过这个 postProcessBeanDefinitionRegistry，不能再重复执行
 			throw new IllegalStateException(
 					"postProcessBeanDefinitionRegistry already called on this post-processor against " + registry);
 		}
 		if (this.factoriesPostProcessed.contains(registryId)) {
+			// 和上边一样，执行过了则不能再重复执行
 			throw new IllegalStateException(
 					"postProcessBeanFactory already called on this post-processor against " + registry);
 		}
-		this.registriesPostProcessed.add(registryId);   // 添加
-		// 处理逻辑
+		// 添加当前的 registry 到 registriesPostProcessed，避免重复执行
+		this.registriesPostProcessed.add(registryId);
+		// 处理逻辑，重点
 		processConfigBeanDefinitions(registry);
 	}
 
@@ -272,20 +288,31 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	/**
 	 * Build and validate a configuration model based on the registry of
 	 * {@link Configuration} classes.
+	 * <p>
+	 * 通过 Configuration 的注册器，处理和验证 configuration 的模式
+	 * </p>
 	 */
 	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
 		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
+		// 获取当前注册器中已有的所有 bd 的名称
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
-		for (String beanName : candidateNames) {   // 循环遍历所有bd
+		// 循环遍历所有bd
+		for (String beanName : candidateNames) {
+			// 获取对应的 bd
 			BeanDefinition beanDef = registry.getBeanDefinition(beanName);
-			if (beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE) != null) {  // 不为空说明已经处理过了
+			// todo 如果这个属性不为空，则说明已经处理过了，跳过
+			if (beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE) != null) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Bean definition has already been processed as a configuration class: " + beanDef);
 				}
-			} // 初步判断是否可能是配置，先过滤掉一些不可能的类
+			}
+			// this.metadataReaderFactory = CachingMetadataReaderFactory
+			//
 			else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
-				configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));  // 添加到configCandidates后边遍历处理
+				// 初步判断是否可能是配置，先过滤掉一些不可能的类
+				// 添加到 configCandidates 后边遍历处理，后边进行递归处理
+				configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
 			}
 		}
 

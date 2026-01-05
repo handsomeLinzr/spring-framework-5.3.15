@@ -583,6 +583,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			// 	  5.loadBeanDefinitions 解析加载并注册 bd
 			//	  		1.解析 xml（包括默认 namespace 和 在自定义 namespace）
 			//	  		2.解析到的 bd 注册到 beanFactory 中
+			//			3.如果开启了注解的情况（<context:component-scan>）,需要看到
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.

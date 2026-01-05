@@ -29,24 +29,30 @@ import org.springframework.lang.Nullable;
  */
 public class DocumentDefaultsDefinition implements DefaultsDefinition {
 
+	// 默认 false
 	@Nullable
 	private String lazyInit;
 
+	// 默认 false
 	@Nullable
 	private String merge;
 
+	// 默认 no
 	@Nullable
 	private String autowire;
 
+	// 默认 空
 	@Nullable
 	private String autowireCandidates;
 
+	// 默认 空
 	@Nullable
 	private String initMethod;
 
 	@Nullable
 	private String destroyMethod;
 
+	// 默认 空
 	@Nullable
 	private Object source;
 

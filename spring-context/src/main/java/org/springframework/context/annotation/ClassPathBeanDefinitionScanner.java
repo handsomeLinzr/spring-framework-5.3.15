@@ -64,6 +64,12 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 
 	private final BeanDefinitionRegistry registry;
 
+	// 设置默认的 beanDefinitionDefaults，在创建 ClassPathBeanDefinitionScanner 的时候，会进行 set 设置，
+	// 		BeanDefinitionDefaults bdd = new BeanDefinitionDefaults();
+	//		bdd.setLazyInit(TRUE_VALUE.equalsIgnoreCase(this.defaults.getLazyInit()));
+	//		bdd.setAutowireMode(getAutowireMode(DEFAULT_VALUE));
+	//		bdd.setInitMethodName(this.defaults.getInitMethod());
+	//		bdd.setDestroyMethodName(this.defaults.getDestroyMethod());
 	private BeanDefinitionDefaults beanDefinitionDefaults = new BeanDefinitionDefaults();
 
 	@Nullable
@@ -71,6 +77,11 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 
 	private BeanNameGenerator beanNameGenerator = AnnotationBeanNameGenerator.INSTANCE;
 
+	// 如果没特殊梳理，默认是 AnnotationScopeMetadataResolver(NO)
+	// 特殊处理是指：
+	//		1.在 component-scan 里设置了属性 scope-resolver = scopeMetadataResolver（对应处理类的字符串)
+	// 		2.在 component-scan 里设置了属性 scoped-proxy = targetClass/interface/no
+	// 		  对应于枚举 AnnotationScopeMetadataResolver(ScopedProxyMode defaultProxyMode)
 	private ScopeMetadataResolver scopeMetadataResolver = new AnnotationScopeMetadataResolver();
 
 	private boolean includeAnnotationConfig = true;
@@ -162,7 +173,8 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 		this.registry = registry;
 
-		if (useDefaultFilters) {  // true
+		if (useDefaultFilters) {
+			// true, 用默认的过滤器
 			registerDefaultFilters();
 		}
 		setEnvironment(environment);
@@ -265,13 +277,16 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	/**
 	 * Perform a scan within the specified base packages,
 	 * returning the registered bean definitions.
+	 * <p>在执行的包中进行扫描，并返回对应注册的 bd </p>
 	 * <p>This method does <i>not</i> register an annotation config processor
 	 * but rather leaves this up to the caller.
 	 * @param basePackages the packages to check for annotated classes
 	 * @return set of beans registered if any for tooling registration purposes (never {@code null})
 	 */
 	protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
+		// 扫描路径必须不能为空
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
+		// 先定义一个集合，用来存 bd 对象
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
 		// 遍历路径，进行处理
 		for (String basePackage : basePackages) {

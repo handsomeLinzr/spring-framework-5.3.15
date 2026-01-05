@@ -73,6 +73,8 @@ public abstract class NamespaceHandlerSupport implements NamespaceHandler {
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		// 获取解析器，通过标签的实际名称拿到的解析器
 		// 解析器在 init 方法的时候就通过 new 新建，并放到 map 中了
+		// 在 ContextNamespaceHandler 的 init 方法中，有 registerBeanDefinitionParser("component-scan", new ComponentScanBeanDefinitionParser());
+		// 则如果是开启了注解，且当前走的解析这个 component-scan，则需要走到这里 ComponentScanBeanDefinitionParser 进行解析
 		BeanDefinitionParser parser = findParserForElement(element, parserContext);
 		// 自定义解析的过程
 		return (parser != null ? parser.parse(element, parserContext) : null);

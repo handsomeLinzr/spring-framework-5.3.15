@@ -1,8 +1,12 @@
 package org.springframework.expand;
 
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
+ * 用作做扩展的 demo
  * @author linzherong
  * @date 2025/12/24 23:52
  */
@@ -21,4 +25,20 @@ public class MyClassPathXmlApplicationContext extends ClassPathXmlApplicationCon
 		super.setAllowCircularReferences(true);
 	}
 
+
+	@Override
+	protected void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+
+		addBeanFactoryPostProcessor(beanFactory1 -> System.out.println("==============扩展 BEPP ======================"));
+
+		beanFactory.addBeanPostProcessor(new BeanPostProcessor() {
+			@Override
+			public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+				if (bean instanceof MyUser) {
+					System.out.println("=============扩展 beanPostProcessor 获取到 myUser ======================：" + bean);
+				}
+				return BeanPostProcessor.super.postProcessBeforeInitialization(bean, beanName);
+			}
+		});
+	}
 }

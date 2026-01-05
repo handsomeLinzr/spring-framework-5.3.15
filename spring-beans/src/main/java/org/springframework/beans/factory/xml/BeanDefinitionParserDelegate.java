@@ -333,16 +333,17 @@ public class BeanDefinitionParserDelegate {
 	 * @param root the root element of the current bean definition document (or nested beans element)
 	 */
 	protected void populateDefaults(DocumentDefaultsDefinition defaults, @Nullable DocumentDefaultsDefinition parentDefaults, Element root) {
-		// default
+		// default 属性
 		String lazyInit = root.getAttribute(DEFAULT_LAZY_INIT_ATTRIBUTE);
 		if (isDefaultValue(lazyInit)) {
 			// Potentially inherited from outer <beans> sections, otherwise falling back to false.
+			// default 属性为空或者 default 时，都用默认的 false
 			lazyInit = (parentDefaults != null ? parentDefaults.getLazyInit() : FALSE_VALUE);
 		}
 		// false
 		defaults.setLazyInit(lazyInit);
 
-		// default
+		// default-merge 属性，默认 false
 		String merge = root.getAttribute(DEFAULT_MERGE_ATTRIBUTE);
 		if (isDefaultValue(merge)) {
 			// Potentially inherited from outer <beans> sections, otherwise falling back to false.
@@ -351,7 +352,7 @@ public class BeanDefinitionParserDelegate {
 		// false
 		defaults.setMerge(merge);
 
-		// default
+		// default-autowire 属性，默认 no
 		String autowire = root.getAttribute(DEFAULT_AUTOWIRE_ATTRIBUTE);
 		if (isDefaultValue(autowire)) {
 			// Potentially inherited from outer <beans> sections, otherwise falling back to 'no'.
@@ -360,7 +361,7 @@ public class BeanDefinitionParserDelegate {
 		// no
 		defaults.setAutowire(autowire);
 
-		// false
+		// default-autowire-candidates 属性，默认空
 		if (root.hasAttribute(DEFAULT_AUTOWIRE_CANDIDATES_ATTRIBUTE)) {
 			defaults.setAutowireCandidates(root.getAttribute(DEFAULT_AUTOWIRE_CANDIDATES_ATTRIBUTE));
 		}
@@ -368,6 +369,7 @@ public class BeanDefinitionParserDelegate {
 			defaults.setAutowireCandidates(parentDefaults.getAutowireCandidates());
 		}
 
+		// default-init-method 属性，默认空
 		if (root.hasAttribute(DEFAULT_INIT_METHOD_ATTRIBUTE)) {
 			defaults.setInitMethod(root.getAttribute(DEFAULT_INIT_METHOD_ATTRIBUTE));
 		}
@@ -375,6 +377,7 @@ public class BeanDefinitionParserDelegate {
 			defaults.setInitMethod(parentDefaults.getInitMethod());
 		}
 
+		// default-destroy-method 属性，默认空
 		if (root.hasAttribute(DEFAULT_DESTROY_METHOD_ATTRIBUTE)) {
 			defaults.setDestroyMethod(root.getAttribute(DEFAULT_DESTROY_METHOD_ATTRIBUTE));
 		}
@@ -382,7 +385,7 @@ public class BeanDefinitionParserDelegate {
 			defaults.setDestroyMethod(parentDefaults.getDestroyMethod());
 		}
 
-		// null
+		// 默认 null
 		defaults.setSource(this.readerContext.extractSource(root));
 	}
 
@@ -396,12 +399,19 @@ public class BeanDefinitionParserDelegate {
 	/**
 	 * Return the default settings for bean definitions as indicated within
 	 * the attributes of the top-level {@code <beans/>} element.
+	 * <p>
+	 *     创建一个 bd 默认的属性设置
+	 * </p>
 	 */
 	public BeanDefinitionDefaults getBeanDefinitionDefaults() {
 		BeanDefinitionDefaults bdd = new BeanDefinitionDefaults();
+		// false
 		bdd.setLazyInit(TRUE_VALUE.equalsIgnoreCase(this.defaults.getLazyInit()));
+		// no
 		bdd.setAutowireMode(getAutowireMode(DEFAULT_VALUE));
+		// 空
 		bdd.setInitMethodName(this.defaults.getInitMethod());
+		// 空
 		bdd.setDestroyMethodName(this.defaults.getDestroyMethod());
 		return bdd;
 	}
@@ -1467,6 +1477,7 @@ public class BeanDefinitionParserDelegate {
 			return null;
 		}
 		// 具体的解析操作
+		// 比如开启注解通知的 <context:component-scan /> 则会走到 ContextNamespaceHandler 这个 handler 里
 		return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
 	}
 

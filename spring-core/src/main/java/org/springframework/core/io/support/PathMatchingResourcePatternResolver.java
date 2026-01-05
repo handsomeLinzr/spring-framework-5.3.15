@@ -280,7 +280,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	public Resource[] getResources(String locationPattern) throws IOException {
 		Assert.notNull(locationPattern, "Location pattern must not be null");
 		if (locationPattern.startsWith(CLASSPATH_ALL_URL_PREFIX)) {
-			// 路径是否是 classpath*:开头（前缀匹配，多文件），这里的例子不是
+			// 路径是否是 classpath*:开头
 			// a class path resource (multiple resources for same name possible)
 			if (getPathMatcher().isPattern(locationPattern.substring(CLASSPATH_ALL_URL_PREFIX.length()))) {
 				// a class path resource pattern
@@ -502,8 +502,10 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	 * @see org.springframework.util.PathMatcher
 	 */
 	protected Resource[] findPathMatchingResources(String locationPattern) throws IOException {
-		String rootDirPath = determineRootDir(locationPattern);  //路径部分
-		String subPattern = locationPattern.substring(rootDirPath.length());  // 文件后边部分
+		//路径部分，如 classpath*:
+		String rootDirPath = determineRootDir(locationPattern);
+		// 文件后边部分
+		String subPattern = locationPattern.substring(rootDirPath.length());
 		Resource[] rootDirResources = getResources(rootDirPath);   // 获取资源
 		Set<Resource> result = new LinkedHashSet<>(16);   // 获得所有符合条件的class文件
 		for (Resource rootDirResource : rootDirResources) {
