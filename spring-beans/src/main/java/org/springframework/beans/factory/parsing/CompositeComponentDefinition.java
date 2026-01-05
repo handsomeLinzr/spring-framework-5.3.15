@@ -38,6 +38,12 @@ public class CompositeComponentDefinition extends AbstractComponentDefinition {
 	@Nullable
 	private final Object source;
 
+	// 1.扫描的 component 注解的bean 会加到这里
+	// 2.扫描后，通过调用 registerComponents (即注册完注解bd后的一步)，也会加进来这里几个固定的bean，分别是
+	// 		ConfigurationClassPostProcessor、
+	// 		AutowiredAnnotationBeanPostProcessor、
+	// 		EventListenerMethodProcessor、
+	// 		DefaultEventListenerFactory
 	private final List<ComponentDefinition> nestedComponents = new ArrayList<>();
 
 

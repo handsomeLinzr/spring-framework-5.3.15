@@ -61,7 +61,7 @@ final class PostProcessorRegistrationDelegate {
 	// 的时候，都可能会新增一些新的 BeanDefinitionRegisterPostProcess 或 BeanFactoryPostProcess，如果一次性获取然后直接处理则可能会导致过程中
 	// 加入的后边执行不到；分多次获取，则后边的可以获取到前边加入的 BeanDefinitionRegisterPostProcess 和 BeanFactoryPostProcess
 	// 避免漏处理
-	// todo 这里特别要注意的是，应用注解的情况下（如 xml 开启了注解扫描，或者用了 Springboot 的情况)，或扫描到类 ConfigurationClassPostProcessor，这个
+	// todo 这里特别要注意的是，应用注解的情况下（如 xml 开启了注解扫描，或者用了 Springboot 的情况)，会扫描到类 ConfigurationClassPostProcessor，这个
 	// 		类则是注解的关键，同时也是 Springboot 自动装配的关键，需要重点看，在 invokeBeanDefinitionRegistryPostProcessors 方法调用过去
 	public static void invokeBeanFactoryPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, List<BeanFactoryPostProcessor> beanFactoryPostProcessors) {

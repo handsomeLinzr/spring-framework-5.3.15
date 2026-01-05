@@ -583,7 +583,12 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			// 	  5.loadBeanDefinitions 解析加载并注册 bd
 			//	  		1.解析 xml（包括默认 namespace 和 在自定义 namespace）
 			//	  		2.解析到的 bd 注册到 beanFactory 中
-			//			3.如果开启了注解的情况（<context:component-scan>）,需要看到
+			//			3.如果开启了注解的情况（<context:component-scan>）,需要重点关注类 ComponentScanBeanDefinitionParser，解析 Component 注解的过程
+			//				会注册进去这几个特殊的 bd
+			// 					ConfigurationClassPostProcessor（BPFF）、
+			// 					AutowiredAnnotationBeanPostProcessor（BPP）、
+			// 					EventListenerMethodProcessor（BeanFactoryPostProcessor）、
+			// 					DefaultEventListenerFactory
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
@@ -612,10 +617,12 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				//		3.获取beanFactory 中的所有 bdrpp，按照排序执行 postProcessBeanDefinitionRegistry 方法
 				//		4.获取上一步的所有 bdrpp, 按照排序执行 postProcessBeanFactory 方法
 				// 		5.获取 beanFactory 中的所有 bfpp(前边没有执行过的)，按照排序执行 postProcessBeanFactory 方法
+				//		6.开启了注解的情况下，重点需要看到 ConfigurationClassPostProcessor 这个类的处理
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
-				registerBeanPostProcessors(beanFactory);   // 扫描 BPP，设置到 factory.beanPostProcessors中
+				// 扫描 BPP，设置到 factory.beanPostProcessors中
+				registerBeanPostProcessors(beanFactory);
 				beanPostProcess.end();
 
 				// Initialize message source for this context.

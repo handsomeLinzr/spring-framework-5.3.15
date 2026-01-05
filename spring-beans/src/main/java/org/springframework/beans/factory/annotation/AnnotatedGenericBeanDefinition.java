@@ -43,6 +43,7 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implements AnnotatedBeanDefinition {
 
+	// 在构造函数会处理并设置，对象是 StandardAnnotationMetadata，内部有内省类，设置的是 beanClass
 	private final AnnotationMetadata metadata;
 
 	@Nullable
@@ -51,10 +52,15 @@ public class AnnotatedGenericBeanDefinition extends GenericBeanDefinition implem
 
 	/**
 	 * Create a new AnnotatedGenericBeanDefinition for the given bean class.
+	 * <p>
+	 *     创建一个 AnnotatedGenericBeanDefinition
+	 * </p>
 	 * @param beanClass the loaded bean class
 	 */
 	public AnnotatedGenericBeanDefinition(Class<?> beanClass) {
+		// 调用父类的构造函数，设置 beanClass
 		setBeanClass(beanClass);
+		// 设置 metadata 元数据， 最后得到的是 StandardAnnotationMetadata 对象
 		this.metadata = AnnotationMetadata.introspect(beanClass);
 	}
 

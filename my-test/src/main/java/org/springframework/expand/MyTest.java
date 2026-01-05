@@ -1,5 +1,6 @@
 package org.springframework.expand;
 
+import org.springframework.bean.MyBean1;
 import org.springframework.bean.MyBean4;
 import org.springframework.context.ApplicationContext;
 
@@ -16,9 +17,8 @@ public class MyTest {
 		System.out.println(myUser);
 		MyBean4 myBean4 = context.getBean(MyBean4.class);
 		System.out.println(myBean4);
-		MyBean4 bean1 = context.getBean(MyBean4.class);
-		MyBean4 bean2 = context.getBean(MyBean4.class);
-		System.out.println(bean1 == bean2);
+		MyBean1 bean1 = context.getBean(MyBean1.class);
+		System.out.println(bean1);
 	}
 
 }

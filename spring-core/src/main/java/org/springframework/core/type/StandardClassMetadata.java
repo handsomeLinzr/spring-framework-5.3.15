@@ -33,6 +33,7 @@ import org.springframework.util.StringUtils;
  */
 public class StandardClassMetadata implements ClassMetadata {
 
+	// 这里保存的其实就是 beanClass，
 	private final Class<?> introspectedClass;
 
 

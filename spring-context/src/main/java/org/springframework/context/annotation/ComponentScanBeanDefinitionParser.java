@@ -77,6 +77,11 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 	private static final String FILTER_EXPRESSION_ATTRIBUTE = "expression";
 
 
+	// 1.获取扫描路径
+	// 2.根据扫描路径，获取所有的class文件资源
+	// 3.读取所有的class文件资源，判断是否是符合扫描条件（默认 Component 注解），
+	// 		符合条件的创建 ScannedGenericBeanDefinition，并设置对应的属性，如作用域
+	// 4.将对应的 ScannedGenericBeanDefinition 注册到 beanFactory 中
 	@Override
 	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
@@ -98,8 +103,13 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 		// 解析后都设置到 scanner 中
 		ClassPathBeanDefinitionScanner scanner = configureScanner(parserContext, element);
 		// 进行扫描，重点，basePackages 为需要扫描的包集合，通过标签设置进来的
+		// 这个方法会扫描所有符合条件（Component注解）的类，创建成对应的 bd，并注册到 beanFactory 中
 		Set<BeanDefinitionHolder> beanDefinitions = scanner.doScan(basePackages);
-		// 注册组件
+		// 注册组件，这里会注册进去
+		// 		ConfigurationClassPostProcessor（重点）、
+		// 		AutowiredAnnotationBeanPostProcessor、
+		// 		EventListenerMethodProcessor、
+		// 		DefaultEventListenerFactory
 		registerComponents(parserContext.getReaderContext(), beanDefinitions, element);
 
 		return null;
@@ -156,26 +166,43 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 	protected void registerComponents(
 			XmlReaderContext readerContext, Set<BeanDefinitionHolder> beanDefinitions, Element element) {
 
+		// null，没啥东西
 		Object source = readerContext.extractSource(element);
+		// 创建 CompositeComponentDefinition，就是对 element.getTagName 和 source 的一个包装
+		// element.getTagName ==> context:component-scan
 		CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(), source);
 
+		// 遍历扫描到的 Component 注解对应的 beanDefinitionHolder 对象
 		for (BeanDefinitionHolder beanDefHolder : beanDefinitions) {
+			// BeanComponentDefinition 类继承了 BeanDefinitionHolder
+			// new BeanComponentDefinition(beanDefHolder) 是对于 BeanDefinitionHolder 的一个包装加强
 			compositeDef.addNestedComponent(new BeanComponentDefinition(beanDefHolder));
 		}
 
 		// Register annotation config processors, if necessary.
 		boolean annotationConfig = true;
+
+		// 是否含有 annotation-config 属性，默认 component-scan 这个标签含有这个属性，默认值是 true
 		if (element.hasAttribute(ANNOTATION_CONFIG_ATTRIBUTE)) {
+			// 默认是 true
 			annotationConfig = Boolean.parseBoolean(element.getAttribute(ANNOTATION_CONFIG_ATTRIBUTE));
 		}
 		if (annotationConfig) {
+			// 注册注解扫描需要的相关的 BFPP，注册到这个registry，也就是 beanFactory
+			// 这里注册了4个
+			// 		ConfigurationClassPostProcessor（重点）、
+			// 		AutowiredAnnotationBeanPostProcessor、
+			// 		EventListenerMethodProcessor、
+			// 		DefaultEventListenerFactory
 			Set<BeanDefinitionHolder> processorDefinitions =
 					AnnotationConfigUtils.registerAnnotationConfigProcessors(readerContext.getRegistry(), source);
+
+			// 把上一步注册的几个 bd，也都加入到内嵌 component
 			for (BeanDefinitionHolder processorDefinition : processorDefinitions) {
 				compositeDef.addNestedComponent(new BeanComponentDefinition(processorDefinition));
 			}
 		}
-
+		// 发布组件注册事件
 		readerContext.fireComponentRegistered(compositeDef);
 	}
 

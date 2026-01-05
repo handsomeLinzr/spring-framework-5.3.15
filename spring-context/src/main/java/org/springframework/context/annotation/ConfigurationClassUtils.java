@@ -100,7 +100,7 @@ abstract class ConfigurationClassUtils {
 		}
 
 		// 是否是通过注解来的，这里要注意的是
-		// AnnotatedBeanDefinition ----> BeanDefinition，AnnotatedBeanDefinition 接口直接实现了 BeanDefinition 接口，在 xxx 的时候进行扫描创建
+		// AnnotatedBeanDefinition ----> BeanDefinition，AnnotatedBeanDefinition 接口直接实现了 BeanDefinition 接口，在 component-scan 的时候进行扫描创建
 		// AbstractBeanDefinition  ----> BeanDefinition，AbstractBeanDefinition 抽象类直接实现了 BeanDefinition 接口，下边的实现类有
 		//		RootBeanDefinition 和 GenericBeanDefinition
 		AnnotationMetadata metadata;
@@ -119,6 +119,8 @@ abstract class ConfigurationClassUtils {
 					EventListenerFactory.class.isAssignableFrom(beanClass)) {
 				return false;
 			}
+			// 如果是非注解的类，则调用 AnnotationMetadata.introspect 创建元数据
+			// 其实 AnnotatedBeanDefinition 中的 metadata 也是调用这个方法得到的
 			metadata = AnnotationMetadata.introspect(beanClass);
 		}
 		else {
@@ -135,19 +137,26 @@ abstract class ConfigurationClassUtils {
 			}
 		}
 
-		Map<String, Object> config = metadata.getAnnotationAttributes(Configuration.class.getName());  // 获取Cofiguration注解的属性
+		// 获取 Configuration 注解的所有属性
+		Map<String, Object> config = metadata.getAnnotationAttributes(Configuration.class.getName());
 		if (config != null && !Boolean.FALSE.equals(config.get("proxyBeanMethods"))) {
-			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);  // 给Configuration注解加上属性 org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass = full
+			// 给Configuration注解加上属性 org.springframework.context.annotation.ConfigurationClassPostProcessor.configurationClass = full
+			// 默认 Configuration.proxyBeanMethods 这个属性是 true
+			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
 		}
+		// isConfigurationCandidate 这方法，会对 metadata 进行解析，返回该元数据是否是一个配置，或者内嵌配置
+		// 这个方法会看是否有注解 Component、ComponentScan、Import、ImportResource，或者是否有 Bean 注解的方法
 		else if (config != null || isConfigurationCandidate(metadata)) {
-			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);  //设置配置，表示解析过
+			//设置配置，设置属性是 lite
+			beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
 		}
 		else {
 			return false;
 		}
 
 		// It's a full or lite configuration candidate... Let's determine the order value, if any.
-		Integer order = getOrder(metadata);  // 获取Order注解
+		// 如果是 lite 或者 lite 配置的情况下，再看是否有 Order 注解，并设置
+		Integer order = getOrder(metadata);
 		if (order != null) {
 			beanDef.setAttribute(ORDER_ATTRIBUTE, order);
 		}
@@ -158,12 +167,16 @@ abstract class ConfigurationClassUtils {
 	/**
 	 * Check the given metadata for a configuration class candidate
 	 * (or nested component class declared within a configuration/component class).
+	 * <p>
+	 *     检查这个给定的 metadata 是否是一个配置，或者是内嵌在 configuration/component 的配置类
+	 * </p>
 	 * @param metadata the metadata of the annotated class
 	 * @return {@code true} if the given class is to be registered for
 	 * configuration class processing; {@code false} otherwise
 	 */
 	public static boolean isConfigurationCandidate(AnnotationMetadata metadata) {
 		// Do not consider an interface or an annotation...
+		// 接口获取注解的情况，返回 false
 		if (metadata.isInterface()) {
 			return false;
 		}
@@ -171,11 +184,13 @@ abstract class ConfigurationClassUtils {
 		// Any of the typical annotations found?
 		for (String indicator : candidateIndicators) {
 			if (metadata.isAnnotated(indicator)) {
+				// 如果有 Component、ComponentScan、Import、ImportResource 这4种注解其中一种，返回true
 				return true;
 			}
 		}
 
 		// Finally, let's look for @Bean methods...
+		// 如果有 Bean 方法，也返回true
 		return hasBeanMethods(metadata);
 	}
 

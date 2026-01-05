@@ -288,6 +288,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 			}
 			else {
 				// all class path resources with the given name
+				// 通过给定的名称
 				return findAllClassPathResources(locationPattern.substring(CLASSPATH_ALL_URL_PREFIX.length()));
 			}
 		}
@@ -502,15 +503,18 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	 * @see org.springframework.util.PathMatcher
 	 */
 	protected Resource[] findPathMatchingResources(String locationPattern) throws IOException {
-		//路径部分，如 classpath*:
+		//路径部分，如 classpath*:org/springframework/bean/
 		String rootDirPath = determineRootDir(locationPattern);
-		// 文件后边部分
+		// 文件后边部分， 如 **/*.class
 		String subPattern = locationPattern.substring(rootDirPath.length());
-		Resource[] rootDirResources = getResources(rootDirPath);   // 获取资源
-		Set<Resource> result = new LinkedHashSet<>(16);   // 获得所有符合条件的class文件
+		// 根据前缀路径，构建对应的前缀路径资源对象
+		Resource[] rootDirResources = getResources(rootDirPath);
+		// 用来存放从前缀资源对象拿到的文件资源
+		Set<Resource> result = new LinkedHashSet<>(16);
 		for (Resource rootDirResource : rootDirResources) {
 			rootDirResource = resolveRootDirResource(rootDirResource);
-			URL rootDirUrl = rootDirResource.getURL(); // 获得扫描路径，及Configurateion 中 basePackage的包路径
+			// 获取 url
+			URL rootDirUrl = rootDirResource.getURL();
 			if (equinoxResolveMethod != null && rootDirUrl.getProtocol().startsWith("bundle")) {
 				URL resolvedUrl = (URL) ReflectionUtils.invokeMethod(equinoxResolveMethod, null, rootDirUrl);
 				if (resolvedUrl != null) {
@@ -518,13 +522,17 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 				}
 				rootDirResource = new UrlResource(rootDirUrl);
 			}
-			if (rootDirUrl.getProtocol().startsWith(ResourceUtils.URL_PROTOCOL_VFS)) {  // 路径是否以vfs开头，这里是以file开够，所以不是
+			if (rootDirUrl.getProtocol().startsWith(ResourceUtils.URL_PROTOCOL_VFS)) {
+				// 路径是否以vfs开头，一般以 file 开头
 				result.addAll(VfsResourceMatchingDelegate.findMatchingResources(rootDirUrl, subPattern, getPathMatcher()));
 			}
 			else if (ResourceUtils.isJarURL(rootDirUrl) || isJarResource(rootDirResource)) {
+				// 是否是 jar 类型
 				result.addAll(doFindPathMatchingJarResources(rootDirResource, rootDirUrl, subPattern));
 			}
 			else {
+				// 一般自己写的代码，走的这里
+				// 获取符合条件的所有文件，通过前缀+后边匹配的情况
 				result.addAll(doFindPathMatchingFileResources(rootDirResource, subPattern));
 			}
 		}
@@ -542,12 +550,15 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 	 * remainder of the location as pattern.
 	 * <p>Will return "/WEB-INF/" for the pattern "/WEB-INF/*.xml",
 	 * for example.
+	 * <p>举例：如果给定的是 /WEB-INF/*.xml，则会返回 /WEB-INF/，即返回前缀
 	 * @param location the location to check
 	 * @return the part of the location that denotes the root directory
 	 * @see #retrieveMatchingFiles
 	 */
 	protected String determineRootDir(String location) {
+		// 获取冒号后的第一个位置
 		int prefixEnd = location.indexOf(':') + 1;
+		// 总长度
 		int rootDirEnd = location.length();
 		while (rootDirEnd > prefixEnd && getPathMatcher().isPattern(location.substring(prefixEnd, rootDirEnd))) {
 			rootDirEnd = location.lastIndexOf('/', rootDirEnd - 2) + 1;
@@ -555,6 +566,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 		if (rootDirEnd == 0) {
 			rootDirEnd = prefixEnd;
 		}
+		// 返回前边的部分
 		return location.substring(0, rootDirEnd);
 	}
 
@@ -712,7 +724,8 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 
 		File rootDir;
 		try {
-			rootDir = rootDirResource.getFile().getAbsoluteFile();  // 构建file
+			// 构建file对象
+			rootDir = rootDirResource.getFile().getAbsoluteFile();
 		}
 		catch (FileNotFoundException ex) {
 			if (logger.isDebugEnabled()) {
@@ -727,7 +740,8 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 			}
 			return Collections.emptySet();
 		}
-		return doFindMatchingFileSystemResources(rootDir, subPattern);  // 根据路径找匹配的文件
+		// 根据 file 和 后缀匹配类型，获取匹配的文件
+		return doFindMatchingFileSystemResources(rootDir, subPattern);
 	}
 
 	/**
@@ -744,10 +758,12 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 		if (logger.isTraceEnabled()) {
 			logger.trace("Looking for matching resources in directory tree [" + rootDir.getPath() + "]");
 		}
-		Set<File> matchingFiles = retrieveMatchingFiles(rootDir, subPattern);  // 收集到所有匹配到的文件
+		// 收集到所有匹配到的文件
+		Set<File> matchingFiles = retrieveMatchingFiles(rootDir, subPattern);
 		Set<Resource> result = new LinkedHashSet<>(matchingFiles.size());
 		for (File file : matchingFiles) {
-			result.add(new FileSystemResource(file));   // 添加到result
+			// 添加到result
+			result.add(new FileSystemResource(file));
 		}
 		return result;
 	}
@@ -783,13 +799,14 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 			}
 			return Collections.emptySet();
 		}
-		String fullPattern = StringUtils.replace(rootDir.getAbsolutePath(), File.separator, "/");  // 换成统一大的格式
+		String fullPattern = StringUtils.replace(rootDir.getAbsolutePath(), File.separator, "/");  // 换成统一的格式
 		if (!pattern.startsWith("/")) {
 			fullPattern += "/";
 		}
 		fullPattern = fullPattern + StringUtils.replace(pattern, File.separator, "/");   //把 fullPattern 修改成正常的形态
 		Set<File> result = new LinkedHashSet<>(8);
-		doRetrieveMatchingFiles(fullPattern, rootDir, result);    // 收集路径下的所有文件
+		// 收集路径下的所有文件，从 rootDir 下获取所有匹配的文件，放到 result 中
+		doRetrieveMatchingFiles(fullPattern, rootDir, result);
 		return result;
 	}
 
@@ -808,6 +825,7 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 					"] for files matching pattern [" + fullPattern + "]");
 		}
 		for (File content : listDirectory(dir)) {
+			// 遍历 dir 文件夹，获取所有的文件以及子文件夹下的文件处理
 			String currPath = StringUtils.replace(content.getAbsolutePath(), File.separator, "/");
 			if (content.isDirectory() && getPathMatcher().matchStart(fullPattern, currPath + "/")) {
 				if (!content.canRead()) {
@@ -817,10 +835,12 @@ public class PathMatchingResourcePatternResolver implements ResourcePatternResol
 					}
 				}
 				else {
+					// 递归。继续扫描子文件夹
 					doRetrieveMatchingFiles(fullPattern, content, result);
 				}
 			}
 			if (getPathMatcher().match(fullPattern, currPath)) {
+				// 文件匹配上，则添加到 result 中
 				result.add(content);
 			}
 		}

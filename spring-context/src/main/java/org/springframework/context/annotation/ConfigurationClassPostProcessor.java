@@ -293,6 +293,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	 * </p>
 	 */
 	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
+		// 用户存可能存在的配置 bd
 		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
 		// 获取当前注册器中已有的所有 bd 的名称
 		String[] candidateNames = registry.getBeanDefinitionNames();
@@ -308,7 +309,10 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 				}
 			}
 			// this.metadataReaderFactory = CachingMetadataReaderFactory
-			//
+			// ConfigurationClassUtils.checkConfigurationClassCandidate 作用是判断对应的 bd 是否是一个配置类
+			// 	1.如果是 Configuration 注解，且 proxyBeanMethods 属性为 true（默认是），设置为 full，返回 true
+			//	2.如果是 Component、ComponentScan、Import、ImportResource 注解，则设置为 lite，返回 true
+			//	3.其他返回 false，因为其他都不会是配置或者内嵌配置了
 			else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
 				// 初步判断是否可能是配置，先过滤掉一些不可能的类
 				// 添加到 configCandidates 后边遍历处理，后边进行递归处理
@@ -318,17 +322,22 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 
 		// Return immediately if no @Configuration classes were found
 		if (configCandidates.isEmpty()) {
+			// 没有配置bd，直接返回
 			return;
 		}
 
 		// Sort by previously determined @Order value, if applicable
-		configCandidates.sort((bd1, bd2) -> {   // 排序
+		// 对上边扫描遍历得到的候选配置bd，进行排序，排序规则是 Order 注解的值
+		// 在进行扫描遍历的时候，已经将对应的 Order 属性（有的情况）获取并设置到属性中了
+		configCandidates.sort((bd1, bd2) -> {
 			int i1 = ConfigurationClassUtils.getOrder(bd1.getBeanDefinition());
 			int i2 = ConfigurationClassUtils.getOrder(bd2.getBeanDefinition());
-			return Integer.compare(i1, i2);  // 从小到大顺序
+			// 优先级从小到大，即 数字越小，优先级越高
+			return Integer.compare(i1, i2);
 		});
 
 		// Detect any custom bean name generation strategy supplied through the enclosing application context
+		// 检查自定义的bean名称生成策略
 		SingletonBeanRegistry sbr = null;
 		if (registry instanceof SingletonBeanRegistry) {
 			sbr = (SingletonBeanRegistry) registry;
@@ -336,23 +345,28 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 				BeanNameGenerator generator = (BeanNameGenerator) sbr.getSingleton(
 						AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR);   // internalConfigurationBeanNameGenerator
 				if (generator != null) {
+					// 这里一般得到的 generator 为 null，所以不用处理
 					this.componentScanBeanNameGenerator = generator;
 					this.importBeanNameGenerator = generator;
 				}
 			}
 		}
 
+		// env 在最前边已经创建了，这里不会进来
 		if (this.environment == null) {
 			this.environment = new StandardEnvironment();
 		}
 
-		// Parse each @Configuration class  用来解析 @Configuration 注解的解析器，同时也创建了componentScanParser
+		// Parse each @Configuration class
+		// 用来解析 @Configuration 注解的解析器，同时也创建了 ComponentScanParser
 		ConfigurationClassParser parser = new ConfigurationClassParser(
 				this.metadataReaderFactory, this.problemReporter, this.environment,
 				this.resourceLoader, this.componentScanBeanNameGenerator, registry);
 
-		Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);   // 需要解析的类放这里
-		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());  // 记录已经解析过得的类
+		// 需要解析的类放这里
+		Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
+		// 记录已经解析过得的类
+		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
 		do {
 			StartupStep processConfig = this.applicationStartup.start("spring.context.config-classes.parse");
 			parser.parse(candidates);  // 解析

@@ -290,23 +290,41 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
 		// 遍历路径，进行处理
 		for (String basePackage : basePackages) {
-			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);   // 获取bd
-			for (BeanDefinition candidate : candidates) {   // 获得ScannedGenerialBeanDefinition
+			// 获取 basePackage 路径下的 Component 注解的bd，bd 类型是 ScannedGenericBeanDefinition
+			// ScannedGenericBeanDefinition 即是 AbstractBeanDefinition 又是 AnnotatedBeanDefinition
+			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
+			for (BeanDefinition candidate : candidates) {
+				// 处理 scope 作用域声明周期
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
-				candidate.setScope(scopeMetadata.getScopeName()); // 设置声明周期
+				candidate.setScope(scopeMetadata.getScopeName());
+				// 获取 bean 的名称
+				//		优先根据注解的 value 值取
+				//		如果没有，则根据自动规则生成 bean 名称
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);  // 获得beanName
 				if (candidate instanceof AbstractBeanDefinition) {
-					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);  // 执行方法
+					// 属于 AbstractBeanDefinition，执行这个方法
+					// 前边的逻辑里，创建的是  ScannedGenericBeanDefinition 对象，所以会走到这里，进行处理
+					// 这里其实就是处理 bd 的默认值
+					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
 				}
 				if (candidate instanceof AnnotatedBeanDefinition) {
+					// 如果是注解的 bean，执行当前方法
+					// 前边的逻辑里，创建的是  ScannedGenericBeanDefinition 对象，所以会走到这里，进行处理
+					// 这里也是设置 bd 的属性值
 					AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
 				}
+				// 校验冲突检测
 				if (checkCandidate(beanName, candidate)) {
+					// 创建对应的 BeanDefinitionHolder
 					BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
+					// todo 作用域？
 					definitionHolder =
 							AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
-					beanDefinitions.add(definitionHolder);   // 添加 bds
-					registerBeanDefinition(definitionHolder, this.registry);   // 注册bd
+					// 添加到 beanDefinitions
+					beanDefinitions.add(definitionHolder);
+					// 注册 bd 的详细过程
+					//		其实就是将 bd 保存到 beanDefinitionMap， beanName 保存到 beanDefinitionNames
+					registerBeanDefinition(definitionHolder, this.registry);
 				}
 			}
 		}
@@ -320,7 +338,8 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * @param beanName the generated bean name for the given bean
 	 */
 	protected void postProcessBeanDefinition(AbstractBeanDefinition beanDefinition, String beanName) {
-		beanDefinition.applyDefaults(this.beanDefinitionDefaults);  // bd默认值
+		// 设置 bd 的默认值
+		beanDefinition.applyDefaults(this.beanDefinitionDefaults);
 		if (this.autowireCandidatePatterns != null) {
 			beanDefinition.setAutowireCandidate(PatternMatchUtils.simpleMatch(this.autowireCandidatePatterns, beanName));
 		}
@@ -341,6 +360,9 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	/**
 	 * Check the given candidate's bean name, determining whether the corresponding
 	 * bean definition needs to be registered or conflicts with an existing definition.
+	 * <p>
+	 *     检查这个 bean 是否冲突，是否允许进行注册
+	 * </p>
 	 * @param beanName the suggested name for the bean
 	 * @param beanDefinition the corresponding bean definition
 	 * @return {@code true} if the bean can be registered as-is;
@@ -351,14 +373,17 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 */
 	protected boolean checkCandidate(String beanName, BeanDefinition beanDefinition) throws IllegalStateException {
 		if (!this.registry.containsBeanDefinition(beanName)) {
+			// 首先判断在当前的注册器中是否已经有这个 beanName，如果没有，则通过验证
 			return true;
 		}
+		// 获取当前已经存在的beanName 对应的 bd 对象
 		BeanDefinition existingDef = this.registry.getBeanDefinition(beanName);
 		BeanDefinition originatingDef = existingDef.getOriginatingBeanDefinition();
 		if (originatingDef != null) {
 			existingDef = originatingDef;
 		}
 		if (isCompatible(beanDefinition, existingDef)) {
+			// todo 兼容判断？
 			return false;
 		}
 		throw new ConflictingBeanDefinitionException("Annotation-specified bean name '" + beanName +

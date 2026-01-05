@@ -150,12 +150,16 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	/** Whether to allow eager class loading even for lazy-init beans. */
 	private boolean allowEagerClassLoading = true;
 
+	// 在 AnnotationConfigUtils.registerAnnotationConfigProcessors（就是解析xml得到扫描，注册完 bd，注册组件的时候），
+	// 会设置这个值 等于 AnnotationAwareOrderComparator
 	/** Optional OrderComparator for dependency Lists and arrays. */
 	@Nullable
 	private Comparator<Object> dependencyComparator;
 
+	// 在 AnnotationConfigUtils.registerAnnotationConfigProcessors（就是解析xml得到扫描，注册完 bd，注册组件的时候），
+	// 会设置这个值 等于 ContextAnnotationAutowireCandidateResolver
 	/** Resolver to use for checking if a bean definition is an autowire candidate. */
-	private AutowireCandidateResolver autowireCandidateResolver = SimpleAutowireCandidateResolver.INSTANCE;  // 修改成 DefaultListableBeanFactory
+	private AutowireCandidateResolver autowireCandidateResolver = SimpleAutowireCandidateResolver.INSTANCE;
 
 	// todo 这里在 prepareBeanFactory 方法的时候，添加进去了4个映射
 	//  	BeanFactory->beanFactory
@@ -996,6 +1000,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		if (beanDefinition instanceof AbstractBeanDefinition) {
 			try {
+				// 验证
 				((AbstractBeanDefinition) beanDefinition).validate();
 			}
 			catch (BeanDefinitionValidationException ex) {
@@ -1004,7 +1009,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 		}
 
-		BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);  // 从 bdm中拿，第一次是空的
+		// 从 bdm中拿，第一次是空的
+		BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
 		if (existingDefinition != null) {
 			if (!isAllowBeanDefinitionOverriding()) {
 				throw new BeanDefinitionOverrideException(beanName, beanDefinition, existingDefinition);
@@ -1037,7 +1043,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			if (hasBeanCreationStarted()) {  // alreadyCreated 是否不为空
 				// Cannot modify startup-time collection elements anymore (for stable iteration)
 				synchronized (this.beanDefinitionMap) {
+					// 当前的 bd 对象存放到 beanDefinitionMap 中
 					this.beanDefinitionMap.put(beanName, beanDefinition);
+					// beanDefinitionNames 中添加对应的 beanName，用到了 写时复制
 					List<String> updatedDefinitions = new ArrayList<>(this.beanDefinitionNames.size() + 1);
 					updatedDefinitions.addAll(this.beanDefinitionNames);
 					updatedDefinitions.add(beanName);
@@ -1047,6 +1055,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 			else {
 				// Still in startup registration phase
+				// 将 bd 的信息进行保存，存到 beanDefinitionMap 和 beanDefinitionNames 中
 				this.beanDefinitionMap.put(beanName, beanDefinition);
 				this.beanDefinitionNames.add(beanName);
 				removeManualSingletonName(beanName);
@@ -1180,6 +1189,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	 * (if this condition does not apply, the action can be skipped)
 	 */
 	private void updateManualSingletonNames(Consumer<Set<String>> action, Predicate<Set<String>> condition) {
+		// 操作manualSingletonNames 容器对象
 		if (hasBeanCreationStarted()) {
 			// Cannot modify startup-time collection elements anymore (for stable iteration)
 			synchronized (this.beanDefinitionMap) {

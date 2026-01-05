@@ -79,13 +79,15 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 	@Override
 	public String generateBeanName(BeanDefinition definition, BeanDefinitionRegistry registry) {
 		if (definition instanceof AnnotatedBeanDefinition) {
-			String beanName = determineBeanNameFromAnnotation((AnnotatedBeanDefinition) definition);  // 从注解上value属性获取beanName
+			// 从注解上value属性获取beanName
+			String beanName = determineBeanNameFromAnnotation((AnnotatedBeanDefinition) definition);
 			if (StringUtils.hasText(beanName)) {
 				// Explicit bean name found.
 				return beanName;
 			}
 		}
 		// Fallback: generate a unique default bean name.
+		// 如果没有注解中 value 属性指定，则自动生成 bean 名称
 		return buildDefaultBeanName(definition, registry);
 	}
 
@@ -97,17 +99,21 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 	@Nullable
 	protected String determineBeanNameFromAnnotation(AnnotatedBeanDefinition annotatedDef) {
 		AnnotationMetadata amd = annotatedDef.getMetadata();
-		Set<String> types = amd.getAnnotationTypes(); // 获取到注解
+		// 获取到注解
+		Set<String> types = amd.getAnnotationTypes();
 		String beanName = null;
 		for (String type : types) {
-			AnnotationAttributes attributes = AnnotationConfigUtils.attributesFor(amd, type);  // 获取注解上的属性
+			// 获取注解上的属性
+			AnnotationAttributes attributes = AnnotationConfigUtils.attributesFor(amd, type);
 			if (attributes != null) {
 				Set<String> metaTypes = this.metaAnnotationTypesCache.computeIfAbsent(type, key -> {
 					Set<String> result = amd.getMetaAnnotationTypes(key);
 					return (result.isEmpty() ? Collections.emptySet() : result);
 				});
 				if (isStereotypeWithNameValue(type, metaTypes, attributes)) {
+					// 获取 value 属性
 					Object value = attributes.get("value");
+					// 如果是 String 类型
 					if (value instanceof String) {
 						String strVal = (String) value;
 						if (StringUtils.hasLength(strVal)) {
@@ -115,6 +121,7 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 								throw new IllegalStateException("Stereotype annotations suggest inconsistent " +
 										"component names: '" + beanName + "' versus '" + strVal + "'");
 							}
+							// beanName 就是设置的 value
 							beanName = strVal;
 						}
 					}

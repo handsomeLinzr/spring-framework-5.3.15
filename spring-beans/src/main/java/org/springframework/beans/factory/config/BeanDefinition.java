@@ -232,6 +232,9 @@ public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
 
 	/**
 	 * Return the property values to be applied to a new instance of the bean.
+	 * <p>
+	 *     属性值
+	 * </p>
 	 * <p>The returned instance can be modified during bean factory post-processing.
 	 * @return the MutablePropertyValues object (never {@code null})
 	 */

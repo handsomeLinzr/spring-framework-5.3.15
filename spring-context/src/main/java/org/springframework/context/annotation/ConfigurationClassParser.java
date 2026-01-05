@@ -329,7 +329,8 @@ class ConfigurationClassParser {
 		}
 
 		// Process default methods on interfaces
-		processInterfaces(configClass, sourceClass);  // 实现的接口默认方法扫描
+		// 接口的默认方法扫描处理，从 jdk1.8 开始，接口中允许定义 default 方法实现，这个方法同样有可能是 @Bean 修饰
+		processInterfaces(configClass, sourceClass);
 
 		// Process superclass, if any
 		if (sourceClass.getMetadata().hasSuperClass()) {
