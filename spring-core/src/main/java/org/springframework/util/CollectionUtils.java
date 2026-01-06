@@ -145,6 +145,7 @@ public abstract class CollectionUtils {
 	@SuppressWarnings("unchecked")
 	public static <K, V> void mergePropertiesIntoMap(@Nullable Properties props, Map<K, V> map) {
 		if (props != null) {
+			// 将 props 的所有配置都复制到 map 中
 			for (Enumeration<?> en = props.propertyNames(); en.hasMoreElements();) {
 				String key = (String) en.nextElement();
 				Object value = props.get(key);
@@ -152,6 +153,7 @@ public abstract class CollectionUtils {
 					// Allow for defaults fallback or potentially overridden accessor...
 					value = props.getProperty(key);
 				}
+				// 放到 map 中
 				map.put((K) key, (V) value);
 			}
 		}

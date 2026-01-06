@@ -28,15 +28,10 @@
 
 	<!-- Example Service Bean -->
 	<import resource="application-a.xml" />
-	<alias name="myBean1" alias="alias1" />
-	<bean id="myBean2" class="org.springframework.bean.MyBean2">
-		<property name="myBean3" ref="myBean3" />
-	</bean>
-
-	<bean id="myBean3" class="org.springframework.bean.MyBean3" />
+	<bean id="myBean1" class="org.springframework.bean.MyBean1" />
 
 <!--	Component Scan-->
-	<context:component-scan base-package="org.springframework.bean" />
+	<context:component-scan base-package="org.springframework.bean.components" />
 
 	<!-- Property Placeholder -->
 	<context:property-placeholder location="classpath:application.properties" />

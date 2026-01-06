@@ -1,7 +1,8 @@
 package org.springframework.expand;
 
 import org.springframework.bean.MyBean1;
-import org.springframework.bean.MyBean4;
+import org.springframework.bean.components.MyBean2;
+import org.springframework.bean.components.MyBean4;
 import org.springframework.context.ApplicationContext;
 
 /**
@@ -12,13 +13,12 @@ public class MyTest {
 
 	public static void main(String[] args) {
 		ApplicationContext context = new MyClassPathXmlApplicationContext("classpath:application.xml");
-		Object myBean2 = context.getBean("myBean2");
-		MyUser myUser = context.getBean(MyUser.class);
-		System.out.println(myUser);
-		MyBean4 myBean4 = context.getBean(MyBean4.class);
-		System.out.println(myBean4);
-		MyBean1 bean1 = context.getBean(MyBean1.class);
-		System.out.println(bean1);
+//		Object myBean1 = context.getBean("myBean1");
+//		System.out.println(myBean1);
+//		MyUser myUser = context.getBean(MyUser.class);
+//		System.out.println(myUser);
+		MyBean2 bean2 = context.getBean(MyBean2.class);
+		System.out.println(bean2);
 	}
 
 }

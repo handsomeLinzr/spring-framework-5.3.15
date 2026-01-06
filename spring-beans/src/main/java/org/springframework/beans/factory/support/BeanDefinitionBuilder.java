@@ -151,6 +151,7 @@ public final class BeanDefinitionBuilder {
 	}
 
 
+	// 构造函数设置 builder 的时候会传进来
 	/**
 	 * The {@code BeanDefinition} instance we are creating.
 	 */

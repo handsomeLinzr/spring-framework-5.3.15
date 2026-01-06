@@ -1,6 +1,6 @@
 package org.springframework;
 
-import org.springframework.bean.MyBean2;
+import org.springframework.bean.components.MyBean2;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;

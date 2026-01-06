@@ -41,13 +41,18 @@ public abstract class AbstractPropertyLoadingBeanDefinitionParser extends Abstra
 
 	@Override
 	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
+		// 获取 location 属性，得到一个文件路径
 		String location = element.getAttribute("location");
 		if (StringUtils.hasLength(location)) {
+			// 先对路径进行表达式的解析
 			location = parserContext.getReaderContext().getEnvironment().resolvePlaceholders(location);
+			// 逗号切割，可能是多个路径拼接
 			String[] locations = StringUtils.commaDelimitedListToStringArray(location);
+			// 设置属性 locations 到 bd
 			builder.addPropertyValue("locations", locations);
 		}
 
+		// 解析 properties-ref
 		String propertiesRef = element.getAttribute("properties-ref");
 		if (StringUtils.hasLength(propertiesRef)) {
 			builder.addPropertyReference("properties", propertiesRef);

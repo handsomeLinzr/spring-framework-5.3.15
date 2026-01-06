@@ -48,6 +48,8 @@ public abstract class PropertiesLoaderSupport {
 
 	protected boolean localOverride = false;
 
+	// 这里的值，是通过在处理 bfpp 的时候，创建 bean 的过程中，通过依赖注入的方式设置进来的值
+	// 在 xml 解析的时候设置了 bd 的 value（String类型，路径），在创建 bean 的过程中依赖注入了对应的对象
 	@Nullable
 	private Resource[] locations;
 
@@ -139,29 +141,35 @@ public abstract class PropertiesLoaderSupport {
 	}
 
 
+	// 返回一个合并的属性集合
 	/**
 	 * Return a merged Properties instance containing both the
 	 * loaded properties and properties set on this FactoryBean.
 	 */
 	protected Properties mergeProperties() throws IOException {
+		// 创建一个 prop 配置
 		Properties result = new Properties();
 
 		if (this.localOverride) {
+			// 默认 false
 			// Load properties from file upfront, to let local properties override.
 			loadProperties(result);
 		}
 
 		if (this.localProperties != null) {
+			// 默认一开始为 null，如果 localProperties 不为null，则会将 localProperties 中的所有配置都合并到 result 中
 			for (Properties localProp : this.localProperties) {
+				// 属性配置进行合并
 				CollectionUtils.mergePropertiesIntoMap(localProp, result);
 			}
 		}
 
 		if (!this.localOverride) {
 			// Load properties from file afterwards, to let those properties override.
+			// 从 locations 配置文件中，加载配置到 result 中
 			loadProperties(result);
 		}
-
+		// 返回 result
 		return result;
 	}
 

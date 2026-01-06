@@ -127,10 +127,15 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
 		if (this.propertySources == null) {
+			// 第一次进来，propertySources 为 null，这里会创建 MutablePropertySources
 			this.propertySources = new MutablePropertySources();
+			// env 在一开始就创建了
 			if (this.environment != null) {
+				// 在 propertySources 中把当前的 env 环境添加进去
 				this.propertySources.addLast(
 					new PropertySource<Environment>(ENVIRONMENT_PROPERTIES_PROPERTY_SOURCE_NAME, this.environment) {
+						// 这里重写了抽象方法，这里的 source 就是构造函数传进来的 environment
+						// 所以这里的 getProperty 获取的是 env 的结果
 						@Override
 						@Nullable
 						public String getProperty(String key) {
@@ -140,12 +145,16 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 				);
 			}
 			try {
+				// localPropertySource 加载到 locations 的配置
 				PropertySource<?> localPropertySource =
+						// mergeProperties() 方法合并配置，会合并并加载 locations 路径的配置，返回一个 Properties
 						new PropertiesPropertySource(LOCAL_PROPERTIES_PROPERTY_SOURCE_NAME, mergeProperties());
 				if (this.localOverride) {
 					this.propertySources.addFirst(localPropertySource);
 				}
 				else {
+					// 将 localPropertySource 添加到 propertySources 中
+					// 这时候，propertySources 中有 env 和 localPropertySource 两个配置
 					this.propertySources.addLast(localPropertySource);
 				}
 			}
@@ -154,6 +163,9 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 			}
 		}
 
+		// 通过配置解析
+		// 这里其实就是去遍历 beanFactory 中的所有 bd，然后进行解析
+		// 这里具体会根据配置，去找 beanFactory 的所有 bd 对象，然后去配置替换各种值，如 className、scope 和 属性值等
 		processProperties(beanFactory, new PropertySourcesPropertyResolver(this.propertySources));
 		this.appliedPropertySources = this.propertySources;
 	}
@@ -165,6 +177,7 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 	protected void processProperties(ConfigurableListableBeanFactory beanFactoryToProcess,
 			final ConfigurablePropertyResolver propertyResolver) throws BeansException {
 
+		// 设置替换的前缀和后缀
 		propertyResolver.setPlaceholderPrefix(this.placeholderPrefix);
 		propertyResolver.setPlaceholderSuffix(this.placeholderSuffix);
 		propertyResolver.setValueSeparator(this.valueSeparator);
@@ -179,6 +192,7 @@ public class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerS
 			return (resolved.equals(this.nullValue) ? null : resolved);
 		};
 
+		// 解析替换过程，这里具体会根据配置，去找 beanFactory 的所有 bd 对象，然后去配置替换各种值，如 className、scope 和 属性值等
 		doProcessProperties(beanFactoryToProcess, valueResolver);
 	}
 

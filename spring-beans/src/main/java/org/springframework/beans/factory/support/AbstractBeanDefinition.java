@@ -175,11 +175,11 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	@Nullable
 	private String factoryMethodName;
 
-	// ConstructorArgumentValues
+	// ConstructorArgumentValues 默认是 null
 	@Nullable
 	private ConstructorArgumentValues constructorArgumentValues;
 
-	// 创建了 MutablePropertyValues
+	// 创建了 MutablePropertyValues，默认一开始是 null
 	@Nullable
 	private MutablePropertyValues propertyValues;
 

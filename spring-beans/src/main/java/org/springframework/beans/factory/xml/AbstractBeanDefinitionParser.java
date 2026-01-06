@@ -57,29 +57,47 @@ public abstract class AbstractBeanDefinitionParser implements BeanDefinitionPars
 	public static final String NAME_ATTRIBUTE = "name";
 
 
+	// 解析xml配置中的 context:property-placeholder，从这里开始
 	@Override
 	@Nullable
 	public final BeanDefinition parse(Element element, ParserContext parserContext) {
+		// 先进行内部解析，会调用到具体子类的解析方法中进行解析
+		// 这里主要是给子类进行自定义的解析过程，解析成一个 bd 对象返回
+		// 后边再进行统一的通用解析，包括id、name
 		AbstractBeanDefinition definition = parseInternal(element, parserContext);
+		// 解析后 bd 不为空且 非嵌套的？
 		if (definition != null && !parserContext.isNested()) {
 			try {
+				// 处理id的生成
+				// 如果开启了id自动生成的开关，则直接生成 beanName 作为 id，然后返回
+				// 如果没有开启id自动生成的开关，则直接获取配置的属性 id
+				//		如果获取的id属性是空的，则再次查看id降级生成的开关是否打开，是则生成 beanName 作为id，否则直接返回id
 				String id = resolveId(element, definition, parserContext);
+				// 判断如果没有id
 				if (!StringUtils.hasText(id)) {
+					// 记录错误日志
 					parserContext.getReaderContext().error(
 							"Id is required for element '" + parserContext.getDelegate().getLocalName(element)
 									+ "' when used as a top-level tag", element);
 				}
 				String[] aliases = null;
+				// 判断是否需要解析名称
 				if (shouldParseNameAsAliases()) {
+					// 如果打开了开关，则获取 name 属性
 					String name = element.getAttribute(NAME_ATTRIBUTE);
 					if (StringUtils.hasLength(name)) {
+						// 逗号分隔，可能含有多个name
 						aliases = StringUtils.trimArrayElements(StringUtils.commaDelimitedListToStringArray(name));
 					}
 				}
+				// 封装 bd holder 对象，包装器模式
 				BeanDefinitionHolder holder = new BeanDefinitionHolder(definition, id, aliases);
+				// 注册 bd
 				registerBeanDefinition(holder, parserContext.getRegistry());
 				if (shouldFireEvents()) {
+					// 发送事件
 					BeanComponentDefinition componentDefinition = new BeanComponentDefinition(holder);
+					// 空实现，留给子类具体自定义实现
 					postProcessComponentDefinition(componentDefinition);
 					parserContext.registerComponent(componentDefinition);
 				}
@@ -90,6 +108,7 @@ public abstract class AbstractBeanDefinitionParser implements BeanDefinitionPars
 				return null;
 			}
 		}
+		// 返回 bd
 		return definition;
 	}
 
@@ -109,14 +128,21 @@ public abstract class AbstractBeanDefinitionParser implements BeanDefinitionPars
 	protected String resolveId(Element element, AbstractBeanDefinition definition, ParserContext parserContext)
 			throws BeanDefinitionStoreException {
 
+		// 判断是否需要生成ID，还是是从给的配置中获取ID
+		// 这里这个方法需要给具体子类实现
 		if (shouldGenerateId()) {
+			// 如果需要生成ID，则返回生成的 bean 名称
 			return parserContext.getReaderContext().generateBeanName(definition);
 		}
 		else {
+			// 如果不需要生成ID，则直接从配置中获取 ID 属性
 			String id = element.getAttribute(ID_ATTRIBUTE);
+			// 判断是否 ID 为空，如果 ID 为空，且 id降级生成ID的开关打开了
 			if (!StringUtils.hasText(id) && shouldGenerateIdAsFallback()) {
+				// 此时继续生成 bean 名称 作为id
 				id = parserContext.getReaderContext().generateBeanName(definition);
 			}
+			// 返回id
 			return id;
 		}
 	}
@@ -187,6 +213,8 @@ public abstract class AbstractBeanDefinitionParser implements BeanDefinitionPars
 		return true;
 	}
 
+	// 检测该解析器是否支持在解析 bd 后触发 BeanComponentDefinition 事件
+	// 默认是 true
 	/**
 	 * Determine whether this parser is supposed to fire a
 	 * {@link org.springframework.beans.factory.parsing.BeanComponentDefinition}

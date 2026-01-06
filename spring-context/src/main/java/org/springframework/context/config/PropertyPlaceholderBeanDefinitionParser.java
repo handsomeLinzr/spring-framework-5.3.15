@@ -55,10 +55,13 @@ class PropertyPlaceholderBeanDefinitionParser extends AbstractPropertyLoadingBea
 		return org.springframework.beans.factory.config.PropertyPlaceholderConfigurer.class;
 	}
 
+	// 解析标签 context:property-placeholder
 	@Override
 	protected void doParse(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
+		// 解析几个通用的标签（包含主要的 location），解析后设置到 bd 的属性中
 		super.doParse(element, parserContext, builder);
 
+		// 继续进行标签的获取和设置，设置到 bd
 		builder.addPropertyValue("ignoreUnresolvablePlaceholders",
 				Boolean.valueOf(element.getAttribute("ignore-unresolvable")));
 

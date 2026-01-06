@@ -60,13 +60,17 @@ public abstract class AbstractSingleBeanDefinitionParser extends AbstractBeanDef
 	 */
 	@Override
 	protected final AbstractBeanDefinition parseInternal(Element element, ParserContext parserContext) {
+		// 生成一个 bdBuilder
+		// 这里先生成一个 GenericBeanDefinition， 然后再包装进 builder
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition();
 		String parentName = getParentName(element);
 		if (parentName != null) {
 			builder.getRawBeanDefinition().setParentName(parentName);
 		}
+		// 解析 context:property-placeholder 的情况，这里会返回 PropertySourcesPlaceholderConfigurer.class
 		Class<?> beanClass = getBeanClass(element);
 		if (beanClass != null) {
+			// 将对应子类实现得到的 beanClass 设置到 builder 中 bd 的 beanClass 中
 			builder.getRawBeanDefinition().setBeanClass(beanClass);
 		}
 		else {
@@ -76,16 +80,20 @@ public abstract class AbstractSingleBeanDefinitionParser extends AbstractBeanDef
 			}
 		}
 		builder.getRawBeanDefinition().setSource(parserContext.extractSource(element));
+		// null
 		BeanDefinition containingBd = parserContext.getContainingBeanDefinition();
 		if (containingBd != null) {
 			// Inner bean definition must receive same scope as containing bean.
 			builder.setScope(containingBd.getScope());
 		}
 		if (parserContext.isDefaultLazyInit()) {
+			// 默认是 false
 			// Default-lazy-init applies to custom bean definitions as well.
 			builder.setLazyInit(true);
 		}
+		// 调用子类，解析 element
 		doParse(element, parserContext, builder);
+		// 返回解析后的 bd 对象，注意这个 bd 的 beanClass 是 PropertySourcesPlaceholderConfigurer
 		return builder.getBeanDefinition();
 	}
 

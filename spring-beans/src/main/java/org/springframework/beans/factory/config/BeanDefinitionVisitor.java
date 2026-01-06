@@ -76,12 +76,18 @@ public class BeanDefinitionVisitor {
 	 * @see #resolveStringValue(String)
 	 */
 	public void visitBeanDefinition(BeanDefinition beanDefinition) {
+		// 配置替换父名称
 		visitParentName(beanDefinition);
+		// 配置替换class类名称
 		visitBeanClassName(beanDefinition);
+		// 配置替换factoryBean名称
 		visitFactoryBeanName(beanDefinition);
+		// 配置替换factoryMethod名称
 		visitFactoryMethodName(beanDefinition);
+		// 配置替换作用域
 		visitScope(beanDefinition);
 		if (beanDefinition.hasPropertyValues()) {
+			// 配置替换属性值，这里会解析属性的表达式
 			visitPropertyValues(beanDefinition.getPropertyValues());
 		}
 		if (beanDefinition.hasConstructorArgumentValues()) {
