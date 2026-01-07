@@ -115,6 +115,7 @@ class ConfigurationClassBeanDefinitionReader {
 		this.environment = environment;
 		this.importBeanNameGenerator = importBeanNameGenerator;
 		this.importRegistry = importRegistry;
+		// 添加表达处理器
 		this.conditionEvaluator = new ConditionEvaluator(registry, environment, resourceLoader);
 	}
 

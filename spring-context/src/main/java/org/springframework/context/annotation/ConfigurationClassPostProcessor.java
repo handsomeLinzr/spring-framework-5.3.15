@@ -289,20 +289,22 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	 * Build and validate a configuration model based on the registry of
 	 * {@link Configuration} classes.
 	 * <p>
-	 * 通过 Configuration 的注册器，处理和验证 configuration 的模式
+	 *  处理配置 bd 的过程
 	 * </p>
 	 */
 	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
-		// 用户存可能存在的配置 bd
+		// 用户存可能存在的配置 bd，后续后收集到这个集合中，然后统一继续递归处理
 		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
 		// 获取当前注册器中已有的所有 bd 的名称
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
 		// 循环遍历所有bd
+		// 这里是为了找到所有可能的配置，并设置属性，也就是那几种注解的情况，然后收集到 configCandidates 中
 		for (String beanName : candidateNames) {
 			// 获取对应的 bd
 			BeanDefinition beanDef = registry.getBeanDefinition(beanName);
-			// todo 如果这个属性不为空，则说明已经处理过了，跳过
+			// 先查看该 bd 是否有属性 configurationClass
+			// 如果有，则说明已经处理过了，不重复处理（处理过的会设置上这个属性）
 			if (beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE) != null) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Bean definition has already been processed as a configuration class: " + beanDef);
@@ -367,55 +369,83 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
 		// 记录已经解析过得的类
 		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
+
+		// 这里开始进入重点了，开始进行处理的逻辑，循环处理
 		do {
 			StartupStep processConfig = this.applicationStartup.start("spring.context.config-classes.parse");
-			parser.parse(candidates);  // 解析
-			parser.validate();  // 验证，静态、final、私有的方法不能作为bean
+			// 调用解析器进行解析
+			// 这里重点，解析当前从 beanFactory 中拿出来的所有需要解析的注解bean和配置
+			// ConfigurationClassParser
+			parser.parse(candidates);
+			// 验证，静态、final、私有的方法不能作为bean
+			parser.validate();
             // 从配置中扫出来的类
 			Set<ConfigurationClass> configClasses = new LinkedHashSet<>(parser.getConfigurationClasses());
-			configClasses.removeAll(alreadyParsed);  // 移除已解析，剩下待解析
+			// 移除掉已经解析过的类，防止重复解析相同的类
+			configClasses.removeAll(alreadyParsed);
 
 			// Read the model and create bean definitions based on its content
-			if (this.reader == null) {   // 创建一个reader
+			if (this.reader == null) {
+				// 如果 reader 是空的，则先创建一个 ConfigurationClassBeanDefinitionReader
+				// 第一次则需要创建，然后后边再调用到这里，则不再需要创建了
 				this.reader = new ConfigurationClassBeanDefinitionReader(
 						registry, this.sourceExtractor, this.resourceLoader, this.environment,
 						this.importBeanNameGenerator, parser.getImportRegistry());
-			}  // 从扫出来的bd，继续扫Bean方法或者import注解，注册到bdm
+			}
+			// 从扫出来的bd里，继续扫Bean方法或者import注解，注册到bdm
 			this.reader.loadBeanDefinitions(configClasses);
-			alreadyParsed.addAll(configClasses);  // 缓存进已解析中
+			// 到这里，将 configClasses 全部加到 alreadyParsed，表示已经解析过了
+			alreadyParsed.addAll(configClasses);
 			processConfig.tag("classCount", () -> String.valueOf(configClasses.size())).end();
-            // 清空当前已经处理的配置
+            // candidates 先进行清空
+			// 因为 candidates 里的 bd 已经在上边都扫了一次，所以不需要再处理
+			// 这里先清了，下边继续添加进来需要处理的 bd
 			candidates.clear();
-			if (registry.getBeanDefinitionCount() > candidateNames.length) {  // 最新的bd数量大于之前的，说明有新的bd进来了
-				String[] newCandidateNames = registry.getBeanDefinitionNames();  // 现在的bd
-				Set<String> oldCandidateNames = new HashSet<>(Arrays.asList(candidateNames)); // 扫之前的bd
+			if (registry.getBeanDefinitionCount() > candidateNames.length) {
+				// 最新的bd数量大于，说明有新的bd注册进去了
+				// 现在最新的所有 bd 的名称
+				String[] newCandidateNames = registry.getBeanDefinitionNames();
+				// 这个是处理之前的所有 bd 名称
+				Set<String> oldCandidateNames = new HashSet<>(Arrays.asList(candidateNames));
 				Set<String> alreadyParsedClasses = new HashSet<>();
 				for (ConfigurationClass configurationClass : alreadyParsed) {
-					alreadyParsedClasses.add(configurationClass.getMetadata().getClassName());  // 记录已解析的类
+					// 记录已经处理过的所有类的名称
+					alreadyParsedClasses.add(configurationClass.getMetadata().getClassName());
 				}
+				// 遍历当前的所有 bd
 				for (String candidateName : newCandidateNames) {
-					if (!oldCandidateNames.contains(candidateName)) {  // 新bd才需要注册
+					// 如果是上一步已经有的 bd，则跳过，这里是为了找出因为本次处理，新加的那些 bd
+					if (!oldCandidateNames.contains(candidateName)) {
+						// 这个 bd 就是本次处理后新注册的 bd
 						BeanDefinition bd = registry.getBeanDefinition(candidateName);
+						// 判断新加的这个 bd 是否是一个可能的配置，且还没被解析过
 						if (ConfigurationClassUtils.checkConfigurationClassCandidate(bd, this.metadataReaderFactory) &&
-								!alreadyParsedClasses.contains(bd.getBeanClassName())) {  // 已经处理过，不用处理
-							candidates.add(new BeanDefinitionHolder(bd, candidateName));   // 添加未处理的bd，下次循环继续
+								!alreadyParsedClasses.contains(bd.getBeanClassName())) {
+							// 如果是，则加到 candidates 中
+							// 下次循环继续处理
+							candidates.add(new BeanDefinitionHolder(bd, candidateName));
 						}
 					}
 				}
-				candidateNames = newCandidateNames; // 最新的bd
+				// 对 candidateNames 进行赋值，当前所有的 bd，就是下次循环要来比较的原有bd快照
+				candidateNames = newCandidateNames;
 			}
 		}
+		// 一直处理，直到需要解析的类都解析了才跳出循环
 		while (!candidates.isEmpty());
 
 		// Register the ImportRegistry as a bean in order to support ImportAware @Configuration classes
+		// 注册 ImportRegistry 作为一个 bean，去支持 ImportAware @Configuration 类
+		// todo 为啥？
 		if (sbr != null && !sbr.containsSingleton(IMPORT_REGISTRY_BEAN_NAME)) {
-			sbr.registerSingleton(IMPORT_REGISTRY_BEAN_NAME, parser.getImportRegistry());  // 添加单例
+			sbr.registerSingleton(IMPORT_REGISTRY_BEAN_NAME, parser.getImportRegistry());
 		}
 
 		if (this.metadataReaderFactory instanceof CachingMetadataReaderFactory) {
 			// Clear cache in externally provided MetadataReaderFactory; this is a no-op
 			// for a shared cache since it'll be cleared by the ApplicationContext.
-			((CachingMetadataReaderFactory) this.metadataReaderFactory).clearCache();  // 清除缓存
+			// 清除缓存
+			((CachingMetadataReaderFactory) this.metadataReaderFactory).clearCache();
 		}
 	}
 

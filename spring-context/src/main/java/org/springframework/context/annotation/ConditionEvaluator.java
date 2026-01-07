@@ -47,7 +47,8 @@ import org.springframework.util.MultiValueMap;
  */
 class ConditionEvaluator {
 
-	private final ConditionContextImpl context;   // ConditionContextImpl
+	// ConditionContextImpl
+	private final ConditionContextImpl context;
 
 
 	/**

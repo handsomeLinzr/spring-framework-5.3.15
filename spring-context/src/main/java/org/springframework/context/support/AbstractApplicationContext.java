@@ -626,10 +626,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				beanPostProcess.end();
 
 				// Initialize message source for this context.
-				initMessageSource();  // 初始化messageSource，并设置到this.messageSource，注册到bean
+				// 初始化messageSource，并设置到this.messageSource，注册到bean
+				// 前后端分离的项目，这里基本不用管，jsp 或者模版渲染的框架，用springmvc，那些对这个的依赖比较大
+				initMessageSource();
 
 				// Initialize event multicaster for this context.
-				initApplicationEventMulticaster();  // 创建事件传播器applicationEventMulticaster，并设置this.applicationEventMulticaster，注册到bean
+				// 创建事件传播器applicationEventMulticaster，并设置this.applicationEventMulticaster，注册到bean
+				// 事件驱动，观察者模式
+				initApplicationEventMulticaster();
 
 				// Initialize other special beans in specific context subclasses.
 				onRefresh();   // Spring为空实现，但是Springboot-web 则是这里启动web容器

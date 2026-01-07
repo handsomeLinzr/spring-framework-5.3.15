@@ -55,7 +55,9 @@ abstract class ConfigurationClassUtils {
 
 	public static final String CONFIGURATION_CLASS_LITE = "lite";
 
-	// todo processConfigBeanDefinitions 方法中，会先拿到 bd 对象，查询对应的这个属性 是否为空，空不处理
+	// 遍历过的 bd 会设置上这个属性，值有 full 和 lite
+	// full，表示是一个 @Configuration 注解修饰的配置类
+	// lite，表示是  @Component、@ComponentScan、@Import、@ImportResource、包含 @Bean 方法 这五种情况的类
 	public static final String CONFIGURATION_CLASS_ATTRIBUTE =
 			Conventions.getQualifiedAttributeName(ConfigurationClassPostProcessor.class, "configurationClass");
 
@@ -84,7 +86,8 @@ abstract class ConfigurationClassUtils {
 	 * @return whether the candidate qualifies as (any kind of) configuration class
 	 *
 	 * <p>
-	 *     检查给定额 bd 是否是一个配置类，或者是一个在 configuration 或 component 类内部声明的组件，
+	 *     检查给定额 bd 是否是一个配置类（@Configuration 修饰，设置属性 full），
+	 *     或者是一个可能的配置类（@Component、@ComponentScan、@Import、@ImportResource 或者 包含了 @Bean 方法，设置为 lite），
 	 *     即检查这个 bd 是否有可能是一个配置
 	 * </p>
 	 *
@@ -112,6 +115,7 @@ abstract class ConfigurationClassUtils {
 		else if (beanDef instanceof AbstractBeanDefinition && ((AbstractBeanDefinition) beanDef).hasBeanClass()) {
 			// Check already loaded Class if present...
 			// since we possibly can't even load the class file for this Class.
+			// 这几个bd 类的先不处理，后边再处理
 			Class<?> beanClass = ((AbstractBeanDefinition) beanDef).getBeanClass();
 			if (BeanFactoryPostProcessor.class.isAssignableFrom(beanClass) ||
 					BeanPostProcessor.class.isAssignableFrom(beanClass) ||

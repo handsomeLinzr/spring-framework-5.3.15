@@ -50,6 +50,7 @@ final class ConfigurationClass {
 
 	private final AnnotationMetadata metadata;
 
+	// 构造函数传进来，DescriptiveResource
 	private final Resource resource;
 
 	@Nullable

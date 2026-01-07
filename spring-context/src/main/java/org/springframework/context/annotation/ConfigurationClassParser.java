@@ -112,6 +112,8 @@ class ConfigurationClassParser {
 
 	private static final PropertySourceFactory DEFAULT_PROPERTY_SOURCE_FACTORY = new DefaultPropertySourceFactory();
 
+	// 默认的排除方式，这里是通过判断 className 全类名是用 DescriptiveResource 开头 或者 org.springframework.stereotype. 开头
+	// 这两个路径开头的，基本是 注解
 	private static final Predicate<String> DEFAULT_EXCLUSION_FILTER = className ->
 			(className.startsWith("java.lang.annotation.") || className.startsWith("org.springframework.stereotype."));
 
@@ -167,17 +169,27 @@ class ConfigurationClassParser {
 	}
 
 
+	/**
+	 * 解析传进来的 bd 配置文件
+	 * @param configCandidates
+	 */
 	public void parse(Set<BeanDefinitionHolder> configCandidates) {
+		// 遍历所有传进来的 bd
 		for (BeanDefinitionHolder holder : configCandidates) {
+			// 获取对应的 bd
 			BeanDefinition bd = holder.getBeanDefinition();
 			try {
+				// 通过注解扫描进来的 bd
 				if (bd instanceof AnnotatedBeanDefinition) {
-					parse(((AnnotatedBeanDefinition) bd).getMetadata(), holder.getBeanName()); // 解析
+					// 注册的解析方式
+					parse(((AnnotatedBeanDefinition) bd).getMetadata(), holder.getBeanName());
 				}
 				else if (bd instanceof AbstractBeanDefinition && ((AbstractBeanDefinition) bd).hasBeanClass()) {
+					// 非 注解方式扫描进来的，即普通的 bd，直接扫描进来的
 					parse(((AbstractBeanDefinition) bd).getBeanClass(), holder.getBeanName());
 				}
 				else {
+					// 其余的 bd 解析方式
 					parse(bd.getBeanClassName(), holder.getBeanName());
 				}
 			}
@@ -203,6 +215,8 @@ class ConfigurationClassParser {
 		processConfigurationClass(new ConfigurationClass(clazz, beanName), DEFAULT_EXCLUSION_FILTER);
 	}
 
+	// 注解解析
+	// metadata - 元数据；beanName - bd 对应的名称
 	protected final void parse(AnnotationMetadata metadata, String beanName) throws IOException {
 		processConfigurationClass(new ConfigurationClass(metadata, beanName), DEFAULT_EXCLUSION_FILTER);
 	}
@@ -222,6 +236,12 @@ class ConfigurationClassParser {
 	}
 
 
+	/**
+	 * 解析配置的 bd 类
+	 * @param configClass
+	 * @param filter
+	 * @throws IOException
+	 */
 	protected void processConfigurationClass(ConfigurationClass configClass, Predicate<String> filter) throws IOException {
 		if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {  // 是否要跳过
 			return;
