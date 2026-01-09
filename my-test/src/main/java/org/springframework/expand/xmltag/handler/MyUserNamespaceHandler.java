@@ -1,6 +1,7 @@
-package org.springframework.expand;
+package org.springframework.expand.xmltag.handler;
 
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
+import org.springframework.expand.xmltag.parser.UserBeanDefinitionParser;
 
 /**
  * @author linzherong

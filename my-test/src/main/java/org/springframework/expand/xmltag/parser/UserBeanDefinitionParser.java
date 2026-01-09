@@ -1,11 +1,9 @@
-package org.springframework.expand;
+package org.springframework.expand.xmltag.parser;
 
-import org.springframework.beans.factory.config.MapFactoryBean;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
-import org.springframework.beans.factory.support.ManagedMap;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.context.config.AbstractPropertyLoadingBeanDefinitionParser;
-import org.springframework.util.StringUtils;
+import org.springframework.expand.xmltag.bean.MyUser;
 import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
 

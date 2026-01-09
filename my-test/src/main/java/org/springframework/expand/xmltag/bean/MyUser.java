@@ -1,7 +1,4 @@
-package org.springframework.expand;
-
-import java.util.HashMap;
-import java.util.Map;
+package org.springframework.expand.xmltag.bean;
 
 /**
  * @author linzherong

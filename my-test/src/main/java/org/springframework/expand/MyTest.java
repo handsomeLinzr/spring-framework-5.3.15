@@ -4,6 +4,7 @@ import org.springframework.bean.MyBean1;
 import org.springframework.bean.components.MyBean2;
 import org.springframework.bean.components.MyBean4;
 import org.springframework.context.ApplicationContext;
+import org.springframework.expand.xmltag.bean.MyUser;
 
 /**
  * @author linzherong
@@ -15,10 +16,10 @@ public class MyTest {
 		ApplicationContext context = new MyClassPathXmlApplicationContext("classpath:application.xml");
 //		Object myBean1 = context.getBean("myBean1");
 //		System.out.println(myBean1);
-//		MyUser myUser = context.getBean(MyUser.class);
-//		System.out.println(myUser);
-		MyBean2 bean2 = context.getBean(MyBean2.class);
-		System.out.println(bean2);
+		MyUser myUser = context.getBean(MyUser.class);
+		System.out.println(myUser);
+//		MyBean2 bean2 = context.getBean(MyBean2.class);
+//		System.out.println(bean2);
 	}
 
 }
