@@ -1,1 +1,1 @@
-http\://www.springframework.org/schema/my-user=org.springframework.expand.xmltag.handler.MyUserNamespaceHandler
+http\://www.springframework.org/schema/my-user=org.springframework.mytest.expand.xmltag.handler.MyUserNamespaceHandler

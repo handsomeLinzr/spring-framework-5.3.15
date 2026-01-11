@@ -48,6 +48,7 @@ import org.springframework.util.ClassUtils;
  */
 final class ConfigurationClass {
 
+	// 对应配置类的注解元数据
 	private final AnnotationMetadata metadata;
 
 	// 构造函数传进来，DescriptiveResource
@@ -58,11 +59,18 @@ final class ConfigurationClass {
 
 	private final Set<ConfigurationClass> importedBy = new LinkedHashSet<>(1);
 
+	// 存放的是配置类中解析到的有 Bean 注解修饰的方法
 	private final Set<BeanMethod> beanMethods = new LinkedHashSet<>();
 
+	// 存放的是 String->下限是 BeanDefinitionReader 的类对象
+	// 在处理 ImportResource 注解的时候，会获取到这个助理的两个值： locations 和 reader 属性
+	// 然后就会存到这里来，locations 是一个数组，这里会把这个数组每个字符串都添加到 importedResources 中，值都是 reader
 	private final Map<String, Class<? extends BeanDefinitionReader>> importedResources =
 			new LinkedHashMap<>();
 
+	// 存放的是 ImportBeanDefinitionRegistrar->AnnotationMetadata
+	// 在处理 Import 注解的时候，如果 Import 注解对应的 value 是 ImportBeanDefinitionRegistrar 类型
+	// 则会将这个 value 对应的类进行实例化，然后将这个实例化对象作为 key，value 是当前正在解析的 sourceClass 的 metadata
 	private final Map<ImportBeanDefinitionRegistrar, AnnotationMetadata> importBeanDefinitionRegistrars =
 			new LinkedHashMap<>();
 
@@ -104,8 +112,11 @@ final class ConfigurationClass {
 	 */
 	ConfigurationClass(Class<?> clazz, String beanName) {
 		Assert.notNull(beanName, "Bean name must not be null");
+		// 通过 clazz 解析到对应的注解元数据
 		this.metadata = AnnotationMetadata.introspect(clazz);
+		// 设置源
 		this.resource = new DescriptiveResource(clazz.getName());
+		// 设置 bean 名称
 		this.beanName = beanName;
 	}
 
@@ -131,8 +142,11 @@ final class ConfigurationClass {
 	 */
 	ConfigurationClass(AnnotationMetadata metadata, String beanName) {
 		Assert.notNull(beanName, "Bean name must not be null");
+		// 设置注解元数据
 		this.metadata = metadata;
+		// 设置源
 		this.resource = new DescriptiveResource(metadata.getClassName());
+		// 设置 bean 名称
 		this.beanName = beanName;
 	}
 
@@ -198,6 +212,7 @@ final class ConfigurationClass {
 		this.importedResources.put(importedResource, readerClass);
 	}
 
+	// 记录对应的注册器到 importBeanDefinitionRegistrars
 	void addImportBeanDefinitionRegistrar(ImportBeanDefinitionRegistrar registrar, AnnotationMetadata importingClassMetadata) {
 		this.importBeanDefinitionRegistrars.put(registrar, importingClassMetadata);
 	}

@@ -64,6 +64,9 @@ public class ResourcePropertySource extends PropertiesPropertySource {
 	 * {@link Resource#getDescription() description} of the given resource.
 	 */
 	public ResourcePropertySource(EncodedResource resource) throws IOException {
+		// getNameForResource(resource.getResource()) 生成对应的名称
+		// PropertiesLoaderUtils.loadProperties(resource) 解析得到对应的值
+		// 记录到 name 和 source 属性，source 就是对应的 k-v 值信息
 		super(getNameForResource(resource.getResource()), PropertiesLoaderUtils.loadProperties(resource));
 		this.resourceName = null;
 	}

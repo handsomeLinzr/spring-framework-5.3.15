@@ -40,9 +40,10 @@ public class CachingMetadataReaderFactory extends SimpleMetadataReaderFactory {
 	/** Default maximum number of entries for a local MetadataReader cache: 256. */
 	public static final int DEFAULT_CACHE_LIMIT = 256;
 
+	// 存放文件->new SimpleMetadataReader 的关系，这是一个 ConcurrentHashMap
 	/** MetadataReader cache: either local or shared at the ResourceLoader level. */
 	@Nullable
-	private Map<Resource, MetadataReader> metadataReaderCache;  // 存放文件->new SimpleMetadataReader 的关系
+	private Map<Resource, MetadataReader> metadataReaderCache;
 
 
 	/**
@@ -75,7 +76,7 @@ public class CachingMetadataReaderFactory extends SimpleMetadataReaderFactory {
 		super(resourceLoader);
 		if (resourceLoader instanceof DefaultResourceLoader) {
 			this.metadataReaderCache =
-					((DefaultResourceLoader) resourceLoader).getResourceCache(MetadataReader.class);
+					((DefaultResourceLoader) resourceLoader).getResourceCache(MetadataReader.class);  // ConcurrentHashMap
 		}
 		else {
 			setCacheLimit(DEFAULT_CACHE_LIMIT);
@@ -118,11 +119,15 @@ public class CachingMetadataReaderFactory extends SimpleMetadataReaderFactory {
 	public MetadataReader getMetadataReader(Resource resource) throws IOException {
 		if (this.metadataReaderCache instanceof ConcurrentMap) {
 			// No synchronization necessary...
+			// 先从缓存获取，根据 resource 获取到对应的元数据信息读取
 			MetadataReader metadataReader = this.metadataReaderCache.get(resource);
 			if (metadataReader == null) {
+				// 如果没有，则调用 父类 SimpleMetadataReaderFactory 生成元数据对象 SimpleMetadataReader
 				metadataReader = super.getMetadataReader(resource);
+				// 放到缓存中
 				this.metadataReaderCache.put(resource, metadataReader);
 			}
+			// 返回
 			return metadataReader;
 		}
 		else if (this.metadataReaderCache != null) {

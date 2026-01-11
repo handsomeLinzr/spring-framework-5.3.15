@@ -65,6 +65,7 @@ final class SimpleAnnotationMetadataReadingVisitor extends ClassVisitor {
 
 	private List<SimpleMethodMetadata> annotatedMethods = new ArrayList<>();
 
+	// SimpleAnnotationMetadata
 	@Nullable
 	private SimpleAnnotationMetadata metadata;
 

@@ -94,7 +94,8 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 
 	private String resourcePattern = DEFAULT_RESOURCE_PATTERN;
 
-	// 默认这里会添加 Component 注解
+	// 默认这里会添加 Component 注解  ManagedBean 注解  Named 注解
+	// 默认是这几个
 	private final List<TypeFilter> includeFilters = new ArrayList<>();
 
 	private final List<TypeFilter> excludeFilters = new ArrayList<>();
@@ -108,6 +109,11 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	@Nullable
 	private ResourcePatternResolver resourcePatternResolver;
 
+	// 元数据读取工厂
+	// 通过元数据读取工厂，可以获取对应的resource的元数据读取器
+	// 工厂模式，工厂有两个实现 CachingMetadataReaderFactory、SimpleMetadataReaderFactory
+	// 默认是 CachingMetadataReaderFactory
+	// 在解析 component-scan 的时候也会调用 setResourceLoader，设置进来 CachingMetadataReaderFactory
 	@Nullable
 	private MetadataReaderFactory metadataReaderFactory;
 
@@ -145,6 +151,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 */
 	public ClassPathScanningCandidateComponentProvider(boolean useDefaultFilters, Environment environment) {
 		if (useDefaultFilters) {
+			// 添加默认的扫描注解
 			registerDefaultFilters();
 		}
 		setEnvironment(environment);
@@ -264,7 +271,9 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 */
 	@Override
 	public void setResourceLoader(@Nullable ResourceLoader resourceLoader) {
+		// resourceLoader = ApplicationContext
 		this.resourcePatternResolver = ResourcePatternUtils.getResourcePatternResolver(resourceLoader);
+		// 创建 CachingMetadataReaderFactory 元数据读取器工厂
 		this.metadataReaderFactory = new CachingMetadataReaderFactory(resourceLoader);
 		this.componentsIndex = CandidateComponentsIndexLoader.loadIndex(this.resourcePatternResolver.getClassLoader());
 	}
@@ -440,6 +449,9 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 					logger.trace("Scanning " + resource);
 				}
 				try {
+					// 通过元数据读取工厂，获取对应的resource的元数据读取器
+					// 工厂模式，工厂有两个实现 CachingMetadataReaderFactory、SimpleMetadataReaderFactory
+					// 默认是 CachingMetadataReaderFactory
 					MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
 					// 默认这里 isCandidateComponent 是判断是否含有 Component 注解
 					if (isCandidateComponent(metadataReader)) {
@@ -447,7 +459,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 						ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 						// 设置 source，这里放的是源文件class
 						sbd.setSource(resource);
-						// 判断 Component 注解
+						// 判断是否符合候选条件
 						if (isCandidateComponent(sbd)) {
 							if (debugEnabled) {
 								logger.debug("Identified candidate component class: " + resource);
@@ -534,6 +546,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 		return !this.conditionEvaluator.shouldSkip(metadataReader.getAnnotationMetadata());
 	}
 
+	// 检查该类是否符合候选的条件，默认检查该类是否非抽象或接口，或者抽象类但是加了 Lookup 注解，且是否独立
 	/**
 	 * Determine whether the given bean definition qualifies as candidate.
 	 * <p>The default implementation checks whether the class is not an interface

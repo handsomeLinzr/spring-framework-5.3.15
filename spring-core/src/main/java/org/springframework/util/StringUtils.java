@@ -668,6 +668,7 @@ public abstract class StringUtils {
 			return path;
 		}
 
+		// 切割符抓换
 		String normalizedPath = replace(path, WINDOWS_FOLDER_SEPARATOR, FOLDER_SEPARATOR);
 		String pathToUse = normalizedPath;
 
@@ -696,6 +697,7 @@ public abstract class StringUtils {
 			pathToUse = pathToUse.substring(1);
 		}
 
+		// 切割
 		String[] pathArray = delimitedListToStringArray(pathToUse, FOLDER_SEPARATOR);
 		// we never require more elements than pathArray and in the common case the same number
 		Deque<String> pathElements = new ArrayDeque<>(pathArray.length);

@@ -241,6 +241,10 @@ public abstract class ClassUtils {
 	 * @throws ClassNotFoundException if the class was not found
 	 * @throws LinkageError if the class file could not be loaded
 	 * @see Class#forName(String, boolean, ClassLoader)
+	 *
+	 * <p>
+	 *     原生Java中 Class.forName 方法的改进方法
+	 * </p>
 	 */
 	public static Class<?> forName(String name, @Nullable ClassLoader classLoader)
 			throws ClassNotFoundException, LinkageError {
@@ -321,6 +325,7 @@ public abstract class ClassUtils {
 			throws IllegalArgumentException {
 
 		try {
+			// 返回类文件
 			return forName(className, classLoader);
 		}
 		catch (IllegalAccessError err) {

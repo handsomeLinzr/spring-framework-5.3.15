@@ -130,14 +130,15 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	@Nullable
 	private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
 
+	// 这里解析配置，默认用的 metadataReaderFactory 是 CachingMetadataReaderFactory
 	private MetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory();
 
 	private boolean setMetadataReaderFactoryCalled = false;
 
-	// 保存已经处理过的 BeanDefinitionRegistry
+	// 保存已经处理过的 BeanDefinitionRegistry 的 id，避免重复执行
 	private final Set<Integer> registriesPostProcessed = new HashSet<>();
 
-	// 保存当前正在执行的 factoryPostProcessor
+	// 保存已经处理过的 BeanFactoryPostProcessor 的id，避免重复执行
 	private final Set<Integer> factoriesPostProcessed = new HashSet<>();
 
 	@Nullable
@@ -145,6 +146,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 
 	private boolean localBeanNameGeneratorSet = false;
 
+	// 默认用了类名作为 beanName
 	/* Using short class names as default bean names by default. */
 	private BeanNameGenerator componentScanBeanNameGenerator = AnnotationBeanNameGenerator.INSTANCE;
 
@@ -257,7 +259,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			throw new IllegalStateException(
 					"postProcessBeanFactory already called on this post-processor against " + registry);
 		}
-		// 添加当前的 registry 到 registriesPostProcessed，避免重复执行
+		// 添加当前的 registry 的 id 到 registriesPostProcessed，避免重复执行
 		this.registriesPostProcessed.add(registryId);
 		// 处理逻辑，重点
 		processConfigBeanDefinitions(registry);
@@ -304,7 +306,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			// 获取对应的 bd
 			BeanDefinition beanDef = registry.getBeanDefinition(beanName);
 			// 先查看该 bd 是否有属性 configurationClass
-			// 如果有，则说明已经处理过了，不重复处理（处理过的会设置上这个属性）
+			// 如果有这个属性，则说明已经处理过了，不重复处理（处理过的会设置上这个属性）
 			if (beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE) != null) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Bean definition has already been processed as a configuration class: " + beanDef);
@@ -360,9 +362,11 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 
 		// Parse each @Configuration class
-		// 用来解析 @Configuration 注解的解析器，同时也创建了 ComponentScanParser
+		// 用来解析每个 @Configuration 注解的解析器，同时也创建了 ComponentScanParser
 		ConfigurationClassParser parser = new ConfigurationClassParser(
+				// metadataReaderFactory = CachingMetadataReaderFactory, problemReporter 记录日志， environment 环境
 				this.metadataReaderFactory, this.problemReporter, this.environment,
+				// resourceLoader = DefaultResourceLoader, componentScanBeanNameGenerator = AnnotationBeanNameGenerator bean 类名生成器
 				this.resourceLoader, this.componentScanBeanNameGenerator, registry);
 
 		// 需要解析的类放这里
@@ -373,7 +377,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		// 这里开始进入重点了，开始进行处理的逻辑，循环处理
 		do {
 			StartupStep processConfig = this.applicationStartup.start("spring.context.config-classes.parse");
-			// 调用解析器进行解析
+			// 调用解析器进行解析，把当前所有需要解析的 bdHolder 都传进去
 			// 这里重点，解析当前从 beanFactory 中拿出来的所有需要解析的注解bean和配置
 			// ConfigurationClassParser
 			parser.parse(candidates);

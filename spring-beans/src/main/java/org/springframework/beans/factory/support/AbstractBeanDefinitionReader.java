@@ -56,8 +56,7 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 	// 这时候通过 XmlBeanDefinitionReader 的构造函数传进来了 beanFactory，设置到了这个属性
 	private final BeanDefinitionRegistry registry;
 
-	// resourceLoader
-	// applicationContext 本身
+	// 在创建了 beanDefinitionReader.setResourceLoader(this)，这里的 this 是 applicationContext
 	@Nullable
 	private ResourceLoader resourceLoader;
 
@@ -98,7 +97,7 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 			this.resourceLoader = (ResourceLoader) this.registry;
 		}
 		else {
-			// 设置为默认的PathMatchingResourcePatternResolver
+			// 如果当前注册期不是属于 ResourceLoader， 则设置为默认的 PathMatchingResourcePatternResolver
 			this.resourceLoader = new PathMatchingResourcePatternResolver();
 		}
 

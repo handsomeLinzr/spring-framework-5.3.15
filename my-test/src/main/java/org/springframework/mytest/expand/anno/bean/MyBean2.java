@@ -1,4 +1,4 @@
-package org.springframework.bean.components;
+package org.springframework.mytest.expand.anno.bean;
 
 /**
  * @author linzherong

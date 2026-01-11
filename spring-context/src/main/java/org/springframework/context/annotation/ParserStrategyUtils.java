@@ -43,6 +43,9 @@ import org.springframework.util.Assert;
  */
 abstract class ParserStrategyUtils {
 
+	// 通过给定的构造器和返回类型，实例化一个特殊的类型对象，这个返回的实例实现了
+	// 如果该类实现了 BeanClassLoaderAware、BeanFactoryAware、EnvironmentAware 和 ResourceLoaderAware等 aware 接口，
+	// 则会调用 aware 方法
 	/**
 	 * Instantiate a class using an appropriate constructor and return the new
 	 * instance as the specified assignable type. The returned instance will
@@ -62,11 +65,14 @@ abstract class ParserStrategyUtils {
 		}
 		ClassLoader classLoader = (registry instanceof ConfigurableBeanFactory ?
 				((ConfigurableBeanFactory) registry).getBeanClassLoader() : resourceLoader.getClassLoader());
+		// 反射创建实例对象
 		T instance = (T) createInstance(clazz, environment, resourceLoader, registry, classLoader);
+		// 手动调用 Aware 方法
 		ParserStrategyUtils.invokeAwareMethods(instance, environment, resourceLoader, registry, classLoader);
 		return instance;
 	}
 
+	// 构建实例对象
 	private static Object createInstance(Class<?> clazz, Environment environment,
 			ResourceLoader resourceLoader, BeanDefinitionRegistry registry,
 			@Nullable ClassLoader classLoader) {
@@ -118,6 +124,8 @@ abstract class ParserStrategyUtils {
 		throw new IllegalStateException("Illegal method parameter type: " + parameterType.getName());
 	}
 
+	// 根据传入的实例对象，手动进行反射调用
+	// BeanClassLoaderAware、BeanFactoryAware、EnvironmentAware、ResourceLoaderAware 的 aware 方法
 	private static void invokeAwareMethods(Object parserStrategyBean, Environment environment,
 			ResourceLoader resourceLoader, BeanDefinitionRegistry registry, @Nullable ClassLoader classLoader) {
 

@@ -1,4 +1,4 @@
-package org.springframework.expand.xmltag.bean;
+package org.springframework.mytest.expand.xmltag.bean;
 
 /**
  * @author linzherong

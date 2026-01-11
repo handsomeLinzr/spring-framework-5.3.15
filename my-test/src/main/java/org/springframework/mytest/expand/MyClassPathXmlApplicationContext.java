@@ -1,10 +1,10 @@
-package org.springframework.expand;
+package org.springframework.mytest.expand;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.expand.xmltag.bean.MyUser;
+import org.springframework.mytest.expand.xmltag.bean.MyUser;
 
 /**
  * 用作做扩展的 demo

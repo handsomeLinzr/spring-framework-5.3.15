@@ -44,6 +44,7 @@ import org.springframework.lang.Nullable;
  */
 public class XmlReaderContext extends ReaderContext {
 
+	// 解析 xml 元素的时候，一开始创建的那个对象 XmlBeanDefinitionReader
 	private final XmlBeanDefinitionReader reader;
 
 	// 这里的对象是 DefaultNamespaceHandlerResolver

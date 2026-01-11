@@ -58,22 +58,33 @@ class ComponentScanAnnotationParser {
 	public ComponentScanAnnotationParser(Environment environment, ResourceLoader resourceLoader,
 			BeanNameGenerator beanNameGenerator, BeanDefinitionRegistry registry) {
 
+		// 环境
 		this.environment = environment;
+		// DefaultResourceLoader
 		this.resourceLoader = resourceLoader;
+		// 名称生成器，默认 AnnotationBeanNameGenerator，构造函数传尽来
 		this.beanNameGenerator = beanNameGenerator;
+		// beanFactory
 		this.registry = registry;
 	}
 
 
-	public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, String declaringClass) {   // 解析注解，解析componentScan注解的各个属性，都记录到scanner中
+	// 解析注解，解析componentScan注解的各个属性，都记录到scanner中
+	public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, String declaringClass) {
+		// 创建扫描器
+		// 创建的时候已经设置了默认的扫描条件
+		// 默认是 注解Component、注解ManagedBean、注解Named
 		ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry,
 				componentScan.getBoolean("useDefaultFilters"), this.environment, this.resourceLoader);
 
+		// 获取 bean 名称成生器
 		Class<? extends BeanNameGenerator> generatorClass = componentScan.getClass("nameGenerator");
 		boolean useInheritedGenerator = (BeanNameGenerator.class == generatorClass);
+		// 设置
 		scanner.setBeanNameGenerator(useInheritedGenerator ? this.beanNameGenerator :
 				BeanUtils.instantiateClass(generatorClass));
 
+		// 设置声明周期
 		ScopedProxyMode scopedProxyMode = componentScan.getEnum("scopedProxy");
 		if (scopedProxyMode != ScopedProxyMode.DEFAULT) {
 			scanner.setScopedProxyMode(scopedProxyMode);
@@ -82,9 +93,10 @@ class ComponentScanAnnotationParser {
 			Class<? extends ScopeMetadataResolver> resolverClass = componentScan.getClass("scopeResolver");
 			scanner.setScopeMetadataResolver(BeanUtils.instantiateClass(resolverClass));
 		}
+		// 设置文件的匹配方式，默认这里设置了 **/*.class，表示扫描匹配路径下的所有 class 文件
+		scanner.setResourcePattern(componentScan.getString("resourcePattern"));
 
-		scanner.setResourcePattern(componentScan.getString("resourcePattern"));  // 设置**/*.class
-
+		// 遍历 includeFilters 属性设置的类型
 		for (AnnotationAttributes includeFilterAttributes : componentScan.getAnnotationArray("includeFilters")) {
 			List<TypeFilter> typeFilters = TypeFilterUtils.createTypeFiltersFor(includeFilterAttributes, this.environment,
 					this.resourceLoader, this.registry);
@@ -92,6 +104,7 @@ class ComponentScanAnnotationParser {
 				scanner.addIncludeFilter(typeFilter);
 			}
 		}
+		// 遍历 excludeFilters 属性设置的类型
 		for (AnnotationAttributes excludeFilterAttributes : componentScan.getAnnotationArray("excludeFilters")) {
 			List<TypeFilter> typeFilters = TypeFilterUtils.createTypeFiltersFor(excludeFilterAttributes, this.environment,
 				this.resourceLoader, this.registry);
@@ -100,32 +113,40 @@ class ComponentScanAnnotationParser {
 			}
 		}
 
+		// 是否懒加载
 		boolean lazyInit = componentScan.getBoolean("lazyInit");
 		if (lazyInit) {
 			scanner.getBeanDefinitionDefaults().setLazyInit(true);
 		}
 
-		Set<String> basePackages = new LinkedHashSet<>();  // 扫描的包路径
+		// 扫描的包路径
+		Set<String> basePackages = new LinkedHashSet<>();
 		String[] basePackagesArray = componentScan.getStringArray("basePackages");
 		for (String pkg : basePackagesArray) {
+			// 分割
 			String[] tokenized = StringUtils.tokenizeToStringArray(this.environment.resolvePlaceholders(pkg),
 					ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
+			// 收集路径，添加到 basePackages
 			Collections.addAll(basePackages, tokenized);
 		}
+		// 添加 basePackageClasses 属性额外设置的额类名称
 		for (Class<?> clazz : componentScan.getClassArray("basePackageClasses")) {
 			basePackages.add(ClassUtils.getPackageName(clazz));
 		}
+		// 如果没有设置任务扫描路径，默认用的当前配置的的路径作为 basePackages
 		if (basePackages.isEmpty()) {
-			basePackages.add(ClassUtils.getPackageName(declaringClass));   // 如果 basePackages 属性为空，则将当前配置类的路径作为basePackages
+			basePackages.add(ClassUtils.getPackageName(declaringClass));
 		}
 
+		// 移除调用当前配置类，避免重复扫描处理自己
 		scanner.addExcludeFilter(new AbstractTypeHierarchyTraversingFilter(false, false) {
 			@Override
 			protected boolean matchClassName(String className) {
 				return declaringClass.equals(className);
 			}
 		});
-		return scanner.doScan(StringUtils.toStringArray(basePackages));  // 扫描路径，得到BD
+		// 扫描路径，得到BD
+		return scanner.doScan(StringUtils.toStringArray(basePackages));
 	}
 
 }

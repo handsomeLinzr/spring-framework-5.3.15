@@ -62,6 +62,7 @@ import org.springframework.util.PatternMatchUtils;
  */
 public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateComponentProvider {
 
+	// beanFactory
 	private final BeanDefinitionRegistry registry;
 
 	// 设置默认的 beanDefinitionDefaults，在创建 ClassPathBeanDefinitionScanner 的时候，会进行 set 设置，
@@ -174,7 +175,8 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		this.registry = registry;
 
 		if (useDefaultFilters) {
-			// true, 用默认的过滤器
+			// true, 用默认的匹配过滤，即符合条件的被扫描的条件
+			// 默认是 注解Component、注解ManagedBean、注解Named
 			registerDefaultFilters();
 		}
 		setEnvironment(environment);
@@ -383,7 +385,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 			existingDef = originatingDef;
 		}
 		if (isCompatible(beanDefinition, existingDef)) {
-			// todo 兼容判断？
+			// 判断是否已经扫描过，比如之前已经扫描过了，则这里就直接返回 false 了
 			return false;
 		}
 		throw new ConflictingBeanDefinitionException("Annotation-specified bean name '" + beanName +
@@ -404,7 +406,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 */
 	protected boolean isCompatible(BeanDefinition newDefinition, BeanDefinition existingDefinition) {
 		return (!(existingDefinition instanceof ScannedGenericBeanDefinition) ||  // explicitly registered overriding bean
-				(newDefinition.getSource() != null && newDefinition.getSource().equals(existingDefinition.getSource())) ||  // scanned same file twice
+				(newDefinition.getSource() != null && newDefinition.getSource().equals(existingDefinition.getSource())) ||  // scanned same file twice 扫描了两次相同的文件
 				newDefinition.equals(existingDefinition));  // scanned equivalent class twice
 	}
 

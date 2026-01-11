@@ -85,6 +85,7 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 	@Override
 	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
+		// element-解析的元素    parserContext-ParserContext对象，已经设置了属性 readerContext 和 delegate
 		// 解析到基础要扫描的路径，这里获取 base-package 的属性值
 		String basePackage = element.getAttribute(BASE_PACKAGE_ATTRIBUTE);
 		// 对路径进行解析，比如用了一些表达式的，这里进行处理，比如 ${} 那些，通过 env 进行替换

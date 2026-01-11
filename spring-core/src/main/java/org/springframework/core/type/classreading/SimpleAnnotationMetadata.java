@@ -146,11 +146,14 @@ final class SimpleAnnotationMetadata implements AnnotationMetadata {
 	@Override
 	public Set<MethodMetadata> getAnnotatedMethods(String annotationName) {
 		Set<MethodMetadata> annotatedMethods = null;
+		// 遍历所有的注解方法
 		for (MethodMetadata annotatedMethod : this.annotatedMethods) {
+			// 如果是匹配上
 			if (annotatedMethod.isAnnotated(annotationName)) {
 				if (annotatedMethods == null) {
 					annotatedMethods = new LinkedHashSet<>(4);
 				}
+				// 添加
 				annotatedMethods.add(annotatedMethod);
 			}
 		}

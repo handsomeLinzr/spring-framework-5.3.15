@@ -64,6 +64,7 @@ public abstract class PropertiesLoaderUtils {
 	 */
 	public static Properties loadProperties(EncodedResource resource) throws IOException {
 		Properties props = new Properties();
+		// 解析 resource 并填充到 props
 		fillProperties(props, resource);
 		return props;
 	}
@@ -91,17 +92,22 @@ public abstract class PropertiesLoaderUtils {
 	static void fillProperties(Properties props, EncodedResource resource, PropertiesPersister persister)
 			throws IOException {
 
+		// persister 默认是 ResourcePropertiesPersister
 		InputStream stream = null;
 		Reader reader = null;
 		try {
+			// 文件名称
 			String filename = resource.getResource().getFilename();
+			// xml 文件
 			if (filename != null && filename.endsWith(XML_FILE_EXTENSION)) {
 				if (shouldIgnoreXml) {
 					throw new UnsupportedOperationException("XML support disabled");
 				}
+				// 解析 xml
 				stream = resource.getInputStream();
 				persister.loadFromXml(props, stream);
 			}
+			// 解析
 			else if (resource.requiresReader()) {
 				reader = resource.getReader();
 				persister.load(props, reader);

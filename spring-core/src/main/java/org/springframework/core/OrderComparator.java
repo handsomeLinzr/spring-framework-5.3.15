@@ -74,8 +74,10 @@ public class OrderComparator implements Comparator<Object> {
 	}
 
 	private int doCompare(@Nullable Object o1, @Nullable Object o2, @Nullable OrderSourceProvider sourceProvider) {
+		// 判断两个对象是否有实现了 PriorityOrdered
 		boolean p1 = (o1 instanceof PriorityOrdered);
 		boolean p2 = (o2 instanceof PriorityOrdered);
+		// 如果只有一个实现了，则哪个实现了，哪个的优先级高
 		if (p1 && !p2) {
 			return -1;
 		}
@@ -83,11 +85,17 @@ public class OrderComparator implements Comparator<Object> {
 			return 1;
 		}
 
+		// 分别获取顺序，
+		// 	1.获取是否实现了 Ordered 接口
+		//	2.获取是否有 Order 注解
+		//	3.获取是否有 Priority 注解
+		//	4.以上都没有，则直接给一个最大值，默认的最低优先级
 		int i1 = getOrder(o1, sourceProvider);
 		int i2 = getOrder(o2, sourceProvider);
 		return Integer.compare(i1, i2);
 	}
 
+	// 获取顺序
 	/**
 	 * Determine the order value for the given object.
 	 * <p>The default implementation checks against the given {@link OrderSourceProvider}
@@ -113,6 +121,7 @@ public class OrderComparator implements Comparator<Object> {
 				}
 			}
 		}
+		// 调用 getOrder 获取顺序
 		return (order != null ? order : getOrder(obj));
 	}
 
@@ -125,11 +134,15 @@ public class OrderComparator implements Comparator<Object> {
 	 */
 	protected int getOrder(@Nullable Object obj) {
 		if (obj != null) {
+			// findOrder
+			// 1.如果实现了 Ordered，则返回对应的 order
+			// 2.先找 Order 注解，再找 Priority 注解，没有则返回 null
 			Integer order = findOrder(obj);
 			if (order != null) {
 				return order;
 			}
 		}
+		// 上边都没有，说明没有设置排序，所以排序就不重要了，返回一个固定一样的顺序值即可
 		return Ordered.LOWEST_PRECEDENCE;
 	}
 
@@ -142,6 +155,7 @@ public class OrderComparator implements Comparator<Object> {
 	 */
 	@Nullable
 	protected Integer findOrder(Object obj) {
+		// 实现了 Ordered 则返回对应的 order，没有则返回 null
 		return (obj instanceof Ordered ? ((Ordered) obj).getOrder() : null);
 	}
 

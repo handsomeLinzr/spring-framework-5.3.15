@@ -46,6 +46,7 @@ import org.springframework.lang.Nullable;
  */
 public class AnnotationAwareOrderComparator extends OrderComparator {
 
+	// 注解的一个排序规则，其实就是根据是否继承 Order，或者是否有注解 Order 或这 Priority 注解，获取对应的值，进行比较, 小的排前边
 	/**
 	 * Shared default instance of {@code AnnotationAwareOrderComparator}.
 	 */
@@ -61,19 +62,25 @@ public class AnnotationAwareOrderComparator extends OrderComparator {
 	@Override
 	@Nullable
 	protected Integer findOrder(Object obj) {
+		// 实现了 Ordered 则返回 order，没有则返回 null
 		Integer order = super.findOrder(obj);
 		if (order != null) {
 			return order;
 		}
+		// 先找 Order 注解，再找 Priority 注解，没有则返回 null
 		return findOrderFromAnnotation(obj);
 	}
 
+	// 获取 Order 或者 Priority 这两个注解，如果有的话返回 value 属性，没有则返回 null
 	@Nullable
 	private Integer findOrderFromAnnotation(Object obj) {
+		// 获取注解
 		AnnotatedElement element = (obj instanceof AnnotatedElement ? (AnnotatedElement) obj : obj.getClass());
 		MergedAnnotations annotations = MergedAnnotations.from(element, SearchStrategy.TYPE_HIERARCHY);
+		// 先找 Order 注解，再找 Priority 注解，没有则返回 null
 		Integer order = OrderUtils.getOrderFromAnnotations(element, annotations);
 		if (order == null && obj instanceof DecoratingProxy) {
+			// 代理包装，继续递归拿到对应的被包装类
 			return findOrderFromAnnotation(((DecoratingProxy) obj).getDecoratedClass());
 		}
 		return order;
