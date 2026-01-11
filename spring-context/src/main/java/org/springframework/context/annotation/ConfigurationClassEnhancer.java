@@ -55,6 +55,9 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 
+// 在进行 BFPP 处理的时候，在 ConfigurationClassPostProcessor 处理 postProcessBeanFactory 的时候，
+// 会将所有的 Configuration 注解的 bd，和有  Bean 注解方法发的 bd 都进行 beanClass 的增强代理，而代理
+// 后的逻辑就是用的这个类
 /**
  * Enhances {@link Configuration} classes by generating a CGLIB subclass which
  * interacts with the Spring container to respect bean scoping semantics for
@@ -72,6 +75,7 @@ import org.springframework.util.ReflectionUtils;
  */
 class ConfigurationClassEnhancer {
 
+	// 代理类的增强逻辑的类
 	// The callbacks to use. Note that these callbacks must be stateless.
 	private static final Callback[] CALLBACKS = new Callback[] {
 			new BeanMethodInterceptor(),
@@ -96,6 +100,7 @@ class ConfigurationClassEnhancer {
 	 */
 	public Class<?> enhance(Class<?> configClass, @Nullable ClassLoader classLoader) {
 		if (EnhancedConfiguration.class.isAssignableFrom(configClass)) {
+			// 已经代理了，直接返回
 			if (logger.isDebugEnabled()) {
 				logger.debug(String.format("Ignoring request to enhance %s as it has " +
 						"already been enhanced. This usually indicates that more than one " +
@@ -106,37 +111,48 @@ class ConfigurationClassEnhancer {
 			}
 			return configClass;
 		}
+		// 创建代理类
 		Class<?> enhancedClass = createClass(newEnhancer(configClass, classLoader));
 		if (logger.isTraceEnabled()) {
 			logger.trace(String.format("Successfully enhanced %s; enhanced class name is: %s",
 					configClass.getName(), enhancedClass.getName()));
 		}
+		// 返回代理类
 		return enhancedClass;
 	}
 
+	// 创建一个 cglib 代理对象
 	/**
 	 * Creates a new CGLIB {@link Enhancer} instance.
 	 */
 	private Enhancer newEnhancer(Class<?> configSuperClass, @Nullable ClassLoader classLoader) {
+		// 这里就是非常常规的 cglib 代理类创建过程，主要是看 callback 设置了什么
 		Enhancer enhancer = new Enhancer();
 		enhancer.setSuperclass(configSuperClass);
+		// 这里额外给代理类加了实现的接口 EnhancedConfiguration，是一个 BeanFactoryAware 接口，最后会设置进去 beanFactory
 		enhancer.setInterfaces(new Class<?>[] {EnhancedConfiguration.class});
 		enhancer.setUseFactory(false);
 		enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
 		enhancer.setStrategy(new BeanFactoryAwareGeneratorStrategy(classLoader));
+		// callback
+		// 这里其实就是设置了三个：BeanMethodInterceptor, BeanFactoryAwareMethodInterceptor, NoOp.INSTANCE
 		enhancer.setCallbackFilter(CALLBACK_FILTER);
+		// callback 类型，也是 BeanMethodInterceptor, BeanFactoryAwareMethodInterceptor, NoOp.INSTANCE 三种 Class 类型
 		enhancer.setCallbackTypes(CALLBACK_FILTER.getCallbackTypes());
 		return enhancer;
 	}
 
+	// 创建类，用增强器生成一个对应的字类，确保能调用 callback 回来
 	/**
 	 * Uses enhancer to generate a subclass of superclass,
 	 * ensuring that callbacks are registered for the new subclass.
 	 */
 	private Class<?> createClass(Enhancer enhancer) {
+		// 获取代理类的 Class 对象
 		Class<?> subclass = enhancer.createClass();
 		// Registering callbacks statically (as opposed to thread-local)
 		// is critical for usage in an OSGi environment (SPR-5932)...
+		// 注册
 		Enhancer.registerStaticCallbacks(subclass, CALLBACKS);
 		return subclass;
 	}
@@ -273,6 +289,7 @@ class ConfigurationClassEnhancer {
 	 */
 	private static class BeanMethodInterceptor implements MethodInterceptor, ConditionalCallback {
 
+		// 增强 Bean 方法，检查提供的 beanFactory 是否存在这个 bean 对象
 		/**
 		 * Enhance a {@link Bean @Bean} method to check the supplied BeanFactory for the
 		 * existence of this bean object.
@@ -284,10 +301,13 @@ class ConfigurationClassEnhancer {
 		public Object intercept(Object enhancedConfigInstance, Method beanMethod, Object[] beanMethodArgs,
 					MethodProxy cglibMethodProxy) throws Throwable {
 
+			// 获取到 beanFactory 对象
 			ConfigurableBeanFactory beanFactory = getBeanFactory(enhancedConfigInstance);
+			// 获取 bean 方法
 			String beanName = BeanAnnotationHelper.determineBeanNameFor(beanMethod);
 
 			// Determine whether this bean is a scoped-proxy
+			// 检查判断是否是多例
 			if (BeanAnnotationHelper.isScopedProxy(beanMethod)) {
 				String scopedBeanName = ScopedProxyCreator.getTargetBeanName(beanName);
 				if (beanFactory.isCurrentlyInCreation(scopedBeanName)) {
@@ -407,13 +427,17 @@ class ConfigurationClassEnhancer {
 					BeanAnnotationHelper.isBeanAnnotated(candidateMethod));
 		}
 
+		// 获取 beanFactory 这个属性对象，因为该代理类已经实现了 BeanFactoryAware 接口，所以会设置进来
 		private ConfigurableBeanFactory getBeanFactory(Object enhancedConfigInstance) {
+			// 获取当前 beanFactory 字段
 			Field field = ReflectionUtils.findField(enhancedConfigInstance.getClass(), BEAN_FACTORY_FIELD);
 			Assert.state(field != null, "Unable to find generated bean factory field");
+			// 反射获取到这个 beanFactory 对象
 			Object beanFactory = ReflectionUtils.getField(field, enhancedConfigInstance);
 			Assert.state(beanFactory != null, "BeanFactory has not been injected into @Configuration class");
 			Assert.state(beanFactory instanceof ConfigurableBeanFactory,
 					"Injected BeanFactory is not a ConfigurableBeanFactory");
+			// 返回
 			return (ConfigurableBeanFactory) beanFactory;
 		}
 

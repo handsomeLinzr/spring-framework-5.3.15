@@ -33,6 +33,7 @@ import org.springframework.util.StringUtils;
  */
 public abstract class AutoProxyUtils {
 
+	// 在 BFPP 时候，在扫描到 Configuration 注解 bd，或者是有 Bean 注解方法的 bd，都会设置上这个属性，值为 true
 	/**
 	 * Bean definition attribute that may indicate whether a given bean is supposed
 	 * to be proxied with its target class (in case of it getting proxied in the first

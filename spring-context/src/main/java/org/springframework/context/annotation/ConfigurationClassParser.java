@@ -212,7 +212,9 @@ class ConfigurationClassParser {
 						"Failed to parse configuration class [" + bd.getBeanClassName() + "]", ex);
 			}
 		}
-        // import 进来的配置进行解析
+        // 处理 deferredImportSelectorHandler 的数据
+		// 在解析 Import 注解的时候，如果 Import 进来的配置类，是属于 DeferredImportSelector 类型，则会放到这里边
+		// 等现在再执行
 		this.deferredImportSelectorHandler.process();
 	}
 
@@ -737,7 +739,7 @@ class ConfigurationClassParser {
 						// Candidate class is an ImportSelector -> delegate to it to determine imports
 						// 加载得到当前配置类的类对象信息，Class
 						Class<?> candidateClass = candidate.loadClass();
-						// 数理化对象，如果是 Aware 接口，并调用了对应的 aware 方法
+						// 实例化对象，如果是 Aware 接口，并调用了对应的 aware 方法
 						ImportSelector selector = ParserStrategyUtils.instantiateClass(candidateClass, ImportSelector.class,
 								this.environment, this.resourceLoader, this.registry);
 						// 获取这个 ImportSelector 的排除过滤规则，默认实现是 null
@@ -749,6 +751,7 @@ class ConfigurationClassParser {
 						// 如果是默认的 DeferredImportSelector，延迟加载选择器
 						if (selector instanceof DeferredImportSelector) {
 							// 调用 DeferredImportSelectorHandler.handle 方法
+							// 即如果 import 的类是 DeferredImportSelector 类型，则会放入到 deferredImportSelectorHandler 中，最后再处理的
 							this.deferredImportSelectorHandler.handle(configClass, (DeferredImportSelector) selector);
 						}
 						else {
@@ -983,13 +986,18 @@ class ConfigurationClassParser {
 			try {
 				if (deferredImports != null) {
 					DeferredImportSelectorGroupingHandler handler = new DeferredImportSelectorGroupingHandler();
+					// 对 deferredImportSelectors 的配置进行排序
 					deferredImports.sort(DEFERRED_IMPORT_COMPARATOR);
-					deferredImports.forEach(handler::register);   // import 注解对应的扫默处理
+					// 遍历 deferredImportSelectors 的配置，调用 register 处理
+					// 其实就是进行一些前置工作，实例化 Group，创建 DeferredImportSelectorGrouping，放到 configurationClasses 中
+					deferredImports.forEach(handler::register);
+					// 收集后，进行处理整个组
 					handler.processGroupImports();
 				}
 			}
 			finally {
-				this.deferredImportSelectors = new ArrayList<>(); // import数组清空
+				// 最后将 deferredImportSelectors 进行清空，表示已经处理过了
+				this.deferredImportSelectors = new ArrayList<>();
 			}
 		}
 	}
@@ -997,26 +1005,41 @@ class ConfigurationClassParser {
 
 	private class DeferredImportSelectorGroupingHandler {
 
+		// 也是延迟处理的 DeferredImportSelectorGrouping
 		private final Map<Object, DeferredImportSelectorGrouping> groupings = new LinkedHashMap<>();
 
+		// 对已经处理的 selector 进行处理，也就是放到这里
 		private final Map<AnnotationMetadata, ConfigurationClass> configurationClasses = new HashMap<>();
 
+		// 对延迟处理的 selector 进行注册和处理
 		public void register(DeferredImportSelectorHolder deferredImport) {
+			// 获得对应的 group，如果没有默认则返回 null
 			Class<? extends Group> group = deferredImport.getImportSelector().getImportGroup();
+			// 存放 groupings 数据，放入 group 和 DeferredImportSelectorGrouping，创建一个新的 DeferredImportSelectorGrouping 给进去 groupings
+			// 所以这里放入集合，不涉及真的处理过程
 			DeferredImportSelectorGrouping grouping = this.groupings.computeIfAbsent(
 					(group != null ? group : deferredImport),
+					// createGroup(group) 实例化一个 Group 类型的对象
 					key -> new DeferredImportSelectorGrouping(createGroup(group)));
+			// 这里个的 grouping 就是一个 DeferredImportSelectorGrouping
 			grouping.add(deferredImport);
+			// 添加到 configurationClasses 中，后边在处理的时候才能拿到
 			this.configurationClasses.put(deferredImport.getConfigurationClass().getMetadata(),
 					deferredImport.getConfigurationClass());
 		}
 
+		// 处理上边方法缓存起来的延迟处理的 selector
 		public void processGroupImports() {
+			// 遍历 groupings
 			for (DeferredImportSelectorGrouping grouping : this.groupings.values()) {
+				// 获取 grouping 里所有 selector 需要排除的过滤条件
 				Predicate<String> exclusionFilter = grouping.getCandidateFilter();
+				// 开始遍历所有的 imports
 				grouping.getImports().forEach(entry -> {
+					// 从 configurationClasses 缓存中获取对应的配置
 					ConfigurationClass configurationClass = this.configurationClasses.get(entry.getMetadata());
 					try {
+						// 调用 processImports 处理 import 过程，将排除过滤的条件也放进去
 						processImports(configurationClass, asSourceClass(configurationClass, exclusionFilter),
 								Collections.singleton(asSourceClass(entry.getImportClassName(), exclusionFilter)),
 								exclusionFilter, false);
@@ -1035,6 +1058,7 @@ class ConfigurationClassParser {
 
 		private Group createGroup(@Nullable Class<? extends Group> type) {
 			Class<? extends Group> effectiveType = (type != null ? type : DefaultDeferredImportSelectorGroup.class);
+			// 实例化
 			return ParserStrategyUtils.instantiateClass(effectiveType, Group.class,
 					ConfigurationClassParser.this.environment,
 					ConfigurationClassParser.this.resourceLoader,
@@ -1049,6 +1073,7 @@ class ConfigurationClassParser {
 
 		private final DeferredImportSelector importSelector;
 
+		// 构造函数，设置两个属性 configurationClass 和 importSelector
 		public DeferredImportSelectorHolder(ConfigurationClass configClass, DeferredImportSelector selector) {
 			this.configurationClass = configClass;
 			this.importSelector = selector;
@@ -1066,8 +1091,10 @@ class ConfigurationClassParser {
 
 	private static class DeferredImportSelectorGrouping {
 
+		// 构造函数传进来的 group 对象
 		private final DeferredImportSelector.Group group;
 
+		// 延迟处理的 selector
 		private final List<DeferredImportSelectorHolder> deferredImports = new ArrayList<>();
 
 		DeferredImportSelectorGrouping(Group group) {
@@ -1090,14 +1117,20 @@ class ConfigurationClassParser {
 			return this.group.selectImports();
 		}
 
+		// 合并需要排除的条件
 		public Predicate<String> getCandidateFilter() {
+			// 过滤条件
 			Predicate<String> mergedFilter = DEFAULT_EXCLUSION_FILTER;
+			// 遍历 deferredImports 中的所有 selector
 			for (DeferredImportSelectorHolder deferredImport : this.deferredImports) {
+				// 获取 selector 自己设置的排除条件
 				Predicate<String> selectorFilter = deferredImport.getImportSelector().getExclusionFilter();
 				if (selectorFilter != null) {
+					// 如果 selector 自己也有排除的条件，则直接和上边的统一条件合并
 					mergedFilter = mergedFilter.or(selectorFilter);
 				}
 			}
+			// 返回总的排除条件
 			return mergedFilter;
 		}
 	}

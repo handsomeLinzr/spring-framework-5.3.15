@@ -282,7 +282,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			// Simply call processConfigurationClasses lazily at this point then.
 			processConfigBeanDefinitions((BeanDefinitionRegistry) beanFactory);
 		}
-        // 代理加强 Configuration，设置 beanClass为加强的代理类
+        // 代理加强 Configuration，设置 beanClass 为加强的代理类
 		enhanceConfigurationClasses(beanFactory);
 		beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
 	}
@@ -453,6 +453,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 	}
 
+	// 后置处理一个 BeanFactory 去寻找 bd 的配置类，所有候选都会被 ConfigurationClassEnhancer 增强
 	/**
 	 * Post-processes a BeanFactory in search of Configuration class BeanDefinitions;
 	 * any candidates are then enhanced by a {@link ConfigurationClassEnhancer}.
@@ -461,28 +462,51 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	 */
 	public void enhanceConfigurationClasses(ConfigurableListableBeanFactory beanFactory) {
 		StartupStep enhanceConfigClasses = this.applicationStartup.start("spring.context.config-classes.enhance");
+		// 创建一个 map 集合
 		Map<String, AbstractBeanDefinition> configBeanDefs = new LinkedHashMap<>();
+		// 遍历此时的所有 bd name
 		for (String beanName : beanFactory.getBeanDefinitionNames()) {
+			// 获取 bd
 			BeanDefinition beanDef = beanFactory.getBeanDefinition(beanName);
+			// 获取 bd 的属性 CONFIGURATION_CLASS_ATTRIBUTE，
+			// full 表示是一个 Configuration 注解的配置类
+			// lite 表示是是一个 非 Configuration 注解，但是也是需要解析的 组件类
 			Object configClassAttr = beanDef.getAttribute(ConfigurationClassUtils.CONFIGURATION_CLASS_ATTRIBUTE);
 			AnnotationMetadata annotationMetadata = null;
 			MethodMetadata methodMetadata = null;
+			// 如果是注解扫描出来的
 			if (beanDef instanceof AnnotatedBeanDefinition) {
 				AnnotatedBeanDefinition annotatedBeanDefinition = (AnnotatedBeanDefinition) beanDef;
+				// bd 的元数据
 				annotationMetadata = annotatedBeanDefinition.getMetadata();
+				// 对应 bd 的方法的元数据
 				methodMetadata = annotatedBeanDefinition.getFactoryMethodMetadata();
 			}
+			// 判断是否是配置类或者候选配置，或者有方法，且是属于 AbstractBeanDefinition
+			// ScannedGenericBeanDefinition 这种扫描出来的 bd，也是属于 AbstractBeanDefinition
+			// 需要走进这个逻辑
 			if ((configClassAttr != null || methodMetadata != null) && beanDef instanceof AbstractBeanDefinition) {
 				// Configuration class (full or lite) or a configuration-derived @Bean method
+				// 现在需要先解析 bean class，除非它是一个 lite 的配置
 				// -> eagerly resolve bean class at this point, unless it's a 'lite' configuration
+				// 获取是没有 @Bean 注解的 组件类
 				// or component class without @Bean methods.
 				AbstractBeanDefinition abd = (AbstractBeanDefinition) beanDef;
+				// 判断过还没有设置 beanClass 为一个 Class 类型，则下边需要处理设置成对应 beanClass 的 Class 类型了
 				if (!abd.hasBeanClass()) {
 					boolean liteConfigurationCandidateWithoutBeanMethods =
+							// 当前 bd 是属于 lite 类型
 							(ConfigurationClassUtils.CONFIGURATION_CLASS_LITE.equals(configClassAttr) &&
+									// annotationMetadata 不为空，则表示是配置类   且   没有 Bean 注解的方法
+									// 这里可以直接简单认为是否是没有 Bean 注解方法，先判断 annotationMetadata 不为空是为了防止直接判断 Bean 方法的时候出现空指针
 								annotationMetadata != null && !ConfigurationClassUtils.hasBeanMethods(annotationMetadata));
+					// !liteConfigurationCandidateWithoutBeanMethods 表示的意义
+					// 		1.是 full 配置
+					//		2.有 Bean 注解的方法
+					//			以上两个符合其中一个即可进入下边的分支
 					if (!liteConfigurationCandidateWithoutBeanMethods) {
 						try {
+							// 利用反射，设置 bd 的 beanClass 为具体的类对象 Class
 							abd.resolveBeanClass(this.beanClassLoader);
 						}
 						catch (Throwable ex) {
@@ -492,40 +516,51 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 					}
 				}
 			}
-			if (ConfigurationClassUtils.CONFIGURATION_CLASS_FULL.equals(configClassAttr)) {  // 把 full 情况的类加强
+			// 判断是否是 full，这里只针对 full 类型的配置
+			if (ConfigurationClassUtils.CONFIGURATION_CLASS_FULL.equals(configClassAttr)) {
 				if (!(beanDef instanceof AbstractBeanDefinition)) {
 					throw new BeanDefinitionStoreException("Cannot enhance @Configuration bean definition '" +
 							beanName + "' since it is not stored in an AbstractBeanDefinition subclass");
 				}
+				// 打印此时代理加强 @Configuration 配置的日志
 				else if (logger.isInfoEnabled() && beanFactory.containsSingleton(beanName)) {
 					logger.info("Cannot enhance @Configuration bean definition '" + beanName +
 							"' since its singleton instance has been created too early. The typical cause " +
 							"is a non-static @Bean method with a BeanDefinitionRegistryPostProcessor " +
 							"return type: Consider declaring such methods as 'static'.");
 				}
+				// 将符合条件的 bd 放入 configBeanDefs 中
 				configBeanDefs.put(beanName, (AbstractBeanDefinition) beanDef);
 			}
 		}
 		if (configBeanDefs.isEmpty() || NativeDetector.inNativeImage()) {
 			// nothing to enhance -> return immediately
+			// 如果没有需要增强的 bd 或者 NativeDetector.inNativeImage() 则直接返回
 			enhanceConfigClasses.end();
 			return;
 		}
 
+		// 创建增强类 ConfigurationClassEnhancer
 		ConfigurationClassEnhancer enhancer = new ConfigurationClassEnhancer();
 		for (Map.Entry<String, AbstractBeanDefinition> entry : configBeanDefs.entrySet()) {
+			// 获取对应的 bd
 			AbstractBeanDefinition beanDef = entry.getValue();
 			// If a @Configuration class gets proxied, always proxy the target class
+			// 先给这个 bd 设置属性
 			beanDef.setAttribute(AutoProxyUtils.PRESERVE_TARGET_CLASS_ATTRIBUTE, Boolean.TRUE);
 			// Set enhanced subclass of the user-specified bean class
+			// 被增强的类，即原来 bd 的类
 			Class<?> configClass = beanDef.getBeanClass();
-			Class<?> enhancedClass = enhancer.enhance(configClass, this.beanClassLoader); // 代理
+			// 设置增强代理
+			Class<?> enhancedClass = enhancer.enhance(configClass, this.beanClassLoader);
 			if (configClass != enhancedClass) {
 				if (logger.isTraceEnabled()) {
 					logger.trace(String.format("Replacing bean definition '%s' existing class '%s' with " +
 							"enhanced class '%s'", entry.getKey(), configClass.getName(), enhancedClass.getName()));
 				}
-				beanDef.setBeanClass(enhancedClass);  // 将加强的代理类设置beanClass
+				// 将加强的代理类设置 beanClass，所以后续在实例化的时候，这些个 bd 实例化后都是代理类
+				// 所以调用方法都是代理方法，具体代理行为，则需要看 ConfigurationClassEnhancer 的逻辑
+				beanDef.setBeanClass(enhancedClass);
 			}
 		}
 		enhanceConfigClasses.tag("classCount", () -> String.valueOf(configBeanDefs.keySet().size())).end();

@@ -60,6 +60,8 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		// Don't override the class with CGLIB if no overrides.
+		// 先判断是否有方法覆盖，这里如果对应的 bean 有标签 lookup-method 或 replace-method，
+		// 则这里 bd.hasMethodOverrides() 会返回 true
 		if (!bd.hasMethodOverrides()) {
 			Constructor<?> constructorToUse;
 			synchronized (bd.constructorArgumentLock) {

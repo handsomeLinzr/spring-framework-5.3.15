@@ -33,6 +33,10 @@
 <!--	Component Scan-->
 	<context:component-scan base-package="org.springframework.mytest.expand" />
 
+	<bean id="fruid" class="org.springframework.mytest.bean.MyBean1">
+		<lookup-method></lookup-method>
+	</bean>
+
 	<!-- Property Placeholder -->
 	<context:property-placeholder location="classpath:application.properties" />
 
