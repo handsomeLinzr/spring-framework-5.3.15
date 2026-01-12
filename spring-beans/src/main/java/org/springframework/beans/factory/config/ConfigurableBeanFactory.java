@@ -368,6 +368,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 */
 	boolean isCurrentlyInCreation(String beanName);
 
+	// 注册（记录) 一个 bean 之间的依赖关系，给定的 bean 销毁之前，这个关系也要销毁
 	/**
 	 * Register a dependent bean for the given bean,
 	 * to be destroyed before the given bean is destroyed.

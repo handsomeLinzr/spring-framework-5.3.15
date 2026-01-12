@@ -109,9 +109,11 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	/** Map between containing bean names: bean name to Set of bean names that the bean contains. */
 	private final Map<String, Set<String>> containedBeanMap = new ConcurrentHashMap<>(16);
 
+	// 相关依赖关系，key 是被注入的bean，value 是注入的 bean 的集合
 	/** Map between dependent bean names: bean name to Set of dependent bean names. */
 	private final Map<String, Set<String>> dependentBeanMap = new ConcurrentHashMap<>(64);
 
+	// 也是依赖关系，key 是需要进行注入的bean，value 是 bean 需要注入的 bean 的集合
 	/** Map between depending bean names: bean name to Set of bean names for the bean's dependencies. */
 	private final Map<String, Set<String>> dependenciesForBeanMap = new ConcurrentHashMap<>(64);
 
@@ -419,19 +421,26 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @param dependentBeanName the name of the dependent bean
 	 */
 	public void registerDependentBean(String beanName, String dependentBeanName) {
+		// bean 名称
 		String canonicalName = canonicalName(beanName);
 
+		// 同步加锁，锁 dependentBeanMap 对象
 		synchronized (this.dependentBeanMap) {
+			// 加入 canonicalName-> LinkedHashSet
 			Set<String> dependentBeans =
 					this.dependentBeanMap.computeIfAbsent(canonicalName, k -> new LinkedHashSet<>(8));
+			// LinkedHashSet 中加入 dependentBeanName
 			if (!dependentBeans.add(dependentBeanName)) {
 				return;
 			}
 		}
 
+		// 加锁 dependenciesForBeanMap
 		synchronized (this.dependenciesForBeanMap) {
+			// 加入 dependentBeanName-> LinkedHashSet
 			Set<String> dependenciesForBean =
 					this.dependenciesForBeanMap.computeIfAbsent(dependentBeanName, k -> new LinkedHashSet<>(8));
+			// LinkedHashSet 加入 canonicalName
 			dependenciesForBean.add(canonicalName);
 		}
 	}

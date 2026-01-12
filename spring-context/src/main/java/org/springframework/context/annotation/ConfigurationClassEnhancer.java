@@ -390,7 +390,7 @@ class ConfigurationClassEnhancer {
 				return cglibMethodProxy.invokeSuper(enhancedConfigInstance, beanMethodArgs);
 			}
 
-			// 处理 bean 引用
+			// 处理 bean 的依赖引用
 			return resolveBeanReference(beanMethod, beanMethodArgs, beanFactory, beanName);
 		}
 
@@ -410,7 +410,7 @@ class ConfigurationClassEnhancer {
 				}
 				// 是否有参数
 				boolean useArgs = !ObjectUtils.isEmpty(beanMethodArgs);
-				// 如果 bean 方法有用参数，其实单例的类型
+				// 如果 bean 方法有用参数（依赖注入），并且是单例的类型
 				if (useArgs && beanFactory.isSingleton(beanName)) {
 					// Stubbed null arguments just for reference purposes,
 					// expecting them to be autowired for regular singleton references?
@@ -454,16 +454,18 @@ class ConfigurationClassEnhancer {
 				// 获取当前正在处理的 bean 方法
 				Method currentlyInvoked = SimpleInstantiationStrategy.getCurrentlyInvokedFactoryMethod();
 				if (currentlyInvoked != null) {
-					// 得到 bean 名称
+					// 得到当前正在创建的 bean 方法，所以有 bean 需要注入 beanName 对象，就是这个方法需要引用到这个 bean 对象
 					String outerBeanName = BeanAnnotationHelper.determineBeanNameFor(currentlyInvoked);
 					// 设置依赖 beanName  outerBeanName
+					// outerBeanName 引用了 beanName，beanName 需要注入都 outerBeanName 中
 					beanFactory.registerDependentBean(beanName, outerBeanName);
 				}
-				// 返回实例
+				// 如果没有 currentlyInvoked，则说明是没有依赖的关系，直接返回实例
 				return beanInstance;
 			}
 			finally {
 				if (alreadyInCreation) {
+					// 如果是当前这个 bean 正在创建，则设置当前创建的 bean 是 beanName
 					beanFactory.setCurrentlyInCreation(beanName, true);
 				}
 			}
