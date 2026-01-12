@@ -653,6 +653,7 @@ public class Enhancer extends AbstractClassGenerator {
 		CollectionUtils.filter(methods, new RejectModifierPredicate(Constants.ACC_FINAL));
 	}
 
+	// 动态代理类生成的过程
 	public void generateClass(ClassVisitor v) throws Exception {
 		Class sc = (superclass == null) ? Object.class : superclass;
 

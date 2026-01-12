@@ -531,6 +531,8 @@ public abstract class AnnotatedElementUtils {
 		return findAnnotations(element).isPresent(annotationType);
 	}
 
+	// 通过指定的 annotationType，从 element 中获取到第一个匹配上的注解，并将父级中
+	// 的对应注解的属性和当前注解的属性进行合并
 	/**
 	 * Find the first annotation of the specified {@code annotationType} within
 	 * the annotation hierarchy <em>above</em> the supplied {@code element} and
@@ -562,8 +564,12 @@ public abstract class AnnotatedElementUtils {
 	public static AnnotationAttributes findMergedAnnotationAttributes(AnnotatedElement element,
 			Class<? extends Annotation> annotationType, boolean classValuesAsString, boolean nestedAnnotationsAsMap) {
 
+		// 从 element 中获取到对应需要的注解
+		// 这里 findAnnotations(element) 返回 TypeMappedAnnotations 对象
 		MergedAnnotation<?> mergedAnnotation = findAnnotations(element)
+				//  MergedAnnotationSelectors.firstDirectlyDeclared() = FirstDirectlyDeclared
 				.get(annotationType, null, MergedAnnotationSelectors.firstDirectlyDeclared());
+		// 获取注解的属性
 		return getAnnotationAttributes(mergedAnnotation, classValuesAsString, nestedAnnotationsAsMap);
 	}
 
@@ -761,6 +767,7 @@ public abstract class AnnotatedElementUtils {
 	}
 
 	private static MergedAnnotations findAnnotations(AnnotatedElement element) {
+		// element - 元素    RepeatableContainers.none() = NoRepeatableContainers
 		return MergedAnnotations.from(element, SearchStrategy.TYPE_HIERARCHY, RepeatableContainers.none());
 	}
 
@@ -786,8 +793,10 @@ public abstract class AnnotatedElementUtils {
 			boolean classValuesAsString, boolean nestedAnnotationsAsMap) {
 
 		if (!annotation.isPresent()) {
+			// 给定的注解没有数据，返回 null
 			return null;
 		}
+		// 获取注解的属性值
 		return annotation.asAnnotationAttributes(
 				Adapt.values(classValuesAsString, nestedAnnotationsAsMap));
 	}

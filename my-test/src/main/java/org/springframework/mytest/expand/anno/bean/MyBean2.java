@@ -6,4 +6,10 @@ package org.springframework.mytest.expand.anno.bean;
  */
 public class MyBean2 {
 
+	public MyBean5 myBean5;
+
+	public MyBean2(MyBean5 bean5) {
+		this.myBean5 = bean5;
+	}
+
 }

@@ -61,6 +61,8 @@ final class TypeMappedAnnotations implements MergedAnnotations {
 
 	private final RepeatableContainers repeatableContainers;
 
+	// 从 new PackagesAnnotationFilter("java.lang", "org.springframework.lang")
+	// 从 AnnotatedElementUtils.findAnnotations 方法中得到的是 上边这个类型
 	private final AnnotationFilter annotationFilter;
 
 	@Nullable
@@ -143,9 +145,12 @@ final class TypeMappedAnnotations implements MergedAnnotations {
 			@Nullable Predicate<? super MergedAnnotation<A>> predicate,
 			@Nullable MergedAnnotationSelector<A> selector) {
 
+		// 判断是否注解是 "java.lang", "org.springframework.lang" 这两种开头
 		if (this.annotationFilter.matches(annotationType)) {
+			// 如果是，返回 missing
 			return MergedAnnotation.missing();
 		}
+		// 扫描注解
 		MergedAnnotation<A> result = scan(annotationType,
 				new MergedAnnotationFinder<>(annotationType, predicate, selector));
 		return (result != null ? result : MergedAnnotation.missing());
@@ -239,6 +244,7 @@ final class TypeMappedAnnotations implements MergedAnnotations {
 			return processor.finish(result);
 		}
 		if (this.element != null && this.searchStrategy != null) {
+			// 根据注解元素和搜索策略，扫描结果
 			return AnnotationsScanner.scan(criteria, this.element, this.searchStrategy, processor);
 		}
 		return null;

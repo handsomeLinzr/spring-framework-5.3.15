@@ -60,6 +60,7 @@ abstract class AnnotationsScanner {
 	}
 
 
+	// 搜索给定 element 的整个层级，找到对应相关的注解过程，最后执行传进来的参数 processor
 	/**
 	 * Scan the hierarchy of the specified element for relevant annotations and
 	 * call the processor as required.

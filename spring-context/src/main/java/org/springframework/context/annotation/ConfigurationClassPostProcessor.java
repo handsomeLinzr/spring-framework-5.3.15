@@ -283,7 +283,9 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			processConfigBeanDefinitions((BeanDefinitionRegistry) beanFactory);
 		}
         // 代理加强 Configuration，设置 beanClass 为加强的代理类
+		// 保证同一个 @Bean 方法在任何地方被调用，都返回的是「容器中的单例 Bean」，而不是一个新的对象
 		enhanceConfigurationClasses(beanFactory);
+		// 添加 BPP  ImportAwareBeanPostProcessor
 		beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
 	}
 
@@ -453,7 +455,12 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 	}
 
-	// 后置处理一个 BeanFactory 去寻找 bd 的配置类，所有候选都会被 ConfigurationClassEnhancer 增强
+	// 增强代理所有的 Configuration 配置类
+	// 这里的目的和逻辑：
+	// 目的：为了 bean 方法对应的 bean 对象，也让 spring 管理，避免调用 bean 方法后，直接就 new 对象了
+	// 逻辑：进行代理增强，如果是普通类的 bean 方法，代理拦截改成 factoryBean.getBean;
+	// 		如果是 FactoryBean 类型，则代理 getObject 方法改成调用factoryBean.getBean;
+	// 		如果是当前 bean 中还没有实例化，即有 bd，但是当前不在创建，则调用 bean 方法
 	/**
 	 * Post-processes a BeanFactory in search of Configuration class BeanDefinitions;
 	 * any candidates are then enhanced by a {@link ConfigurationClassEnhancer}.
@@ -546,7 +553,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			// 获取对应的 bd
 			AbstractBeanDefinition beanDef = entry.getValue();
 			// If a @Configuration class gets proxied, always proxy the target class
-			// 先给这个 bd 设置属性
+			// 先给这个 bd 设置属性，表示这个 bd 设置了代理
 			beanDef.setAttribute(AutoProxyUtils.PRESERVE_TARGET_CLASS_ATTRIBUTE, Boolean.TRUE);
 			// Set enhanced subclass of the user-specified bean class
 			// 被增强的类，即原来 bd 的类
@@ -575,6 +582,9 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			this.beanFactory = beanFactory;
 		}
 
+		// 处理 bpp 的时候走这里，
+		// 如果属于这里的代理 EnhancedConfiguration，则设置进去 beanFactory
+		// EnhancedConfiguration 就是这里再进行加强创建 cglib 代理的时候，设置实现的接口
 		@Override
 		public PropertyValues postProcessProperties(@Nullable PropertyValues pvs, Object bean, String beanName) {
 			// Inject the BeanFactory before AutowiredAnnotationBeanPostProcessor's
