@@ -225,14 +225,22 @@ final class ConfigurationClass {
 		return this.importedResources;
 	}
 
+	/**
+	 * 校验检查
+	 * @param problemReporter
+	 */
 	void validate(ProblemReporter problemReporter) {
 		// A configuration class may not be final (CGLIB limitation) unless it declares proxyBeanMethods=false
+		// 获取 Configuration 注解的所有属性
 		Map<String, Object> attributes = this.metadata.getAnnotationAttributes(Configuration.class.getName());
+		// 获取 proxyBeanMethods 属性，如果 proxyBeanMethods 为 true，则需要代理
 		if (attributes != null && (Boolean) attributes.get("proxyBeanMethods")) {
+			// 如果这个配置是 final 类型，则记录错误日志，因为 final 类型的类没法做代理
 			if (this.metadata.isFinal()) {
 				problemReporter.error(new FinalConfigurationProblem());
 			}
 			for (BeanMethod beanMethod : this.beanMethods) {
+				// bean 方法的校验检查
 				beanMethod.validate(problemReporter);
 			}
 		}

@@ -139,6 +139,7 @@ class ConfigurationClassParser {
 
 	private final ConditionEvaluator conditionEvaluator;
 
+	// 存放解析出来的自己类信息
 	private final Map<ConfigurationClass, ConfigurationClass> configurationClasses = new LinkedHashMap<>();
     // 父类指向子类的bd
 	private final Map<String, ConfigurationClass> knownSuperclasses = new HashMap<>();
@@ -304,7 +305,7 @@ class ConfigurationClassParser {
 		// 循环处理，只要父类不是空的，则继续处理父类
 		while (sourceClass != null);
 
-		// 放入缓存，key 和 value 都是自己
+		// 放入缓存，key 和 value 都是自己，表示此时解析了的配置类
 		this.configurationClasses.put(configClass, configClass);
 	}
 

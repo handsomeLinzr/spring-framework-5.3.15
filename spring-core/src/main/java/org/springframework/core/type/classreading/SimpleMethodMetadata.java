@@ -86,6 +86,11 @@ final class SimpleMethodMetadata implements MethodMetadata {
 		return (this.access & Opcodes.ACC_FINAL) != 0;
 	}
 
+	/**
+	 * 方法是否可以被字类重写
+	 * 重写的规则：不是静态方法，不是 final 方法，不是私有方法
+	 * @return
+	 */
 	@Override
 	public boolean isOverridable() {
 		return !isStatic() && !isFinal() && !isPrivate();
