@@ -383,6 +383,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			// 这里重点，解析当前从 beanFactory 中拿出来的所有需要解析的注解bean和配置
 			// ConfigurationClassParser
 			parser.parse(candidates);
+			// 校验 Configuration 注解的配置类，默认是不能 final 类型，因为要cglib创建代理
 			// 验证，静态、final、私有的方法不能作为bean
 			parser.validate();
             // 从配置中扫出来的类
@@ -483,9 +484,9 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			// 如果是注解扫描出来的
 			if (beanDef instanceof AnnotatedBeanDefinition) {
 				AnnotatedBeanDefinition annotatedBeanDefinition = (AnnotatedBeanDefinition) beanDef;
-				// bd 的元数据
+				// 对应 bd 的元数据
 				annotationMetadata = annotatedBeanDefinition.getMetadata();
-				// 对应 bd 的方法的元数据
+				// 对应 bd 的 bean 方法（如果是bean 方法进来的情况)）
 				methodMetadata = annotatedBeanDefinition.getFactoryMethodMetadata();
 			}
 			// 判断是否是配置类或者候选配置，或者有方法，且是属于 AbstractBeanDefinition

@@ -275,9 +275,14 @@ class ConfigurationClassParser {
 		// 先从 configurationClasses 缓存中获取是否存在这个 configClass
 		// 缓存，第一次的话是空的
 		ConfigurationClass existingClass = this.configurationClasses.get(configClass);
+		// existingClass 不为空
 		if (existingClass != null) {
+			// 当前这个配置类是否有 importedBy 数据
 			if (configClass.isImported()) {
+				// 如果之前解析的这个配置，已经有了 importedBy 数据
 				if (existingClass.isImported()) {
+					// configClass 已经解析过了，而且 configClass 和 之前解析的那个都是 import 的
+					// 则进行合并，将 configClass 的 importedBy 加到 existingClass 的 importedBy
 					existingClass.mergeImportedBy(configClass);
 				}
 				// Otherwise ignore new imported config class; existing non-imported class overrides it.
@@ -328,7 +333,7 @@ class ConfigurationClassParser {
 			// Recursively process any member (nested) classes first
 			// 对当前类的内部类
 			// 		1.解析出当前这个类的所有内部类
-			//		2.判断所有内部类是否是配置类或者需要被解析的类
+			//		2.判断所有内部类是否是配置类或者需要被解析的类≤
 			//		3.对所有的内部类进行排序
 			//		4.重新调用到这里的 doProcessConfigurationClass，递归，处理配置类的解析过程
 			processMemberClasses(configClass, sourceClass, filter);
@@ -354,6 +359,7 @@ class ConfigurationClassParser {
 		// 处理所有的 ComponentScan 相关注解，这里包括 ComponentScans 和 ComponentScan
 		Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
+
 		// 判断是否被空，或者是否被跳过
 		if (!componentScans.isEmpty() &&
 				!this.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) {
@@ -519,7 +525,7 @@ class ConfigurationClassParser {
 	private Set<MethodMetadata> retrieveBeanMethodMetadata(SourceClass sourceClass) {
 		// 获取配置类的元数据信息
 		AnnotationMetadata original = sourceClass.getMetadata();
-		// 获取到配置类的所有有 Bean 注解的属性和方法
+		// 获取到配置类的所有有 Bean 注解的属性和方法，获取 bean 方法的，前边已经用asm扫描了
 		Set<MethodMetadata> beanMethods = original.getAnnotatedMethods(Bean.class.getName());
 		// 遍历处理 bean 方法，如果原日志的元数据属于 StandardAnnotationMetadata
 		if (beanMethods.size() > 1 && original instanceof StandardAnnotationMetadata) {
@@ -786,6 +792,7 @@ class ConfigurationClassParser {
 						this.importStack.registerImport(
 								currentSourceClass.getMetadata(), candidate.getMetadata().getClassName());
 						// 就是这里，调用 processConfigurationClass 递归进行处理这个 import 进来的对象
+						// 这时候，asConfigClass 方法会将这个 configClass 添加到 importedBy 中
 						processConfigurationClass(candidate.asConfigClass(configClass), exclusionFilter);
 					}
 				}
@@ -1203,6 +1210,7 @@ class ConfigurationClassParser {
 			return new AssignableTypeFilter(clazz).match((MetadataReader) this.source, metadataReaderFactory);
 		}
 
+		// 创建 ConfigurationClass，并将 importedBy 保存在这个对象中
 		public ConfigurationClass asConfigClass(ConfigurationClass importedBy) {
 			if (this.source instanceof Class) {
 				return new ConfigurationClass((Class<?>) this.source, importedBy);

@@ -83,6 +83,7 @@ public interface ImportBeanDefinitionRegistrar {
 	default void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry,
 			BeanNameGenerator importBeanNameGenerator) {
 
+		// 注册
 		registerBeanDefinitions(importingClassMetadata, registry);
 	}
 

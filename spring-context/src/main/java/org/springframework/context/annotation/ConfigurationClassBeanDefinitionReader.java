@@ -126,7 +126,9 @@ class ConfigurationClassBeanDefinitionReader {
 	 */
 	public void loadBeanDefinitions(Set<ConfigurationClass> configurationModel) {
 		TrackedConditionEvaluator trackedConditionEvaluator = new TrackedConditionEvaluator();
+		// 遍历 configurationModel 所有配置
 		for (ConfigurationClass configClass : configurationModel) {
+			// 加载 bd
 			loadBeanDefinitionsForConfigurationClass(configClass, trackedConditionEvaluator);
 		}
 	}
@@ -139,6 +141,8 @@ class ConfigurationClassBeanDefinitionReader {
 			ConfigurationClass configClass, TrackedConditionEvaluator trackedConditionEvaluator) {
 
 		if (trackedConditionEvaluator.shouldSkip(configClass)) {
+			// 需要跳过，则先进行移除
+			// 获取 bean 名称
 			String beanName = configClass.getBeanName();
 			if (StringUtils.hasLength(beanName) && this.registry.containsBeanDefinition(beanName)) {
 				this.registry.removeBeanDefinition(beanName);
@@ -147,32 +151,46 @@ class ConfigurationClassBeanDefinitionReader {
 			return;
 		}
 
+		// 判断当前配置类 importedBy 是否有值，importedBy 是从 @import 注解，或者当前配置类是否有内部类配置文件
 		if (configClass.isImported()) {
-			registerBeanDefinitionForImportedConfigurationClass(configClass);  // import
+			// import 处理
+			registerBeanDefinitionForImportedConfigurationClass(configClass);
 		}
 		for (BeanMethod beanMethod : configClass.getBeanMethods()) {
-			loadBeanDefinitionsForBeanMethod(beanMethod);  // 加载 Bean 注解的方法
+			// 加载 Bean 注解的方法
+			loadBeanDefinitionsForBeanMethod(beanMethod);
 		}
         // 这两个都是 import 相关
 		loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
 		loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
 	}
 
+	// 注册 bd
 	/**
 	 * Register the {@link Configuration} class itself as a bean definition.
 	 */
 	private void registerBeanDefinitionForImportedConfigurationClass(ConfigurationClass configClass) {
+		// 获得元数据
 		AnnotationMetadata metadata = configClass.getMetadata();
+		// 创建新的 AnnotatedGenericBeanDefinition
 		AnnotatedGenericBeanDefinition configBeanDef = new AnnotatedGenericBeanDefinition(metadata);
-
+		// 作用域
 		ScopeMetadata scopeMetadata = scopeMetadataResolver.resolveScopeMetadata(configBeanDef);
+		// 作用域名称
 		configBeanDef.setScope(scopeMetadata.getScopeName());
+		// 生成一个 beanName
 		String configBeanName = this.importBeanNameGenerator.generateBeanName(configBeanDef, this.registry);
+		// 根据 metadata 给 configBeanDef 这个 bd 设置属性
 		AnnotationConfigUtils.processCommonDefinitionAnnotations(configBeanDef, metadata);
 
+		// 创建一个 holder 包装
 		BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(configBeanDef, configBeanName);
+		// 应用作用域代理
 		definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+
+		// 注册 bd
 		this.registry.registerBeanDefinition(definitionHolder.getBeanName(), definitionHolder.getBeanDefinition());
+		// 设置 beanName
 		configClass.setBeanName(configBeanName);
 
 		if (logger.isTraceEnabled()) {
@@ -352,6 +370,7 @@ class ConfigurationClassBeanDefinitionReader {
 
 		Map<Class<?>, BeanDefinitionReader> readerInstanceCache = new HashMap<>();
 
+		// 遍历 importResource 的数据
 		importedResources.forEach((resource, readerClass) -> {
 			// Default reader selection necessary?
 			if (BeanDefinitionReader.class == readerClass) {
@@ -372,6 +391,7 @@ class ConfigurationClassBeanDefinitionReader {
 			if (reader == null) {
 				try {
 					// Instantiate the specified BeanDefinitionReader
+					// 数理化这个 BeanDefinitionReader
 					reader = readerClass.getConstructor(BeanDefinitionRegistry.class).newInstance(this.registry);
 					// Delegate the current ResourceLoader to it if possible
 					if (reader instanceof AbstractBeanDefinitionReader) {

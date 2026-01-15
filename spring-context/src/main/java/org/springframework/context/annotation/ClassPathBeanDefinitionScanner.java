@@ -237,6 +237,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 				(scopeMetadataResolver != null ? scopeMetadataResolver : new AnnotationScopeMetadataResolver());
 	}
 
+	// 非单例的bean设置特殊代理
 	/**
 	 * Specify the proxy behavior for non-singleton scoped beans.
 	 * Note that this will override any custom "scopeMetadataResolver" setting.
@@ -296,13 +297,15 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 			// ScannedGenericBeanDefinition 即是 AbstractBeanDefinition 又是 AnnotatedBeanDefinition
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
 			for (BeanDefinition candidate : candidates) {
-				// 处理 scope 作用域声明周期
+				// scopeMetadataResolver 已经根据属性 “scopedProxy” 设置对应的处理器
+				// 设置 scope，根据自己Scope注解->类上Scope注解->NO 类型
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
+				// 设置作用域，单例、多例 这些
 				candidate.setScope(scopeMetadata.getScopeName());
-				// 获取 bean 的名称
+				// 生成 bean 的名称
 				//		优先根据注解的 value 值取
 				//		如果没有，则根据自动规则生成 bean 名称
-				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);  // 获得beanName
+				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
 				if (candidate instanceof AbstractBeanDefinition) {
 					// 属于 AbstractBeanDefinition，执行这个方法
 					// 前边的逻辑里，创建的是  ScannedGenericBeanDefinition 对象，所以会走到这里，进行处理
@@ -340,7 +343,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * @param beanName the generated bean name for the given bean
 	 */
 	protected void postProcessBeanDefinition(AbstractBeanDefinition beanDefinition, String beanName) {
-		// 设置 bd 的默认值
+		// 设置 bd 的默认属性值
 		beanDefinition.applyDefaults(this.beanDefinitionDefaults);
 		if (this.autowireCandidatePatterns != null) {
 			beanDefinition.setAutowireCandidate(PatternMatchUtils.simpleMatch(this.autowireCandidatePatterns, beanName));

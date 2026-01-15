@@ -57,6 +57,8 @@ final class ConfigurationClass {
 	@Nullable
 	private String beanName;
 
+	// 解析 import 注解的配置类的时候，存放进来对应的配置类，或者是配置类的内部类
+	// 在调用 ConfigurationClass 构造函数的时候，就已经存进来了
 	private final Set<ConfigurationClass> importedBy = new LinkedHashSet<>(1);
 
 	// 存放的是配置类中解析到的有 Bean 注解修饰的方法
@@ -90,6 +92,7 @@ final class ConfigurationClass {
 		this.beanName = beanName;
 	}
 
+	// 创建一个 ConfigurationClass 用来表示一个被通过 Import 注解或者作为一个内部类到导入处理的配置
 	/**
 	 * Create a new {@link ConfigurationClass} representing a class that was imported
 	 * using the {@link Import} annotation or automatically processed as a nested
@@ -101,6 +104,7 @@ final class ConfigurationClass {
 	ConfigurationClass(MetadataReader metadataReader, @Nullable ConfigurationClass importedBy) {
 		this.metadata = metadataReader.getAnnotationMetadata();
 		this.resource = metadataReader.getResource();
+		// importedBy 添加上外部配置类
 		this.importedBy.add(importedBy);
 	}
 
@@ -131,6 +135,7 @@ final class ConfigurationClass {
 	ConfigurationClass(Class<?> clazz, @Nullable ConfigurationClass importedBy) {
 		this.metadata = AnnotationMetadata.introspect(clazz);
 		this.resource = new DescriptiveResource(clazz.getName());
+		// 将 importedBy 这个 import 的配置配类加入到 importedBy
 		this.importedBy.add(importedBy);
 	}
 

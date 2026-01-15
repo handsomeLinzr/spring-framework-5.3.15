@@ -458,6 +458,6 @@ public @interface Configuration {
 	 * behaviorally equivalent to removing the {@code @Configuration} stereotype.
 	 * @since 5.2
 	 */
-	boolean proxyBeanMethods() default true;
+	boolean proxyBeanMethods() default true;  // 代理，默认 true
 
 }

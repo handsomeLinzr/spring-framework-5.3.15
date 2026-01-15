@@ -29,7 +29,7 @@ public class MyTest {
 		MyBean6 bean62 = context.getBean(MyBean6.class);
 		Object bean63 = context.getBean("myFactoryBean");
 		Object bean64 = context.getBean("&myFactoryBean");
-		MyFactoryBean bean65 = context.getBean(MyFactoryBean.class);
+//		MyFactoryBean bean65 = context.getBean(MyFactoryBean.class);
 		System.out.println(bean62);
 
 

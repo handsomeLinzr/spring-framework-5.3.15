@@ -251,6 +251,7 @@ public abstract class AnnotationConfigUtils {
 		processCommonDefinitionAnnotations(abd, abd.getMetadata());
 	}
 
+	// 处理通用的注解 bd 注解属性
 	static void processCommonDefinitionAnnotations(AnnotatedBeanDefinition abd, AnnotatedTypeMetadata metadata) {
 		// 处理 lazy 属性
 		AnnotationAttributes lazy = attributesFor(metadata, Lazy.class);
@@ -289,11 +290,15 @@ public abstract class AnnotationConfigUtils {
 	static BeanDefinitionHolder applyScopedProxyMode(
 			ScopeMetadata metadata, BeanDefinitionHolder definition, BeanDefinitionRegistry registry) {
 
+		// 获取这个bean要应用的代理模式
 		ScopedProxyMode scopedProxyMode = metadata.getScopedProxyMode();
+		// 如果是 NO 类型，则不需要代理，直接返回
 		if (scopedProxyMode.equals(ScopedProxyMode.NO)) {
 			return definition;
 		}
+		// 判断代理模式是不是 TARGET_CLASS
 		boolean proxyTargetClass = scopedProxyMode.equals(ScopedProxyMode.TARGET_CLASS);
+		// 根据代理类型作用域代理模式创建代理对象的包装，还没有正在的创建代理对象
 		return ScopedProxyCreator.createScopedProxy(definition, registry, proxyTargetClass);
 	}
 

@@ -58,23 +58,28 @@ public class ScopedProxyFactoryBean extends ProxyConfig
 	/** The TargetSource that manages scoping. */
 	private final SimpleBeanTargetSource scopedTargetSource = new SimpleBeanTargetSource();
 
+	// 目标 bean 的名称，即 被代理 bean 的名称
 	/** The name of the target bean. */
 	@Nullable
 	private String targetBeanName;
 
+	// 缓存对应的单例代理对象
 	/** The cached singleton proxy. */
 	@Nullable
 	private Object proxy;
 
 
+	// 春关键一个新的 ScopedProxyFactoryBean 实例
 	/**
 	 * Create a new ScopedProxyFactoryBean instance.
 	 */
 	public ScopedProxyFactoryBean() {
+		// 创建代理对象的时候，给属性 proxyTargetClass 设置true
 		setProxyTargetClass(true);
 	}
 
 
+	// 设置被代理对象的bean名称
 	/**
 	 * Set the name of the bean that is to be scoped.
 	 */
@@ -90,6 +95,7 @@ public class ScopedProxyFactoryBean extends ProxyConfig
 		}
 		ConfigurableBeanFactory cbf = (ConfigurableBeanFactory) beanFactory;
 
+		// 给 scopedTargetSource 设置 beanFactory，在里边 getTarget 需要用到 beanFactory
 		this.scopedTargetSource.setBeanFactory(beanFactory);
 
 		ProxyFactory pf = new ProxyFactory();

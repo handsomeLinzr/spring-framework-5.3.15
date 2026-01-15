@@ -37,9 +37,15 @@ final class ScopedProxyCreator {
 	public static BeanDefinitionHolder createScopedProxy(
 			BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry, boolean proxyTargetClass) {
 
+		// 创建作用域代理对象
 		return ScopedProxyUtils.createScopedProxy(definitionHolder, registry, proxyTargetClass);
 	}
 
+	/**
+	 * 获取作用域代理后的beanName，一般是  scopedTarget.+原beanName
+	 * @param originalBeanName
+	 * @return
+	 */
 	public static String getTargetBeanName(String originalBeanName) {
 		return ScopedProxyUtils.getTargetBeanName(originalBeanName);
 	}

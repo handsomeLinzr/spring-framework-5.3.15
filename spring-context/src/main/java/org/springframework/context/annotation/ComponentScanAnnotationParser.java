@@ -84,12 +84,14 @@ class ComponentScanAnnotationParser {
 		scanner.setBeanNameGenerator(useInheritedGenerator ? this.beanNameGenerator :
 				BeanUtils.instantiateClass(generatorClass));
 
-		// 设置声明周期
+		// 获取作用域代理值，默认是 DEFAULT
 		ScopedProxyMode scopedProxyMode = componentScan.getEnum("scopedProxy");
 		if (scopedProxyMode != ScopedProxyMode.DEFAULT) {
+			// 非 DEFAULT，设置 scopeMetadataResolver
 			scanner.setScopedProxyMode(scopedProxyMode);
 		}
 		else {
+			// AnnotationScopeMetadataResolver.class
 			Class<? extends ScopeMetadataResolver> resolverClass = componentScan.getClass("scopeResolver");
 			scanner.setScopeMetadataResolver(BeanUtils.instantiateClass(resolverClass));
 		}

@@ -1,5 +1,6 @@
 package org.springframework.mytest.expand.anno.config;
 
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
 import org.springframework.mytest.expand.anno.bean.*;
@@ -7,11 +8,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mytest.expand.anno.condition.MacCondition;
 import org.springframework.mytest.expand.anno.condition.WindowsCondition;
+import org.springframework.stereotype.Component;
 
 /**
  * @author linzherong
  * @date 2026/1/4 11:25
- */
+// */
 @Configuration
 public class MyConfiguration {
 

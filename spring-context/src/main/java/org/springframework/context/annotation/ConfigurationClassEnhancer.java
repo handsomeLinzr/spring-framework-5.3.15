@@ -332,9 +332,9 @@ class ConfigurationClassEnhancer {
 			if (BeanAnnotationHelper.isScopedProxy(beanMethod)) {
 				// 创建对应的代理后的 beanName 名称
 				String scopedBeanName = ScopedProxyCreator.getTargetBeanName(beanName);
-				// 如果这个 bean 正常创建
+				// 如果这个 代理的 bean 正常创建
 				if (beanFactory.isCurrentlyInCreation(scopedBeanName)) {
-					// 替换 beanName
+					// 后边就用这个代理 bean 来处理
 					beanName = scopedBeanName;
 				}
 			}
@@ -520,7 +520,7 @@ class ConfigurationClassEnhancer {
 		}
 
 
-		// 检查给定的方法是否对应于容器当前调用的工厂方法。
+		// 检查给定的方法是不是就是当前创建 bean 正在用的方法
 		/**
 		 * Check whether the given method corresponds to the container's currently invoked
 		 * factory method. Compares method name and parameter types only in order to work
@@ -528,11 +528,11 @@ class ConfigurationClassEnhancer {
 		 * to happen on Groovy classes).
 		 */
 		private boolean isCurrentlyInvokedFactoryMethod(Method method) {
-			// 当前正在调用的 Bean 方法
+			// 当前正在被调用来创建 bean 的方法
 			Method currentlyInvoked = SimpleInstantiationStrategy.getCurrentlyInvokedFactoryMethod();
-			// 当前调用的 bean 方法不为空
-			// 当前调用的 bean 方法名称和传进来的方法一样
-			// 当前调用的 bean 方法参数和传进来的方法的参数一样
+			// 当前调用的方法不为空
+			// 当前调用的方法名称和传进来的方法一样
+			// 当前调用的方法参数和传进来的方法的参数一样
 			// 其实这里就是判断这个 method 是不是就是当前正在执行的方法
 			return (currentlyInvoked != null && method.getName().equals(currentlyInvoked.getName()) &&
 					Arrays.equals(method.getParameterTypes(), currentlyInvoked.getParameterTypes()));
