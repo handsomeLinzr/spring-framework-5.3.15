@@ -61,6 +61,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	@Nullable
 	private AnnotatedElement qualifiedElement;
 
+	// 是否当前 bd 需要被重新合并
 	/** Determines if the definition needs to be re-merged. */
 	volatile boolean stale;
 

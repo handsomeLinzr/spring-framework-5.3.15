@@ -3,6 +3,7 @@ package org.springframework.mytest.expand.anno.config;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
+import org.springframework.mytest.bean.components.MyBean3;
 import org.springframework.mytest.expand.anno.bean.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

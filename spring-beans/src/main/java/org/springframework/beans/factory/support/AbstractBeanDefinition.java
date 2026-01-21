@@ -281,6 +281,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	}
 
 
+	// 覆盖db的属性设置，从 other 覆盖当前
 	/**
 	 * Override settings in this bean definition (presumably a copied parent
 	 * from a parent-child inheritance relationship) from the given bean

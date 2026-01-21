@@ -256,6 +256,13 @@ final class PostProcessorRegistrationDelegate {
 		beanFactory.clearMetadataCache();
 	}
 
+	/**
+	 * 注册 bpp
+	 * 这里只是将所有的 bpp 按照 PriorityOrdered、Ordered、其他 进行优先级排序，然后注册加入到 beanFactory.beanPostProcessors 中
+	 * 如果该 bpp 属于 MergedBeanDefinitionPostProcessor，则统一放到最后
+	 * @param beanFactory
+	 * @param applicationContext
+	 */
 	public static void registerBeanPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext) {
 
@@ -271,42 +278,57 @@ final class PostProcessorRegistrationDelegate {
 		// list of all declined PRs involving changes to PostProcessorRegistrationDelegate
 		// to ensure that your proposal does not result in a breaking change:
 		// https://github.com/spring-projects/spring-framework/issues?q=PostProcessorRegistrationDelegate+is%3Aclosed+label%3A%22status%3A+declined%22
-        // 获取所有的 BeanPostProcess 类型的 beanName
+        // 获取此时在 beanFactory 中BeanPostProcess 类型的 beanName
 		String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanPostProcessor.class, true, false);
 
 		// Register BeanPostProcessorChecker that logs an info message when
 		// a bean is created during BeanPostProcessor instantiation, i.e. when
 		// a bean is not eligible for getting processed by all BeanPostProcessors.
+		// 这里计算得到 bpp 的数量，加 1 是因为最后还要加上 ApplicationListenerDetector
 		int beanProcessorTargetCount = beanFactory.getBeanPostProcessorCount() + 1 + postProcessorNames.length;
 		beanFactory.addBeanPostProcessor(new BeanPostProcessorChecker(beanFactory, beanProcessorTargetCount));
 
 		// Separate between BeanPostProcessors that implement PriorityOrdered,
 		// Ordered, and the rest.
+		// PriorityOrdered 注解的 bpp
 		List<BeanPostProcessor> priorityOrderedPostProcessors = new ArrayList<>();
+		// 内部的 bpp
 		List<BeanPostProcessor> internalPostProcessors = new ArrayList<>();
+		// Ordered 注解的 bpp
 		List<String> orderedPostProcessorNames = new ArrayList<>();
+		// 剩余的其他 bpp
 		List<String> nonOrderedPostProcessorNames = new ArrayList<>();
+		// 遍历当前得到的所有 bpp
 		for (String ppName : postProcessorNames) {
-			if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {  // PriorityOrdered 类型
+			// PriorityOrdered 类型
+			if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+				// 调用 beanFactory，实例化
 				BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);
+				// 缓存 priorityOrderedPostProcessors
 				priorityOrderedPostProcessors.add(pp);
+				// 属于 MergedBeanDefinitionPostProcessor，则也缓存到内部 bpp
 				if (pp instanceof MergedBeanDefinitionPostProcessor) {
 					internalPostProcessors.add(pp);
 				}
 			}
 			else if (beanFactory.isTypeMatch(ppName, Ordered.class)) {
+				// Ordered 注解，缓存到  orderedPostProcessorNames
 				orderedPostProcessorNames.add(ppName);
 			}
 			else {
+				// 剩余的缓存到 nonOrderedPostProcessorNames
 				nonOrderedPostProcessorNames.add(ppName);
 			}
 		}
 
 		// First, register the BeanPostProcessors that implement PriorityOrdered.
+		// 先对 priorityOrderedPostProcessors 的进行排序
 		sortPostProcessors(priorityOrderedPostProcessors, beanFactory);
+		// 注册的 beanFactory 中，其实就是到 beanFactory 的数组 beanPostProcessors 中
 		registerBeanPostProcessors(beanFactory, priorityOrderedPostProcessors);
 
 		// Next, register the BeanPostProcessors that implement Ordered.
+		// 处理 orderedPostProcessorNames 数组
 		List<BeanPostProcessor> orderedPostProcessors = new ArrayList<>(orderedPostProcessorNames.size());
 		for (String ppName : orderedPostProcessorNames) {
 			BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);
@@ -319,6 +341,7 @@ final class PostProcessorRegistrationDelegate {
 		registerBeanPostProcessors(beanFactory, orderedPostProcessors);
 
 		// Now, register all regular BeanPostProcessors.
+		// 处理 nonOrderedPostProcessorNames 数组
 		List<BeanPostProcessor> nonOrderedPostProcessors = new ArrayList<>(nonOrderedPostProcessorNames.size());
 		for (String ppName : nonOrderedPostProcessorNames) {
 			BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);
@@ -327,14 +350,18 @@ final class PostProcessorRegistrationDelegate {
 				internalPostProcessors.add(pp);
 			}
 		}
+		// 这里不需要排序了，因为这个数组是无排序的，直接注册即可
 		registerBeanPostProcessors(beanFactory, nonOrderedPostProcessors);
 
 		// Finally, re-register all internal BeanPostProcessors.
+		// 最后，对internalPostProcessors 进行排序
 		sortPostProcessors(internalPostProcessors, beanFactory);
+		// 重新进行注册，这样处理是为了这些都放到最后边执行
 		registerBeanPostProcessors(beanFactory, internalPostProcessors);
 
 		// Re-register post-processor for detecting inner beans as ApplicationListeners,
 		// moving it to the end of the processor chain (for picking up proxies etc).
+		// 加上 ApplicationListenerDetector
 		beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(applicationContext));
 	}
 
@@ -381,6 +408,7 @@ final class PostProcessorRegistrationDelegate {
 		}
 	}
 
+	// 注册 bpp 到数组 beanPostProcessors 中
 	/**
 	 * Register the given BeanPostProcessor beans.
 	 */
@@ -389,6 +417,7 @@ final class PostProcessorRegistrationDelegate {
 
 		if (beanFactory instanceof AbstractBeanFactory) {
 			// Bulk addition is more efficient against our CopyOnWriteArrayList there
+			// 注册到数组 beanPostProcessors 中
 			((AbstractBeanFactory) beanFactory).addBeanPostProcessors(postProcessors);
 		}
 		else {

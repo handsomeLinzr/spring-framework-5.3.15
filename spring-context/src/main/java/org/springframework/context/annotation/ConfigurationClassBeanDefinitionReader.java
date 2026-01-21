@@ -152,10 +152,13 @@ class ConfigurationClassBeanDefinitionReader {
 		}
 
 		// 判断当前配置类 importedBy 是否有值，importedBy 是从 @import 注解，或者当前配置类是否有内部类配置文件
+		// importedBy 不为空，则表示从当前这个 configClass 中解析出来 Import 注解导入的类，或者是有 configClass 内部类
 		if (configClass.isImported()) {
 			// import 处理
 			registerBeanDefinitionForImportedConfigurationClass(configClass);
 		}
+
+		// 处理配置的所有 bean 方法
 		for (BeanMethod beanMethod : configClass.getBeanMethods()) {
 			// 加载 Bean 注解的方法
 			loadBeanDefinitionsForBeanMethod(beanMethod);
@@ -165,7 +168,7 @@ class ConfigurationClassBeanDefinitionReader {
 		loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
 	}
 
-	// 注册 bd
+	// 注册这个 Configuration 配置类自己本身
 	/**
 	 * Register the {@link Configuration} class itself as a bean definition.
 	 */

@@ -188,10 +188,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	/** List of names of manually registered singletons, in registration order. */
 	private volatile Set<String> manualSingletonNames = new LinkedHashSet<>(16);
 
+	// 缓存冻结的 db
 	/** Cached array of bean definition names in case of frozen configuration. */
 	@Nullable
 	private volatile String[] frozenBeanDefinitionNames;
 
+	// bd 是否已经冻结
 	/** Whether bean definition metadata may be cached for all beans. */
 	private volatile boolean configurationFrozen;
 
@@ -933,14 +935,24 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		// Iterate over a copy to allow for init methods which in turn register new bean definitions.
+		// 遍历一个副本，允许初始化方法去注册新的 db
 		// While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+		// 尽管这个可能不是一个常规工厂处理的部分
+		// 这里复制一个 bd 的数组
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
-		// Trigger initialization of all non-lazy singleton beans...  初始化所有非懒加载的bean
+		// 初始化所有非懒加载的bean
+		// Trigger initialization of all non-lazy singleton beans...
 		for (String beanName : beanNames) {
+			// 根据 beanName，获取到合并后的 bd，这里会先去拿缓存，如果缓存没有，则会遍历到父bd获取，并将
+			// 父bd和当前bd进行属性合并，最后拿到合并后的bd，添加缓存，然后返回到这里
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
+			// 判断是否该bd非抽象类，且是单例的，且非懒加载
+			// 其中一个不匹配，都不在这里进行处理
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
+				// 判断是否是 factoryBean 对象
 				if (isFactoryBean(beanName)) {
+					// 获取到 factoryBean 这个工厂 bean
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
 						FactoryBean<?> factory = (FactoryBean<?>) bean;
@@ -960,6 +972,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 					}
 				}
 				else {
+					// 普通对象，不是 factoryBean，直径调用 getBean，走通用流程
 					getBean(beanName);
 				}
 			}

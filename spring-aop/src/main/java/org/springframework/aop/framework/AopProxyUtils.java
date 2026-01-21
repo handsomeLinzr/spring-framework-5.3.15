@@ -64,7 +64,9 @@ public abstract class AopProxyUtils {
 	 */
 	@Nullable
 	public static Object getSingletonTarget(Object candidate) {
+		// 如果是属于切面对象
 		if (candidate instanceof Advised) {
+			// 获取到对应的目标真实对象
 			TargetSource targetSource = ((Advised) candidate).getTargetSource();
 			if (targetSource instanceof SingletonTargetSource) {
 				return ((SingletonTargetSource) targetSource).getTarget();

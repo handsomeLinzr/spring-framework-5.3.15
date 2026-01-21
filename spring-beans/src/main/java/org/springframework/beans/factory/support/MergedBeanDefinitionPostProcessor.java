@@ -18,6 +18,10 @@ package org.springframework.beans.factory.support;
 
 import org.springframework.beans.factory.config.BeanPostProcessor;
 
+// 运行时进行后置处理的 bpp
+// postProcessMergedBeanDefinition 方法可以反射得到 bean 定义，并做一些前置准备的缓存工作，也可以
+// 对bean定义的属性进行修改
+// 例如实现类 InitDestroyAnnotationBeanPostProcessor，进行创建后和销毁前的方法定义
 /**
  * Post-processor callback interface for <i>merged</i> bean definitions at runtime.
  * {@link BeanPostProcessor} implementations may implement this sub-interface in order
@@ -37,6 +41,7 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
  */
 public interface MergedBeanDefinitionPostProcessor extends BeanPostProcessor {
 
+	// 对给定的特殊合并的 db 进行后置处理
 	/**
 	 * Post-process the given merged bean definition for the specified bean.
 	 * @param beanDefinition the merged bean definition for the bean
@@ -46,6 +51,7 @@ public interface MergedBeanDefinitionPostProcessor extends BeanPostProcessor {
 	 */
 	void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName);
 
+	// 重置 bd
 	/**
 	 * A notification that the bean definition for the specified name has been reset,
 	 * and that this post-processor should clear any metadata for the affected bean.

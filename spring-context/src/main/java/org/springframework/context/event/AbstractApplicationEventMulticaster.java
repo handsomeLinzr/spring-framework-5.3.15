@@ -100,15 +100,19 @@ public abstract class AbstractApplicationEventMulticaster
 	}
 
 
+	// 给多播器添加监听器
 	@Override
 	public void addApplicationListener(ApplicationListener<?> listener) {
 		synchronized (this.defaultRetriever) {
 			// Explicitly remove target for a proxy, if registered already,
 			// in order to avoid double invocations of the same listener.
-			Object singletonTarget = AopProxyUtils.getSingletonTarget(listener);  // 如果是代理对象，需要直接拿到实际对象
+			// 如果是代理对象，需要直接拿到实际对象
+			Object singletonTarget = AopProxyUtils.getSingletonTarget(listener);
 			if (singletonTarget instanceof ApplicationListener) {
+				// 如果 listener 是一个代理，则需要连同代理的目标对象也一起先移除
 				this.defaultRetriever.applicationListeners.remove(singletonTarget);
 			}
+			// 添加
 			this.defaultRetriever.applicationListeners.add(listener);
 			this.retrieverCache.clear();
 		}
@@ -485,10 +489,13 @@ public abstract class AbstractApplicationEventMulticaster
 	 */
 	private class DefaultListenerRetriever {
 
+		// 监听器实例
 		public final Set<ApplicationListener<?>> applicationListeners = new LinkedHashSet<>();
 
+		// 监听器的 beanName
 		public final Set<String> applicationListenerBeans = new LinkedHashSet<>();
-        // 返回所有监听者，包括applicationListeners和applicationListenerBeans
+
+		// 返回所有监听者，包括applicationListeners和applicationListenerBeans
 		public Collection<ApplicationListener<?>> getApplicationListeners() {
 			List<ApplicationListener<?>> allListeners = new ArrayList<>(
 					this.applicationListeners.size() + this.applicationListenerBeans.size());

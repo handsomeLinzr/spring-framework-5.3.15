@@ -142,6 +142,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	@Nullable
 	private BeanExpressionResolver beanExpressionResolver;
 
+	// 在 finishBeanFactoryInitialization 方法的时候，会查询当前的 beanFactory 是否有 conversionService 这个 bd，如果有
+	// 则对这个 bd 进行创建实例化，然后设置到这里
 	/** Spring ConversionService to use instead of PropertyEditors. */
 	@Nullable
 	private ConversionService conversionService;
@@ -1127,6 +1129,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 	}
 
+	// 根据一个给定的 bd 的名称，获得一个和父bd合并后的bd
+	// 合并 bd，需要获取到 父bd，
 	/**
 	 * Return a 'merged' BeanDefinition for the given bean name,
 	 * merging a child bean definition with its parent if necessary.
@@ -1140,12 +1144,16 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	@Override
 	public BeanDefinition getMergedBeanDefinition(String name) throws BeansException {
+		// 获取到这个bd对应的名称
 		String beanName = transformedBeanName(name);
 		// Efficiently check whether bean definition exists in this factory.
+		// 如果当前工厂没有这个 beanName，且父工厂属于 ConfigurableBeanFactory，则通过父工厂去拿这个合并的 beanName
+		// 这里调用了父工厂，其实本质上又是递归调用到了 getMergedBeanDefinition 方法，只是对象不同
 		if (!containsBeanDefinition(beanName) && getParentBeanFactory() instanceof ConfigurableBeanFactory) {
 			return ((ConfigurableBeanFactory) getParentBeanFactory()).getMergedBeanDefinition(beanName);
 		}
 		// Resolve merged bean definition locally.
+		// 如果当前工厂有这个 bd，则从本bean工厂获取合并的 bd，也是递归，回到了入口处获取本工厂的合并bd
 		return getMergedLocalBeanDefinition(beanName);
 	}
 
@@ -1344,6 +1352,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	}
 
 
+	// 返回指定的 bean 的合并 bd
 	/**
 	 * Return a merged RootBeanDefinition, traversing the parent bean definition
 	 * if the specified bean corresponds to a child bean definition.
@@ -1354,11 +1363,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	protected RootBeanDefinition getMergedLocalBeanDefinition(String beanName) throws BeansException {
 		// Quick check on the concurrent map first, with minimal locking.
+		// 先从缓存中获取 bd，
 		RootBeanDefinition mbd = this.mergedBeanDefinitions.get(beanName);
-		if (mbd != null && !mbd.stale) {   // mbd.stale=true需要重新定义
+		// 如果缓存中有，且 stale = false，则直接返回这个 bd 即可
+		// 如果说 mbd.stale = true，则表示这个 bd 是脏的，需要重新合并
+		if (mbd != null && !mbd.stale) {
 			return mbd;
 		}
-		return getMergedBeanDefinition(beanName, getBeanDefinition(beanName));   // 合并bd
+		// 如果没有缓存或者是缓存的 bd 是脏的，需要调用这个方法进行 bd 的合并和缓存
+		// getBeanDefinition(beanName) ==》》 从当前bean工厂获取到 bd 对象
+		// getMergedBeanDefinition ==》》 进行bd的合并和缓存
+		return getMergedBeanDefinition(beanName, getBeanDefinition(beanName));
 	}
 
 	/**
@@ -1375,6 +1390,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		return getMergedBeanDefinition(beanName, bd, null);
 	}
 
+	// 返回一个和parent进行合并后的RootBeanDefinition
 	/**
 	 * Return a RootBeanDefinition for the given bean, by merging with the
 	 * parent if the given bean's definition is a child bean definition.
@@ -1389,35 +1405,48 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			String beanName, BeanDefinition bd, @Nullable BeanDefinition containingBd)
 			throws BeanDefinitionStoreException {
 
+		// 加锁
 		synchronized (this.mergedBeanDefinitions) {
 			RootBeanDefinition mbd = null;
 			RootBeanDefinition previous = null;
 
 			// Check with full lock now in order to enforce the same merged instance.
+			// 双重检验锁
 			if (containingBd == null) {
+				// 从mergedBeanDefinitions中获取当前的缓存的合并mbd
 				mbd = this.mergedBeanDefinitions.get(beanName);
 			}
 
-			if (mbd == null || mbd.stale) {   // 需要定义或需要重定义
+			// 如果缓存没有，或者是mbd.stale=true，则需要进行合并处理
+			if (mbd == null || mbd.stale) {
+				// previous 赋值 mbd，记录当前拿到的缓存
 				previous = mbd;
+				// 如果bd没有父bd
 				if (bd.getParentName() == null) {
 					// Use copy of given root bean definition.
 					if (bd instanceof RootBeanDefinition) {
+						// 如果 bd 本身就是一个 RootBeanDefinition 对象，则进行拷贝，赋值给 mbd
 						mbd = ((RootBeanDefinition) bd).cloneBeanDefinition();
 					}
 					else {
+						// 如果不是，则将 bd 包装成 RootBeanDefinition，赋值给 mbd
 						mbd = new RootBeanDefinition(bd);
 					}
 				}
 				else {
+					// 如果当前bd有父bd的情况
 					// Child bean definition: needs to be merged with parent.
 					BeanDefinition pbd;
 					try {
+						// 获取到父bd的beanName
 						String parentBeanName = transformedBeanName(bd.getParentName());
 						if (!beanName.equals(parentBeanName)) {
+							// 如果当前的 beanName 和 parentBeanName 不一样，则从当前通常获取到合并的父bd
 							pbd = getMergedBeanDefinition(parentBeanName);
 						}
 						else {
+							// 如果当前的 beanName 和 parentBeanName 一样，则获取父工厂，用父工厂去尝试拿 bd
+							// 因为当前工厂已经有了自己的这个 beanName 了，所以父bd也是这个名称，则需要到父工厂拿
 							BeanFactory parent = getParentBeanFactory();
 							if (parent instanceof ConfigurableBeanFactory) {
 								pbd = ((ConfigurableBeanFactory) parent).getMergedBeanDefinition(parentBeanName);
@@ -1434,10 +1463,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 								"Could not resolve parent bean definition '" + bd.getParentName() + "'", ex);
 					}
 					// Deep copy with overridden values.
+					// 把 pbd 进行深拷贝
 					mbd = new RootBeanDefinition(pbd);
+					// 深拷贝后的 mbd，再用 bd 进行覆盖，则得到合并后的 mbd
 					mbd.overrideFrom(bd);
 				}
 
+				// 没有指定作用于，则默认是单例
 				// Set default singleton scope, if not configured before.
 				if (!StringUtils.hasLength(mbd.getScope())) {
 					mbd.setScope(SCOPE_SINGLETON);
@@ -1454,11 +1486,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// Cache the merged bean definition for the time being
 				// (it might still get re-merged later on in order to pick up metadata changes)
 				if (containingBd == null && isCacheBeanMetadata()) {
-					this.mergedBeanDefinitions.put(beanName, mbd);  // 重新定义后设置回去
+					// 设置缓存，下次如果需要拿到，直接从缓存拿即可
+					this.mergedBeanDefinitions.put(beanName, mbd);
 				}
 			}
 			if (previous != null) {
-				copyRelevantMergedBeanDefinitionCaches(previous, mbd);  // 复制属性
+				// 复制属性
+				copyRelevantMergedBeanDefinitionCaches(previous, mbd);
 			}
 			return mbd;
 		}

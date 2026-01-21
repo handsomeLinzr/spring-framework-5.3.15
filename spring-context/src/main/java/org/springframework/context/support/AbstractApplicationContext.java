@@ -223,6 +223,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	@Nullable
 	private MessageSource messageSource;
 
+	// 事件多播器，在方法 initApplicationEventMulticaster 进行设置，获取的是 applicationEventMulticaster 这个 bean
+	// 如果还没有这个 bean，则创建 SimpleApplicationEventMulticaster，并注册成这个 bean
 	/** Helper class used in event publishing. */
 	@Nullable
 	private ApplicationEventMulticaster applicationEventMulticaster;
@@ -230,6 +232,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/** Application startup metrics. **/
 	private ApplicationStartup applicationStartup = ApplicationStartup.DEFAULT;
 
+	// 外部直接添加的监听器
 	/** Statically specified listeners. */
 	private final Set<ApplicationListener<?>> applicationListeners = new LinkedHashSet<>();
 
@@ -621,31 +624,44 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
-				// 扫描 BPP，设置到 factory.beanPostProcessors中
+				// 六.扫描 BPP，设置到 factory.beanPostProcessors中
+				//		1.添加 bpp BeanPostProcessorChecker
+				//		2.遍历此时 beanFactory 中的所有 bpp，按照优先级 PriorityOrdered > Ordered > NoOrdered 进行处理，分别注册到 beanPostProcessors 中
+				//		3.最后再将所有的 MergedBeanDefinitionPostProcessor，重新添加到 beanPostProcessors 中，这样就可以让其最后执行
+				//		4.添加 bpp ApplicationListenerDetector
 				registerBeanPostProcessors(beanFactory);
+
 				beanPostProcess.end();
 
 				// Initialize message source for this context.
-				// 初始化messageSource，并设置到this.messageSource，注册到bean
-				// 前后端分离的项目，这里基本不用管，jsp 或者模版渲染的框架，用springmvc，那些对这个的依赖比较大
+				// 七.初始化 messageSource，并设置到this.messageSource，注册到bean
+				//   前后端分离的项目，这里基本不用管，jsp 或者模版渲染的框架，用springmvc，那些对这个的依赖比较大
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
-				// 创建事件传播器applicationEventMulticaster，并设置this.applicationEventMulticaster，注册到bean
-				// 事件驱动，观察者模式
+				// 八.创建事件传播器 applicationEventMulticaster，并设置this.applicationEventMulticaster，注册到 bean
+				// 	  事件驱动，观察者模式
 				initApplicationEventMulticaster();
 
 				// Initialize other special beans in specific context subclasses.
-				onRefresh();   // Spring为空实现，但是Springboot-web 则是这里启动web容器
+				// 九.刷新
+				//    Spring为空实现，但是Springboot-web 则是这里启动web容器
+				onRefresh();
 
 				// Check for listener beans and register them.
-				registerListeners();  // 从 bdm
+				// 十.注册监听器
+				//		1.从 applicationListeners 中得到外部监听器，注册到多播器中
+				//		2.从 beanFactory 获取 ApplicationListener 类型的监听器，注册到多播器中
+				//		3.通过多播器发布 earlyApplicationEvents 早期的事件
+				registerListeners();
 
 				// Instantiate all remaining (non-lazy-init) singletons.
-				finishBeanFactoryInitialization(beanFactory);   // 实例化所有剩下的bean
+				// 十一.实例化所有剩下的单例 bean
+				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
-				finishRefresh();   // 发布事件
+				// 十二.完成刷新工作
+				finishRefresh();
 			}
 
 			catch (BeansException ex) {
@@ -850,12 +866,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 	}
 
+	// 实例化和注册所有的 BPP，必须在任何 bean 实例化前先调用
 	/**
 	 * Instantiate and register all BeanPostProcessor beans,
 	 * respecting explicit order if given.
 	 * <p>Must be called before any instantiation of application beans.
 	 */
 	protected void registerBeanPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+		// 具体的处理逻辑
 		PostProcessorRegistrationDelegate.registerBeanPostProcessors(beanFactory, this);
 	}
 
@@ -898,7 +916,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see org.springframework.context.event.SimpleApplicationEventMulticaster
 	 */
 	protected void initApplicationEventMulticaster() {
+		// 获取当前的 bean 工厂
 		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
+		// 判断是否已经注册进去 applicationEventMulticaster，如果有，则进行实例化，然后设置给 applicationEventMulticaster
 		if (beanFactory.containsLocalBean(APPLICATION_EVENT_MULTICASTER_BEAN_NAME)) {
 			this.applicationEventMulticaster =
 					beanFactory.getBean(APPLICATION_EVENT_MULTICASTER_BEAN_NAME, ApplicationEventMulticaster.class);
@@ -906,7 +926,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				logger.trace("Using ApplicationEventMulticaster [" + this.applicationEventMulticaster + "]");
 			}
 		}
-		else {  // 创建并设置applicationEventMulticaster事件传播器=SimpleApplicationEventMulticaster 并注册到 bean
+		else {
+			// 如果没有，则创建并设置applicationEventMulticaster事件传播器=SimpleApplicationEventMulticaster 并注册到 bean
 			this.applicationEventMulticaster = new SimpleApplicationEventMulticaster(beanFactory);
 			beanFactory.registerSingleton(APPLICATION_EVENT_MULTICASTER_BEAN_NAME, this.applicationEventMulticaster);
 			if (logger.isTraceEnabled()) {
@@ -953,24 +974,30 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// For subclasses: do nothing by default.
 	}
 
+	// 添加实现了 ApplicationListener 的 bean 作为监听器，
 	/**
 	 * Add beans that implement ApplicationListener as listeners.
 	 * Doesn't affect other listeners, which can be added without being beans.
 	 */
 	protected void registerListeners() {
 		// Register statically specified listeners first.
+		// 首先注册外部直接添加进来的监听器，getApplicationListeners 返回此时的监听器
 		for (ApplicationListener<?> listener : getApplicationListeners()) {
+			// 调用多播器，添加当前的监听器到多播器中
 			getApplicationEventMulticaster().addApplicationListener(listener);
 		}
 
 		// Do not initialize FactoryBeans here: We need to leave all regular beans
 		// uninitialized to let post-processors apply to them!
+		// 第二步，获取当前 beanFactory 中的所有 ApplicationListener 类型的 bean
 		String[] listenerBeanNames = getBeanNamesForType(ApplicationListener.class, true, false);
 		for (String listenerBeanName : listenerBeanNames) {
+			// 同样也是添加到多播器中，这里只是添加了监听器的名称，添加到另一个集合，用的时候才进行实例化
 			getApplicationEventMulticaster().addApplicationListenerBean(listenerBeanName);
 		}
 
 		// Publish early application events now that we finally have a multicaster...
+		// 最后
 		Set<ApplicationEvent> earlyEventsToProcess = this.earlyApplicationEvents;
 		this.earlyApplicationEvents = null;
 		if (!CollectionUtils.isEmpty(earlyEventsToProcess)) {
@@ -980,11 +1007,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 	}
 
+	// 完成 applicationContext 的 beanFactory 剩余的单例 bean 的实例化和初始化
 	/**
 	 * Finish the initialization of this context's bean factory,
 	 * initializing all remaining singleton beans.
 	 */
 	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
+		// 初始化 context 的转换服务
+		// 查询当前 beanFactory 是否有 conversionService 这个 bd，有的进行创建实例，并设置成 conversionService
 		// Initialize conversion service for this context.
 		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
 				beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
@@ -1002,19 +1032,24 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Initialize LoadTimeWeaverAware beans early to allow for registering their transformers early.
+		// 实例化 LoadTimeWeaverAware 类型的 bean，代理用
 		String[] weaverAwareNames = beanFactory.getBeanNamesForType(LoadTimeWeaverAware.class, false, false);
 		for (String weaverAwareName : weaverAwareNames) {
 			getBean(weaverAwareName);
 		}
 
 		// Stop using the temporary ClassLoader for type matching.
+		// 清楚临时类加载器
 		beanFactory.setTempClassLoader(null);
 
+		// 冻结所有当前的bd，暂时不再改变，接下来要进入单例 bean 的实例化
+		// 设置 configurationFrozen = true，然后将当前的所有 bd 的名称加入到 frozenBeanDefinitionNames
 		// Allow for caching all bean definition metadata, not expecting further changes.
-		beanFactory.freezeConfiguration();  // 缓存所有当前的bd，设置 configurationFrozen=true,frozenBeanDefinitionNames=所有bd的name
+		beanFactory.freezeConfiguration();
 
+		// 实例化+初始化所有剩余的非懒加载的单例 bean，重点
 		// Instantiate all remaining (non-lazy-init) singletons.
-		beanFactory.preInstantiateSingletons();  // 实例化+初始化所有剩余的bean
+		beanFactory.preInstantiateSingletons();
 	}
 
 	/**

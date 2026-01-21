@@ -255,7 +255,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 					"postProcessBeanDefinitionRegistry already called on this post-processor against " + registry);
 		}
 		if (this.factoriesPostProcessed.contains(registryId)) {
-			// 和上边一样，执行过了则不能再重复执行
+			// 已经执行了 postProcessBeanFactory 方法
 			throw new IllegalStateException(
 					"postProcessBeanFactory already called on this post-processor against " + registry);
 		}
@@ -386,7 +386,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			// 校验 Configuration 注解的配置类，默认是不能 final 类型，因为要cglib创建代理
 			// 验证，静态、final、私有的方法不能作为bean
 			parser.validate();
-            // 从配置中扫出来的类
+            // 经过 parse 方法后，会通过递归调用 processConfigurationClass 方法，将对应的配置类都放到 configurationClasses 中
 			Set<ConfigurationClass> configClasses = new LinkedHashSet<>(parser.getConfigurationClasses());
 			// 移除掉已经解析过的类，防止重复解析相同的类
 			configClasses.removeAll(alreadyParsed);
@@ -399,7 +399,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						registry, this.sourceExtractor, this.resourceLoader, this.environment,
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
-			// 从扫出来的bd里，继续扫Bean方法或者import注解，注册到bdm
+
+			// 加载解析出来的所有配置类
 			this.reader.loadBeanDefinitions(configClasses);
 			// 到这里，将 configClasses 全部加到 alreadyParsed，表示已经解析过了
 			alreadyParsed.addAll(configClasses);
