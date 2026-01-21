@@ -698,22 +698,30 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	@Override
 	@Nullable
 	protected Class<?> predictBeanType(String beanName, RootBeanDefinition mbd, Class<?>... typesToMatch) {
+		// 推断给定的mbd对应的目标类型
 		Class<?> targetType = determineTargetType(beanName, mbd, typesToMatch);
 		// Apply SmartInstantiationAwareBeanPostProcessors to predict the
 		// eventual type after a before-instantiation shortcut.
+		// 判断得到的目标类不为空，且不是静态的，且有 InstantiationAwareBeanPostProcessor
 		if (targetType != null && !mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			boolean matchingOnlyFactoryBean = typesToMatch.length == 1 && typesToMatch[0] == FactoryBean.class;
+			// 遍历处理
 			for (SmartInstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().smartInstantiationAware) {
+				// 调用bpp.predictBeanType 进行推断，默认是直接返回null
 				Class<?> predicted = bp.predictBeanType(targetType, beanName);
 				if (predicted != null &&
 						(!matchingOnlyFactoryBean || FactoryBean.class.isAssignableFrom(predicted))) {
+					// 如果不为空，且是 FactoryBean 类型，且当前就是为了检测是否是 FactoryBean类型
+					// 都命中了，则直接返回这个类型
 					return predicted;
 				}
 			}
 		}
+		// 返回类型
 		return targetType;
 	}
 
+	// 推断确认给定bd的目标类
 	/**
 	 * Determine the target type for the given bean definition.
 	 * @param beanName the name of the bean (for error handling purposes)
@@ -724,18 +732,28 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	@Nullable
 	protected Class<?> determineTargetType(String beanName, RootBeanDefinition mbd, Class<?>... typesToMatch) {
+		// 获取当前这个 mbd 对应的 Class
 		Class<?> targetType = mbd.getTargetType();
+		// 如果不为空，直接返回
 		if (targetType == null) {
+			// 如果为空，则需要进一步获取到当前这个 Class
+			// 如果有 factoryMethodName，调用 getTypeForFactoryMethod(beanName, mbd, typesToMatch)；否则调用 resolveBeanClass(mbd, beanName, typesToMatch)
+			//		getTypeForFactoryMethod =>> 通过 factory method 方法获得对应的返回类型
+			//		resolveBeanClass ==>> 通过 mbd，解析对应的 beanClass属性（可能是表达式，要进行表达式解析），然后反射得到对应的 Class 类
 			targetType = (mbd.getFactoryMethodName() != null ?
 					getTypeForFactoryMethod(beanName, mbd, typesToMatch) :
 					resolveBeanClass(mbd, beanName, typesToMatch));
 			if (ObjectUtils.isEmpty(typesToMatch) || getTempClassLoader() == null) {
+				// 如果typesToMatch是空的，说明当前不是为了匹配类型，或者没有临时的类加载器
+				// 设置mdb.resolvedTargetType = 当前得到的Class类
 				mbd.resolvedTargetType = targetType;
 			}
 		}
+		// 返回得到的Class类
 		return targetType;
 	}
 
+	// 确认所给定基于factory method 方式的bd的目标类型，仅在没有为目标实例注册单例对象时调用
 	/**
 	 * Determine the target type for the given bean definition which is based on
 	 * a factory method. Only called if there is no singleton instance registered
@@ -752,40 +770,55 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	@Nullable
 	protected Class<?> getTypeForFactoryMethod(String beanName, RootBeanDefinition mbd, Class<?>... typesToMatch) {
+		// 获取属性 factoryMethodReturnType
 		ResolvableType cachedReturnType = mbd.factoryMethodReturnType;
 		if (cachedReturnType != null) {
+			// 不为空，则直接获取 resolved 返回
 			return cachedReturnType.resolve();
 		}
 
+		// 如果 factoryMethodReturnType 是空的，则进行走下去
 		Class<?> commonType = null;
 		Method uniqueCandidate = mbd.factoryMethodToIntrospect;
 
+		// 判断 uniqueCandidate 是否为空
 		if (uniqueCandidate == null) {
 			Class<?> factoryClass;
+			// 先设置对应的静态方法标识为 true
 			boolean isStatic = true;
 
+			// 获取方法名称
 			String factoryBeanName = mbd.getFactoryBeanName();
 			if (factoryBeanName != null) {
+				// 如果设置了factoryBeanName
 				if (factoryBeanName.equals(beanName)) {
 					throw new BeanDefinitionStoreException(mbd.getResourceDescription(), beanName,
 							"factory-bean reference points back to the same bean definition");
 				}
 				// Check declared factory method return type on factory class.
+				// 获取对应的这个方法的返回类型
 				factoryClass = getType(factoryBeanName);
+				// 则该bean方法不是静态方法
 				isStatic = false;
 			}
 			else {
 				// Check declared factory method return type on bean class.
+				// 没有 factory method，则只能通过 mbd 的 beanClass 属性来获取对应的类型
 				factoryClass = resolveBeanClass(mbd, beanName, typesToMatch);
 			}
 
 			if (factoryClass == null) {
+				// 解析得到空，则直接返回
 				return null;
 			}
+			// 否则调用 ClassUtils.getUserClass 得到返回的类型
+			// 这里调用这个方法的原因是避免是属于动态代理对象，导致返回一个代理类型
+			// 这里检测到是动态代理对象，则会进行进到动态代理对象中，获取到目标对象
 			factoryClass = ClassUtils.getUserClass(factoryClass);
 
 			// If all factory methods have the same return type, return that type.
 			// Can't clearly figure out exact method due to type converting / autowiring!
+			// 获取最少的参数数量
 			int minNrOfArgs =
 					(mbd.hasConstructorArgumentValues() ? mbd.getConstructorArgumentValues().getArgumentCount() : 0);
 			Method[] candidates = this.factoryMethodCandidateCache.computeIfAbsent(factoryClass,

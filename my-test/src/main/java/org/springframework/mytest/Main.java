@@ -3,6 +3,7 @@ package org.springframework.mytest;
 import org.springframework.mytest.expand.anno.bean.MyBean2;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.mytest.expand.anno.bean.MyFactoryBean;
 
 /**
  * @author linzherong
@@ -12,6 +13,8 @@ public class Main {
 	public static void main(String[] args) {
 		ApplicationContext context = new ClassPathXmlApplicationContext("classpath:application.xml");
 		MyBean2 myBean2 = context.getBean(MyBean2.class);
+		MyFactoryBean factoryBean = context.getBean(MyFactoryBean.class);
+		System.out.println(factoryBean);
 		System.out.println(myBean2);
 	}
 }

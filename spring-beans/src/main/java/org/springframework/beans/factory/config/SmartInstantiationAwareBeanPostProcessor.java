@@ -37,6 +37,7 @@ import org.springframework.lang.Nullable;
  */
 public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationAwareBeanPostProcessor {
 
+	// 检测推断这个bean的bpp回调后最终返回的类型，默认是返回null
 	/**
 	 * Predict the type of the bean to be eventually returned from this
 	 * processor's {@link #postProcessBeforeInstantiation} callback.

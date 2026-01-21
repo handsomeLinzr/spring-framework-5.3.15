@@ -67,6 +67,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	boolean allowCaching = true;
 
+	// 方法是否唯一没有重载
 	boolean isFactoryMethodUnique;
 
 	@Nullable
@@ -80,10 +81,12 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	@Nullable
 	volatile Boolean isFactoryBean;
 
+	// 缓存 factory method 返回的类型
 	/** Package-visible field for caching the return type of a generically typed factory method. */
 	@Nullable
 	volatile ResolvableType factoryMethodReturnType;
 
+	// factory method 方法
 	/** Package-visible field for caching a unique factory method candidate for introspection. */
 	@Nullable
 	volatile Method factoryMethodToIntrospect;
@@ -389,13 +392,16 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 		this.isFactoryMethodUnique = true;
 	}
 
+	// 指向对应 factory method 的重载的方法
 	/**
 	 * Specify a factory method name that refers to an overloaded method.
 	 * @since 5.2
 	 */
 	public void setNonUniqueFactoryMethodName(String name) {
 		Assert.hasText(name, "Factory method name must not be empty");
+		// 覆盖bean方法名称
 		setFactoryMethodName(name);
+		// 设置方法唯一的属性值为false
 		this.isFactoryMethodUnique = false;
 	}
 

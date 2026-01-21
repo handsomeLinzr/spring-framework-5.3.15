@@ -46,28 +46,36 @@ public abstract class TemplateAwareExpressionParser implements ExpressionParser 
 	@Override
 	public Expression parseExpression(String expressionString, @Nullable ParserContext context) throws ParseException {
 		if (context != null && context.isTemplate()) {
+			// 模板解析
 			return parseTemplate(expressionString, context);
 		}
 		else {
+			// 否则解析表达式
 			return doParseExpression(expressionString, context);
 		}
 	}
 
 
+	// 字符串解析
 	private Expression parseTemplate(String expressionString, ParserContext context) throws ParseException {
+		// 如果给定的字符串是空的，直接返回一个新建的 LiteralExpression，literalValue为空字符串
 		if (expressionString.isEmpty()) {
 			return new LiteralExpression("");
 		}
 
+		// 获取到这个字符串的所有符合表达式的地方
 		Expression[] expressions = parseExpressions(expressionString, context);
 		if (expressions.length == 1) {
+			// 如果只有1个，直接返回
 			return expressions[0];
 		}
 		else {
+			// 如果不止一个，返回合并的 CompositeStringExpression
 			return new CompositeStringExpression(expressionString, expressions);
 		}
 	}
 
+	// 使用配置的解析器解析给定额字符串表达式
 	/**
 	 * Helper that parses given expression string using the configured parser. The
 	 * expression string can contain any number of expressions all contained in "${...}"
@@ -88,11 +96,14 @@ public abstract class TemplateAwareExpressionParser implements ExpressionParser 
 	 */
 	private Expression[] parseExpressions(String expressionString, ParserContext context) throws ParseException {
 		List<Expression> expressions = new ArrayList<>();
+		// 表达式的前后缀
 		String prefix = context.getExpressionPrefix();
 		String suffix = context.getExpressionSuffix();
 		int startIdx = 0;
 
+		// 一直循环解析，直到 startIndex 到最后
 		while (startIdx < expressionString.length()) {
+			// 获取和表达式前缀的字符匹配的位置
 			int prefixIndex = expressionString.indexOf(prefix, startIdx);
 			if (prefixIndex >= startIdx) {
 				// an inner expression was found - this is a composite

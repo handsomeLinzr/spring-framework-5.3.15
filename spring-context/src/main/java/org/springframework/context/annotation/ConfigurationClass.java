@@ -57,7 +57,7 @@ final class ConfigurationClass {
 	@Nullable
 	private String beanName;
 
-	// 解析 import 注解的配置类的时候，存放进来对应的配置类，或者是配置类的内部类
+	// 解析 import 注解的配置类的时候，进行import的那个类，或者对应配置了内部类的那个外部类
 	// 在调用 ConfigurationClass 构造函数的时候，就已经存进来了
 	private final Set<ConfigurationClass> importedBy = new LinkedHashSet<>(1);
 

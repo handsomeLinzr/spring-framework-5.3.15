@@ -33,6 +33,7 @@ import org.springframework.lang.Nullable;
  */
 public interface BeanExpressionResolver {
 
+	// 解析给定的value表达式
 	/**
 	 * Evaluate the given value as an expression, if applicable;
 	 * return the value as-is otherwise.

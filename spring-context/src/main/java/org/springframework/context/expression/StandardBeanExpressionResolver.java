@@ -72,15 +72,21 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 
 	private final Map<BeanExpressionContext, StandardEvaluationContext> evaluationCache = new ConcurrentHashMap<>(8);
 
+	// 表达式解析器
 	private final ParserContext beanExpressionParserContext = new ParserContext() {
+		// 是否模板解析器
 		@Override
 		public boolean isTemplate() {
 			return true;
 		}
+
+		// 解析前缀 #{
 		@Override
 		public String getExpressionPrefix() {
 			return expressionPrefix;
 		}
+
+		// 解析后缀 }
 		@Override
 		public String getExpressionSuffix() {
 			return expressionSuffix;
@@ -139,17 +145,25 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 	@Override
 	@Nullable
 	public Object evaluate(@Nullable String value, BeanExpressionContext evalContext) throws BeansException {
+		// 空字符串，直接返回
 		if (!StringUtils.hasLength(value)) {
 			return value;
 		}
 		try {
+			// 先从表达式缓存这种获取到表达式
 			Expression expr = this.expressionCache.get(value);
 			if (expr == null) {
+				// 如果没有缓存，则创建一个新的模板解析器，对字符串进行解析 #{xxx}，并将解析器放到缓存中
 				expr = this.expressionParser.parseExpression(value, this.beanExpressionParserContext);
 				this.expressionCache.put(value, expr);
 			}
+
+			// 从 evaluationCache 缓存中获取 evalContext
 			StandardEvaluationContext sec = this.evaluationCache.get(evalContext);
 			if (sec == null) {
+				// 如果缓存中没有
+				// 创建一个新的 StandardEvaluationContext
+				// 设置一些属性
 				sec = new StandardEvaluationContext(evalContext);
 				sec.addPropertyAccessor(new BeanExpressionContextAccessor());
 				sec.addPropertyAccessor(new BeanFactoryAccessor());
@@ -162,8 +176,10 @@ public class StandardBeanExpressionResolver implements BeanExpressionResolver {
 					return (cs != null ? cs : DefaultConversionService.getSharedInstance());
 				}));
 				customizeEvaluationContext(sec);
+				// 设置缓存
 				this.evaluationCache.put(evalContext, sec);
 			}
+			// 表达式解析，得到对应的beanClass类名称
 			return expr.getValue(sec);
 		}
 		catch (Throwable ex) {

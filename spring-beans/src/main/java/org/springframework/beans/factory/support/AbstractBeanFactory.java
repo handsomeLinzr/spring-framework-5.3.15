@@ -698,26 +698,35 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	@Override
 	@Nullable
 	public Class<?> getType(String name, boolean allowFactoryBeanInit) throws NoSuchBeanDefinitionException {
+		// 通过这个 name 获取到对应的 beanName
 		String beanName = transformedBeanName(name);
 
 		// Check manually registered singletons.
+		// 从缓存获取对象
 		Object beanInstance = getSingleton(beanName, false);
+		// 如果缓存拿到了对象
 		if (beanInstance != null && beanInstance.getClass() != NullBean.class) {
+			// 判断是否是 FactoryBean
 			if (beanInstance instanceof FactoryBean && !BeanFactoryUtils.isFactoryDereference(name)) {
+				// 如果是 FactoryBean，调用 FactoryBean的getObjectType方法获得实例类型
 				return getTypeForFactoryBean((FactoryBean<?>) beanInstance);
 			}
 			else {
+				// 否则，直接返回这个实例的类型
 				return beanInstance.getClass();
 			}
 		}
 
 		// No singleton instance found -> check bean definition.
+		// 如果缓存中还没有
+		// 获取父工厂，从父工厂中再去找看看有没有这个bean对应的类型
 		BeanFactory parentBeanFactory = getParentBeanFactory();
 		if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 			// No bean definition found in this factory -> delegate to parent.
 			return parentBeanFactory.getType(originalBeanName(name));
 		}
 
+		// 获取最新的mbd对象
 		RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
 
 		// Check decorated bean definition, if any: We assume it'll be easier
@@ -1159,16 +1168,26 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 	@Override
 	public boolean isFactoryBean(String name) throws NoSuchBeanDefinitionException {
+		// 获取对应 bean 的名称
 		String beanName = transformedBeanName(name);
+		// 从当前的beanFactory中对象缓存获取单例bean，如果没有的话，不会涉及创建的过程
 		Object beanInstance = getSingleton(beanName, false);
+		// 如果真拿到了单例对象，返回该对象是否是 FactoryBean
 		if (beanInstance != null) {
 			return (beanInstance instanceof FactoryBean);
 		}
+
 		// No singleton instance found -> check bean definition.
+		// 如果当前对象缓存中没有找到对应的单例bean
+		// 如果当前beanFactory中也没有这个bd，且有父工厂，且父工厂也是属于ConfigurableBeanFactory类型
 		if (!containsBeanDefinition(beanName) && getParentBeanFactory() instanceof ConfigurableBeanFactory) {
 			// No bean definition found in this factory -> delegate to parent.
+			// 通过父工厂去查看这个bean在父工厂中是否是factoryBean类型，这里也是用到了类似递归，只是对象变成了父工厂
 			return ((ConfigurableBeanFactory) getParentBeanFactory()).isFactoryBean(name);
 		}
+
+		// 如果没有缓存单例对象，且当前bean工厂中有该bd，或者没有父工厂
+		// 调用获取到当前的mbd对象，判断是否是factoryBean
 		return isFactoryBean(beanName, getMergedLocalBeanDefinition(beanName));
 	}
 
@@ -1273,6 +1292,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	// Implementation methods
 	//---------------------------------------------------------------------
 
+	// 返回bean的名称，比如去掉factoryBean的前缀，或者给定别名，返回规范的bean名称
 	/**
 	 * Return the bean name, stripping out the factory dereference prefix if necessary,
 	 * and resolving aliases to canonical names.
@@ -1558,6 +1578,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		});
 	}
 
+	//解析给定的bd的beanClass，解析成一个Class引用并设置到bd的resolvedClass这个，以便于后边需要直接使用
 	/**
 	 * Resolve the bean class for the specified bean definition,
 	 * resolving a bean class name into a Class reference (if necessary)
@@ -1574,6 +1595,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			throws CannotLoadBeanClassException {
 
 		try {
+			// 如果当前这个 mbd 已经设置了 beanClass
+			// 直接返回mbd的beanClass
 			if (mbd.hasBeanClass()) {
 				return mbd.getBeanClass();
 			}
@@ -1582,6 +1605,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						() -> doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());
 			}
 			else {
+				// 如果当前的mbd没有设置beanClass，则需要进行解析beanClass
 				return doResolveBeanClass(mbd, typesToMatch);
 			}
 		}
@@ -1601,14 +1625,19 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	private Class<?> doResolveBeanClass(RootBeanDefinition mbd, Class<?>... typesToMatch)
 			throws ClassNotFoundException {
 
+		// 定义类加载器
 		ClassLoader beanClassLoader = getBeanClassLoader();
 		ClassLoader dynamicLoader = beanClassLoader;
 		boolean freshResolve = false;
 
 		if (!ObjectUtils.isEmpty(typesToMatch)) {
+			// typesToMatch 不为空，表明只是为了做类型检查，还没创建一个实例对象
 			// When just doing type checks (i.e. not creating an actual instance yet),
+			// 使用临时类加载器
 			// use the specified temporary class loader (e.g. in a weaving scenario).
+			// 获取临时的类加载器
 			ClassLoader tempClassLoader = getTempClassLoader();
+			// 判断临时类加载器是都不为空
 			if (tempClassLoader != null) {
 				dynamicLoader = tempClassLoader;
 				freshResolve = true;
@@ -1621,16 +1650,23 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 		}
 
+		// 获取mbd的beanClassName属性，即获取类名
 		String className = mbd.getBeanClassName();
+		// 判断类名是否不为空
 		if (className != null) {
+			// 使用表达式的解析器进行解析得到这个类名
 			Object evaluated = evaluateBeanDefinitionString(className, mbd);
 			if (!className.equals(evaluated)) {
 				// A dynamically resolved expression, supported as of 4.2...
 				if (evaluated instanceof Class) {
+					// 如果得到的结果是 Class 类型，直接返回
 					return (Class<?>) evaluated;
 				}
 				else if (evaluated instanceof String) {
+					// 如果是 String 类型，则说明是类的名称
+					// 赋值成 className
 					className = (String) evaluated;
+					// 设置方法的标识
 					freshResolve = true;
 				}
 				else {
@@ -1642,6 +1678,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// to avoid storing the resolved Class in the bean definition.
 				if (dynamicLoader != null) {
 					try {
+						// 如果动态类加载器 dynamicLoader 不为空
+						// 类加载器加载类，然后直接返回
 						return dynamicLoader.loadClass(className);
 					}
 					catch (ClassNotFoundException ex) {
@@ -1650,14 +1688,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						}
 					}
 				}
+				// 如果没有动态类加载器 dynamicLoader， 则利用反射获取到这个beanClass，然后返回
 				return ClassUtils.forName(className, dynamicLoader);
 			}
 		}
 
 		// Resolve regularly, caching the result in the BeanDefinition...
+		// 如果连 className 都是空的，走这里，解析 beanClass
 		return mbd.resolveBeanClass(beanClassLoader);
 	}
 
+	// 对给定的bd包含的String字符串进行表达式解析
 	/**
 	 * Evaluate the given String as contained in a bean definition,
 	 * potentially resolving it as an expression.
@@ -1668,21 +1709,27 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	@Nullable
 	protected Object evaluateBeanDefinitionString(@Nullable String value, @Nullable BeanDefinition beanDefinition) {
+		// 如果没有表达式解析器，则直接返回，没法解析，这里 beanExpressionResolver 已经在前边设置成 StandardBeanExpressionResolver
 		if (this.beanExpressionResolver == null) {
 			return value;
 		}
 
+		// 获取作用域，默认得到的是singleton
 		Scope scope = null;
 		if (beanDefinition != null) {
+			// 从bd信息中获取作用域名称，默认是singleton
 			String scopeName = beanDefinition.getScope();
 			if (scopeName != null) {
+				// 获取对应的作用域缓存
 				scope = getRegisteredScope(scopeName);
 			}
 		}
+		// 对value进行表达式解析，最后得到解析后的真的value，然后返回
 		return this.beanExpressionResolver.evaluate(value, new BeanExpressionContext(this, scope));
 	}
 
 
+	// 检测推断bean的类型，在 getType 和 isTpeMatch 调用
 	/**
 	 * Predict the eventual bean type (of the processed bean instance) for the
 	 * specified bean. Called by {@link #getType} and {@link #isTypeMatch}.
@@ -1700,28 +1747,39 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	@Nullable
 	protected Class<?> predictBeanType(String beanName, RootBeanDefinition mbd, Class<?>... typesToMatch) {
+		// 获取bd的bean类型
 		Class<?> targetType = mbd.getTargetType();
 		if (targetType != null) {
+			// 如果目标类不为空，直接返回
 			return targetType;
 		}
+		// 如果有 factoryMethod，返回空
 		if (mbd.getFactoryMethodName() != null) {
 			return null;
 		}
+		// 解决beanClass的获取处理
 		return resolveBeanClass(mbd, beanName, typesToMatch);
 	}
 
+	// 检查当前给定的bean是否是一个factoryBean
 	/**
 	 * Check whether the given bean is defined as a {@link FactoryBean}.
 	 * @param beanName the name of the bean
 	 * @param mbd the corresponding bean definition
 	 */
 	protected boolean isFactoryBean(String beanName, RootBeanDefinition mbd) {
+		// 先从mnd中获取到属性isFactoryBean，如果有值，直接返回即可
 		Boolean result = mbd.isFactoryBean;
 		if (result == null) {
+			// 如果isFactoryBean没有值，则需要进一步处理检查
+			// 先从当前的mbd中，检查这个bean的类型是否有可能是 FactoryBean
 			Class<?> beanType = predictBeanType(beanName, mbd, FactoryBean.class);
+			// 判断得到的 beanClass 是否是不为空且属于 FactoryBean
 			result = (beanType != null && FactoryBean.class.isAssignableFrom(beanType));
+			// 设置属性isFactoryBean，下次则直接返回
 			mbd.isFactoryBean = result;
 		}
+		// 返回 result
 		return result;
 	}
 

@@ -952,9 +952,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
 				// 判断是否是 factoryBean 对象
 				if (isFactoryBean(beanName)) {
-					// 获取到 factoryBean 这个工厂 bean
+					// 如果是, 则开始走 factoryBean 的流程
+					// 先给这个beanName前加个 &符号，表示是 factoryBean 类型
+					// 然后调用 getBean，进行创建这个 factoryBean 对象，对应的 beanName 是 &beanName
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
+					// 如果得到的 bean 属于 factoryBean
 					if (bean instanceof FactoryBean) {
+						// 强转
 						FactoryBean<?> factory = (FactoryBean<?>) bean;
 						boolean isEagerInit;
 						if (System.getSecurityManager() != null && factory instanceof SmartFactoryBean) {

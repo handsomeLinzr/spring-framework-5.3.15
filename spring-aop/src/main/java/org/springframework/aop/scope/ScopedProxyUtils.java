@@ -57,7 +57,7 @@ public abstract class ScopedProxyUtils {
 	public static BeanDefinitionHolder createScopedProxy(BeanDefinitionHolder definition,
 			BeanDefinitionRegistry registry, boolean proxyTargetClass) {
 
-		// 获取 bean 名称
+		// 获取 bean 原始目标名称
 		String originalBeanName = definition.getBeanName();
 		// 获取 bd 对象
 		BeanDefinition targetDefinition = definition.getBeanDefinition();

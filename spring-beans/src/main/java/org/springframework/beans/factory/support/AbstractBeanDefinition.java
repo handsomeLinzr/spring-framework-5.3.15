@@ -389,6 +389,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 		this.beanClass = beanClassName;
 	}
 
+	// 获取当前beanClass名称或者bd的beanClass
 	/**
 	 * Return the current bean class name of this bean definition.
 	 */
@@ -396,10 +397,13 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	@Nullable
 	public String getBeanClassName() {
 		Object beanClassObject = this.beanClass;
+		// 如果当前的 beanClass 是 Class 类型，直接返回对应的名称
 		if (beanClassObject instanceof Class) {
 			return ((Class<?>) beanClassObject).getName();
 		}
 		else {
+			// 否则，直接返回字符串即可
+			// 因为这里这个属性，不是 Class 类型，就是 String 字符串类型
 			return (String) beanClassObject;
 		}
 	}
@@ -465,12 +469,17 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 */
 	@Nullable
 	public Class<?> resolveBeanClass(@Nullable ClassLoader classLoader) throws ClassNotFoundException {
+		// 获取当前bd的对应beanClass名称
 		String className = getBeanClassName();
 		if (className == null) {
+			// 如果beanClass名称确实没有，那没办法，返回空
 			return null;
 		}
+		// 反射获取对应的Class对象
 		Class<?> resolvedClass = ClassUtils.forName(className, classLoader);
+		// 设置属性，下次则可以直接拿
 		this.beanClass = resolvedClass;
+		// 返回
 		return resolvedClass;
 	}
 

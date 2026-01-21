@@ -172,6 +172,9 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		return getSingleton(beanName, true);
 	}
 
+	// 通过给定的beanName，找到已经注册进来bean工厂的单例bean
+	// 如果从一二级缓存拿不到，且 allowEarlyReference 为 true，则从三级缓存中拿到 ObjectFactory 对应，调用创建逻辑生成bean
+	// 然后移除三级缓存，添加二级缓存
 	/**
 	 * Return the (raw) singleton object registered under the given name.
 	 * <p>Checks already instantiated singletons and also allows for an early
@@ -183,20 +186,33 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
 		// Quick check for existing instance without full singleton lock
+		// 先从单例对象缓存中获取
 		Object singletonObject = this.singletonObjects.get(beanName);
+		// 如果单例缓存中有，则直接返回即可
+		// 如果单例缓存中没有，需要从二级缓存中获取
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
+			// 从二级缓存中获取
 			singletonObject = this.earlySingletonObjects.get(beanName);
+			// 如果二级缓存中有，或者二级缓存中没有且不允许早期创建引用，直接返回
+			// 如果二级缓存中也没有，且允许创建早期引用
 			if (singletonObject == null && allowEarlyReference) {
+				// 加锁，避免多线程重复创建
 				synchronized (this.singletonObjects) {
 					// Consistent creation of early reference within full singleton lock
+					// 再次从一二级缓存中获取
 					singletonObject = this.singletonObjects.get(beanName);
 					if (singletonObject == null) {
 						singletonObject = this.earlySingletonObjects.get(beanName);
 						if (singletonObject == null) {
+							// 从三级缓存中获取，三级缓存放的是 ObjectFactory，创建对应的逻辑
 							ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
+							// 判断三级缓存是否不为空
 							if (singletonFactory != null) {
+								// 调用 ObjectFactory 的 getObject，即这里会调用创建过程
 								singletonObject = singletonFactory.getObject();
+								// 最后缓存到二级缓存
 								this.earlySingletonObjects.put(beanName, singletonObject);
+								// 移除三级缓存
 								this.singletonFactories.remove(beanName);
 							}
 						}

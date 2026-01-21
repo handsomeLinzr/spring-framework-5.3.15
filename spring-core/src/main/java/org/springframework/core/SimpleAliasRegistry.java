@@ -229,6 +229,8 @@ public class SimpleAliasRegistry implements AliasRegistry {
 		// Handle aliasing...
 		String resolvedName;
 		do {
+			// 从别名中获取到当前给定name对应的真实beanName，然后用这个真实beanName继续去别名中获取
+			// 直到没有得到别名了，则直接返回
 			resolvedName = this.aliasMap.get(canonicalName);
 			if (resolvedName != null) {
 				canonicalName = resolvedName;

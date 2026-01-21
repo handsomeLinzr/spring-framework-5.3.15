@@ -461,7 +461,8 @@ class ConfigurationClassParser {
 		if (!memberClasses.isEmpty()) {
 			// 先定义一个集合，用来缓存符合条件（检测可能是一个配置，需要被解析）的内部类
 			List<SourceClass> candidates = new ArrayList<>(memberClasses.size());
-			// 遍历
+
+			// 遍历所有的内部类
 			for (SourceClass memberClass : memberClasses) {
 				// 判断内部类是否是一个配置或者有组件注解，或者有 bean 方法
 				if (ConfigurationClassUtils.isConfigurationCandidate(memberClass.getMetadata()) &&
@@ -484,8 +485,8 @@ class ConfigurationClassParser {
 					this.importStack.push(configClass);
 					try {
 						// 处理这个配置类
-						// 将 ConfigurationClass 封装成 ConfigurationClass，然后递归调用到外部进来的方法 processConfigurationClass
-						// 可以理解为，就是循环遍历所有的内部类，然后继续走外边解析配置类的过程，递归调用
+						// 将 candidate 这个 SourceClass 封装成 ConfigurationClass，然后递归调用到外部进来的方法 processConfigurationClass
+						// ConfigurationClass 里边的属性 importedBy 则会缓存当前这个 configClass
 						processConfigurationClass(candidate.asConfigClass(configClass), filter);
 					}
 					finally {

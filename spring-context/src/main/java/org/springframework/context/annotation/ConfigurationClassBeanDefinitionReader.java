@@ -154,7 +154,7 @@ class ConfigurationClassBeanDefinitionReader {
 		// 判断当前配置类 importedBy 是否有值，importedBy 是从 @import 注解，或者当前配置类是否有内部类配置文件
 		// importedBy 不为空，则表示从当前这个 configClass 中解析出来 Import 注解导入的类，或者是有 configClass 内部类
 		if (configClass.isImported()) {
-			// import 处理
+			// import 处理导入的配置
 			registerBeanDefinitionForImportedConfigurationClass(configClass);
 		}
 
@@ -191,7 +191,7 @@ class ConfigurationClassBeanDefinitionReader {
 		// 应用作用域代理
 		definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 
-		// 注册 bd
+		// 注册这个import的配置bean
 		this.registry.registerBeanDefinition(definitionHolder.getBeanName(), definitionHolder.getBeanDefinition());
 		// 设置 beanName
 		configClass.setBeanName(configBeanName);
@@ -201,39 +201,52 @@ class ConfigurationClassBeanDefinitionReader {
 		}
 	}
 
+	// 读取 bean 方法，注册 bd
 	/**
 	 * Read the given {@link BeanMethod}, registering bean definitions
 	 * with the BeanDefinitionRegistry based on its contents.
 	 */
 	@SuppressWarnings("deprecation")  // for RequiredAnnotationBeanPostProcessor.SKIP_REQUIRED_CHECK_ATTRIBUTE
 	private void loadBeanDefinitionsForBeanMethod(BeanMethod beanMethod) {
+		// 获取当前这个 bean 方法所属的配置类
 		ConfigurationClass configClass = beanMethod.getConfigurationClass();
+		// 获取这个bean方法的元数据
 		MethodMetadata metadata = beanMethod.getMetadata();
-		String methodName = metadata.getMethodName(); // 方法
+		// bean方法
+		String methodName = metadata.getMethodName();
 
 		// Do we need to mark the bean as skipped by its condition?
-		if (this.conditionEvaluator.shouldSkip(metadata, ConfigurationPhase.REGISTER_BEAN)) {  // Condition注解
+		// Condition注解，判断是否需要跳过
+		if (this.conditionEvaluator.shouldSkip(metadata, ConfigurationPhase.REGISTER_BEAN)) {
+			// 如果需要跳过，则添加到 skippedBeanMethods 中，直接返回不走下去
 			configClass.skippedBeanMethods.add(methodName);
 			return;
 		}
+		// 如果 skippedBeanMethods 这里已经有了缓存了这个方法名称，也是直接跳过
 		if (configClass.skippedBeanMethods.contains(methodName)) {
 			return;
 		}
-        // Bean注解
+
+        // 获取到方法上的bean注解
 		AnnotationAttributes bean = AnnotationConfigUtils.attributesFor(metadata, Bean.class);
 		Assert.state(bean != null, "No @Bean annotation attributes");
 
 		// Consider name and any aliases
+		// 获取到属性 name，别名的情况
 		List<String> names = new ArrayList<>(Arrays.asList(bean.getStringArray("name")));
-		String beanName = (!names.isEmpty() ? names.remove(0) : methodName); // 方法名作为beanName
+		// 优先获取 name 作为 beanName，如果没有指定 name，则用方法名作为 beanName
+		String beanName = (!names.isEmpty() ? names.remove(0) : methodName);
 
 		// Register aliases even when overridden
-		for (String alias : names) {  // names都作为别名
+		// 注册别名，name 属性可能设置了多个名称，这里就将其他的作为别名，第一个作为beanName，缓存到别名中
+		for (String alias : names) {
 			this.registry.registerAlias(beanName, alias);
 		}
 
 		// Has this effectively been overridden before (e.g. via XML)?
+		// 检查这个bean方法对应的名称，是不是有其他的地方也定义了相同的bean名称，比如xml
 		if (isOverriddenByExistingDefinition(beanMethod, beanName)) {
+			// 名称一样，则抛出异常
 			if (beanName.equals(beanMethod.getConfigurationClass().getBeanName())) {
 				throw new BeanDefinitionStoreException(beanMethod.getConfigurationClass().getResource().getDescription(),
 						beanName, "Bean name derived from @Bean method '" + beanMethod.getMetadata().getMethodName() +
@@ -241,71 +254,94 @@ class ConfigurationClassBeanDefinitionReader {
 			}
 			return;
 		}
-        // 定义 bd 为  ConfigurationClassBeanDefinition
+        // 定义 bd 为  ConfigurationClassBeanDefinition，配置类解析出来的
 		ConfigurationClassBeanDefinition beanDef = new ConfigurationClassBeanDefinition(configClass, metadata, beanName);
 		beanDef.setSource(this.sourceExtractor.extractSource(metadata, configClass.getResource()));
 
 		if (metadata.isStatic()) {
+			// 静态的 bean 方法
 			// static @Bean method
+			// 设置 beanClass
 			if (configClass.getMetadata() instanceof StandardAnnotationMetadata) {
 				beanDef.setBeanClass(((StandardAnnotationMetadata) configClass.getMetadata()).getIntrospectedClass());
 			}
 			else {
+				// 设置 beanClassName
 				beanDef.setBeanClassName(configClass.getMetadata().getClassName());
 			}
+			// 设置方法名
 			beanDef.setUniqueFactoryMethodName(methodName);
 		}
 		else {
+			// bean 实例方法
 			// instance @Bean method
+			// 设置 bd 的 factoryBeanName 为当前这个配置的bean名称，其实就是这个配置的类名
 			beanDef.setFactoryBeanName(configClass.getBeanName());
+			// 设置 bd 的 factoryMethodName 指向当前这个方法的方法名
+			// 同时设置 isFactoryMethodUnique = true
 			beanDef.setUniqueFactoryMethodName(methodName);
 		}
 
 		if (metadata instanceof StandardMethodMetadata) {
+			// 设置属性 factoryMethodToIntrospect = introspectedMethod 底层方法
 			beanDef.setResolvedFactoryMethod(((StandardMethodMetadata) metadata).getIntrospectedMethod());
 		}
 
+		// 设置bean method 的默认注入方式，bean 方法默认的注入方式是构造器注入
 		beanDef.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_CONSTRUCTOR);
+		// 设置属性 skipRequiredCheck 为 true
 		beanDef.setAttribute(org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor.
 				SKIP_REQUIRED_CHECK_ATTRIBUTE, Boolean.TRUE);
 
+		// 应用上默认的 bd 属性
 		AnnotationConfigUtils.processCommonDefinitionAnnotations(beanDef, metadata);
 
+		// 获取依赖注入类型
 		Autowire autowire = bean.getEnum("autowire");
 		if (autowire.isAutowire()) {
+			// 如果有指定，则进行覆盖默认的注入方式
 			beanDef.setAutowireMode(autowire.value());
 		}
 
+		// 属性设置
 		boolean autowireCandidate = bean.getBoolean("autowireCandidate");
 		if (!autowireCandidate) {
 			beanDef.setAutowireCandidate(false);
 		}
 
+		// initMethod 属性，初始化方法
 		String initMethodName = bean.getString("initMethod");
 		if (StringUtils.hasText(initMethodName)) {
 			beanDef.setInitMethodName(initMethodName);
 		}
 
+		// destroyMethod 属性，销毁方法
 		String destroyMethodName = bean.getString("destroyMethod");
 		beanDef.setDestroyMethodName(destroyMethodName);
 
 		// Consider scoping
+		// 代理模式
 		ScopedProxyMode proxyMode = ScopedProxyMode.NO;
+		// 获取Scope注解
 		AnnotationAttributes attributes = AnnotationConfigUtils.attributesFor(metadata, Scope.class);
+		// Scope注解有值，设置属性值
 		if (attributes != null) {
 			beanDef.setScope(attributes.getString("value"));
 			proxyMode = attributes.getEnum("proxyMode");
 			if (proxyMode == ScopedProxyMode.DEFAULT) {
+				// 默认的代理模式是不代理
 				proxyMode = ScopedProxyMode.NO;
 			}
 		}
 
 		// Replace the original bean definition with the target one, if necessary
+		// 如果有设置了代理，则常见一个代理对象
 		BeanDefinition beanDefToRegister = beanDef;
 		if (proxyMode != ScopedProxyMode.NO) {
 			BeanDefinitionHolder proxyDef = ScopedProxyCreator.createScopedProxy(
 					new BeanDefinitionHolder(beanDef, beanName), this.registry,
 					proxyMode == ScopedProxyMode.TARGET_CLASS);
+			// 对db进行替换
 			beanDefToRegister = new ConfigurationClassBeanDefinition(
 					(RootBeanDefinition) proxyDef.getBeanDefinition(), configClass, metadata, beanName);
 		}
@@ -314,29 +350,42 @@ class ConfigurationClassBeanDefinitionReader {
 			logger.trace(String.format("Registering bean definition for @Bean method %s.%s()",
 					configClass.getMetadata().getClassName(), beanName));
 		}
+		// 注册 bd
 		this.registry.registerBeanDefinition(beanName, beanDefToRegister);
 	}
 
 	protected boolean isOverriddenByExistingDefinition(BeanMethod beanMethod, String beanName) {
 		if (!this.registry.containsBeanDefinition(beanName)) {
+			// 没有这个 beanName，不需要覆盖，直接放回 false
 			return false;
 		}
+		// 有定义了这个 bd，获取对应的 bd 信息
 		BeanDefinition existingBeanDef = this.registry.getBeanDefinition(beanName);
 
 		// Is the existing bean definition one that was created from a configuration class?
 		// -> allow the current bean method to override, since both are at second-pass level.
 		// However, if the bean method is an overloaded case on the same configuration class,
 		// preserve the existing bean definition.
+		// 如果这个 bd 是通过一个配置类定义的，则当前这个bean方法可以被覆盖，因为都是同一个优先级；
+		// 但是如果这个bean method 是在同一个配置类上定义的，则保留现有定义，不做覆盖
 		if (existingBeanDef instanceof ConfigurationClassBeanDefinition) {
+			// 判断是否属于 ConfigurationClassBeanDefinition，来自于配置类的定义
 			ConfigurationClassBeanDefinition ccbd = (ConfigurationClassBeanDefinition) existingBeanDef;
+
+			// 判断外部这个bd的配置类名称是否和当前这个beanName的定义类的名称一样，也就是判断是否来自于同一个配置类
 			if (ccbd.getMetadata().getClassName().equals(
 					beanMethod.getConfigurationClass().getMetadata().getClassName())) {
+				// 判断外部的这个db的对应的工厂方法的名称，是不是和当前这个 factoryMethod 名称一样
+				// 比如方法重载，就会出现方法名一样的情况
 				if (ccbd.getFactoryMethodMetadata().getMethodName().equals(ccbd.getFactoryMethodName())) {
+					// 设置当前bean对应的方法名称，设置非唯一属性
 					ccbd.setNonUniqueFactoryMethodName(ccbd.getFactoryMethodMetadata().getMethodName());
 				}
+				// 返回 true，表示有的覆盖
 				return true;
 			}
 			else {
+				// 返回 false，表示没有需要覆盖
 				return false;
 			}
 		}
@@ -349,6 +398,7 @@ class ConfigurationClassBeanDefinitionReader {
 
 		// Has the existing bean definition bean marked as a framework-generated bean?
 		// -> allow the current bean method to override it, since it is application-level
+		// 框架内部的bean名称
 		if (existingBeanDef.getRole() > BeanDefinition.ROLE_APPLICATION) {
 			return false;
 		}
