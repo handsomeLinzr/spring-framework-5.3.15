@@ -14,6 +14,7 @@ public class Main {
 		ApplicationContext context = new ClassPathXmlApplicationContext("classpath:application.xml");
 		MyBean2 myBean2 = context.getBean(MyBean2.class);
 		MyFactoryBean factoryBean = context.getBean(MyFactoryBean.class);
+		Object bean6 = context.getBean("myFactoryBean");
 		System.out.println(factoryBean);
 		System.out.println(myBean2);
 	}

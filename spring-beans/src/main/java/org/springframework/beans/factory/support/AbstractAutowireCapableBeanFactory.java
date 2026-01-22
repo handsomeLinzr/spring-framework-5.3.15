@@ -702,7 +702,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		Class<?> targetType = determineTargetType(beanName, mbd, typesToMatch);
 		// Apply SmartInstantiationAwareBeanPostProcessors to predict the
 		// eventual type after a before-instantiation shortcut.
-		// 判断得到的目标类不为空，且不是静态的，且有 InstantiationAwareBeanPostProcessor
+		// 判断得到的目标类不为空，且不是合成的，且有 InstantiationAwareBeanPostProcessor
 		if (targetType != null && !mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			boolean matchingOnlyFactoryBean = typesToMatch.length == 1 && typesToMatch[0] == FactoryBean.class;
 			// 遍历处理
@@ -1325,6 +1325,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		return bw;
 	}
 
+	// 重写了父类的方法，用来隐式注册当前创建的bean
 	/**
 	 * Overridden in order to implicitly register the currently created bean as
 	 * dependent on further beans getting programmatically retrieved during a
@@ -1336,11 +1337,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected Object getObjectForBeanInstance(
 			Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd) {
 
+		// 获取到当前正在创建的对象的beanName
 		String currentlyCreatedBean = this.currentlyCreatedBean.get();
 		if (currentlyCreatedBean != null) {
+			// 注册依赖关系
+			// 这里会添加到两个map：dependenciesForBeanMap 和 dependentBeanMap
 			registerDependentBean(beanName, currentlyCreatedBean);
 		}
 
+		// 调用父类的方法，得到真正的bean实例
 		return super.getObjectForBeanInstance(beanInstance, name, beanName, mbd);
 	}
 

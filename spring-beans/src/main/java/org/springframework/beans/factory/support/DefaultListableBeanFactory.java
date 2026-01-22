@@ -958,7 +958,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					// 如果得到的 bean 属于 factoryBean
 					if (bean instanceof FactoryBean) {
-						// 强转
+						// FactoryBean 的情况，强转成 FactoryBean 对象
 						FactoryBean<?> factory = (FactoryBean<?>) bean;
 						boolean isEagerInit;
 						if (System.getSecurityManager() != null && factory instanceof SmartFactoryBean) {
@@ -967,27 +967,36 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 									getAccessControlContext());
 						}
 						else {
+							// 如果FactoryBean 是 SmartFactoryBean 类型
+							// 且设置了 isEagerInit 方法为 true
+							// 则需要马上进行内部真实bean的创建
 							isEagerInit = (factory instanceof SmartFactoryBean &&
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
 						if (isEagerInit) {
+							// 如果需要快速创建，马上调用getBean创建对应的内部对象
 							getBean(beanName);
 						}
 					}
 				}
 				else {
-					// 普通对象，不是 factoryBean，直径调用 getBean，走通用流程
+					// 普通单例对象，不是 factoryBean，直径调用 getBean，走通用流程
 					getBean(beanName);
 				}
 			}
 		}
 
-		// Trigger post-initialization callback for all applicable beans...    触发初始化的后置处理方法
+		// Trigger post-initialization callback for all applicable beans...
+		// 触发初始化的后置处理方法
 		for (String beanName : beanNames) {
+			// 获取单例对象
+			// 如果是单例bean，这里能获取到了，因为上边已经进行创建了
 			Object singletonInstance = getSingleton(beanName);
+			// 判断如果当前的bean 是属于 SmartInitializingSingleton，则需要触发调用方法 afterSingletonsInstantiated
 			if (singletonInstance instanceof SmartInitializingSingleton) {
 				StartupStep smartInitialize = this.getApplicationStartup().start("spring.beans.smart-initialize")
 						.tag("beanName", beanName);
+				// 强转对象
 				SmartInitializingSingleton smartSingleton = (SmartInitializingSingleton) singletonInstance;
 				if (System.getSecurityManager() != null) {
 					AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
@@ -996,6 +1005,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 					}, getAccessControlContext());
 				}
 				else {
+					// 调用 afterSingletonsInstantiated，处理单例bean实例化后的操作
 					smartSingleton.afterSingletonsInstantiated();
 				}
 				smartInitialize.end();

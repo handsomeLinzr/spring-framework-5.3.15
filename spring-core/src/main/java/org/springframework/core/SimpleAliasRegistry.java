@@ -219,6 +219,8 @@ public class SimpleAliasRegistry implements AliasRegistry {
 		}
 	}
 
+	// 检测得到原始beanName，这里可能传进来的是别名
+	// 通过这个方法，最后得到的是一个规范的beanName
 	/**
 	 * Determine the raw name, resolving aliases to canonical names.
 	 * @param name the user-specified name

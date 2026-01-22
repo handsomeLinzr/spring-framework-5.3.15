@@ -110,10 +110,12 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	private final Map<String, Set<String>> containedBeanMap = new ConcurrentHashMap<>(16);
 
 	// 相关依赖关系，key 是被注入的bean，value 是主动注入的 bean 的集合
+	// 如A中需要注入B，这里 key 是 B，value 是A和所有需要注入A的集合
 	/** Map between dependent bean names: bean name to Set of dependent bean names. */
 	private final Map<String, Set<String>> dependentBeanMap = new ConcurrentHashMap<>(64);
 
 	// 也是依赖关系，key 是需要进行注入的bean，value 是 bean 需要注入的 bean 的集合
+	// 如 A中需要注入B，这里 key是A，value是B和其他需要注入的集合
 	/** Map between depending bean names: bean name to Set of bean names for the bean's dependencies. */
 	private final Map<String, Set<String>> dependenciesForBeanMap = new ConcurrentHashMap<>(64);
 
@@ -169,6 +171,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	@Override
 	@Nullable
 	public Object getSingleton(String beanName) {
+		// allowEarlyReference = true，表示当前调用这个方法，允许从三级缓存中获取到提前暴露的引用
 		return getSingleton(beanName, true);
 	}
 
@@ -186,10 +189,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
 		// Quick check for existing instance without full singleton lock
-		// 先从单例对象缓存中获取
+		// 从一级缓存中获取bean实例
 		Object singletonObject = this.singletonObjects.get(beanName);
 		// 如果单例缓存中有，则直接返回即可
-		// 如果单例缓存中没有，需要从二级缓存中获取
+		// 如果单例缓存中没有，且当前这个bean正在创建被创建，则尝试从二级缓存中获取
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
 			// 从二级缓存中获取
 			singletonObject = this.earlySingletonObjects.get(beanName);
@@ -430,6 +433,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		registerDependentBean(containedBeanName, containingBeanName);
 	}
 
+	// beanName 是当前正在处理的名称
+	// dependentBeanName 是一开始要创建的名称
+	// 即表示，在创建 dependentBeanName 的时候，需要创建到 beanName
+	// 所以，dependentBeanName 中依赖 beanName
 	/**
 	 * Register a dependent bean for the given bean,
 	 * to be destroyed before the given bean is destroyed.
@@ -437,12 +444,13 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @param dependentBeanName the name of the dependent bean
 	 */
 	public void registerDependentBean(String beanName, String dependentBeanName) {
-		// bean 名称
+		// 从 beanName 得到对应的规范的beanName
 		String canonicalName = canonicalName(beanName);
 
 		// 同步加锁，锁 dependentBeanMap 对象
 		synchronized (this.dependentBeanMap) {
 			// 加入 canonicalName-> LinkedHashSet
+			// 被依赖
 			Set<String> dependentBeans =
 					this.dependentBeanMap.computeIfAbsent(canonicalName, k -> new LinkedHashSet<>(8));
 			// LinkedHashSet 中加入 dependentBeanName
@@ -454,6 +462,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		// 加锁 dependenciesForBeanMap
 		synchronized (this.dependenciesForBeanMap) {
 			// 加入 dependentBeanName-> LinkedHashSet
+			// 依赖
 			Set<String> dependenciesForBean =
 					this.dependenciesForBeanMap.computeIfAbsent(dependentBeanName, k -> new LinkedHashSet<>(8));
 			// LinkedHashSet 加入 canonicalName

@@ -657,6 +657,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 				// Instantiate all remaining (non-lazy-init) singletons.
 				// 十一.实例化所有剩下的单例 bean
+				//		1.初始化 context 的转换服务，bean名称是 conversionService
+				//		2.清除临时的类加载器
+				//		3.冻结bean工厂的bd
+				//		4.对当前bean工厂的所有单例非懒加载的bean进行实例化
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
@@ -1047,8 +1051,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// Allow for caching all bean definition metadata, not expecting further changes.
 		beanFactory.freezeConfiguration();
 
-		// 实例化+初始化所有剩余的非懒加载的单例 bean，重点
 		// Instantiate all remaining (non-lazy-init) singletons.
+		// 实例化+初始化所有剩余的非懒加载的单例 bean，重点
 		beanFactory.preInstantiateSingletons();
 	}
 

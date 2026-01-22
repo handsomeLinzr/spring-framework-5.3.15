@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
  * @author linzherong
  * @date 2026/1/12 18:29
  */
+@Component
 public class MyFactoryBean implements FactoryBean<MyBean6> {
 	@Override
 	public MyBean6 getObject() throws Exception {

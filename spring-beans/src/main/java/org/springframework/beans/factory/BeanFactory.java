@@ -128,6 +128,8 @@ public interface BeanFactory {
 	String FACTORY_BEAN_PREFIX = "&";
 
 
+	// 返回一个可以共享，并独立的bean实例，这个方法允许一个Spring的bean工厂作为一个单例或多例的替换
+	// 在单例的情况下，调用者可以保持对这个单例bean的引用
 	/**
 	 * Return an instance, which may be shared or independent, of the specified bean.
 	 * <p>This method allows a Spring BeanFactory to be used as a replacement for the

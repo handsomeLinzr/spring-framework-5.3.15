@@ -16,6 +16,7 @@
 
 package org.springframework.beans.factory;
 
+// FactoryBean的扩展接口
 /**
  * Extension of the {@link FactoryBean} interface. Implementations may
  * indicate whether they always return independent instances, for the
