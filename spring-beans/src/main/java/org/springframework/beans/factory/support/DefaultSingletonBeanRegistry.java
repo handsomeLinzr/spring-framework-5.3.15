@@ -192,7 +192,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		// 从一级缓存中获取bean实例
 		Object singletonObject = this.singletonObjects.get(beanName);
 		// 如果单例缓存中有，则直接返回即可
-		// 如果单例缓存中没有，且当前这个bean正在创建被创建，则尝试从二级缓存中获取
+		// 如果单例缓存中没有，且当前这个bean正在被创建，则尝试从二级缓存中获取
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
 			// 从二级缓存中获取
 			singletonObject = this.earlySingletonObjects.get(beanName);
@@ -226,6 +226,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		return singletonObject;
 	}
 
+	// 返回一个给定的注册 bean 的代理对象，如果当前还没有注册，则通过传进来的 singletonFactory
+	// 创建一个 bean，并进行注册
 	/**
 	 * Return the (raw) singleton object registered under the given name,
 	 * creating and registering a new one if none registered yet.
@@ -237,9 +239,12 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	public Object getSingleton(String beanName, ObjectFactory<?> singletonFactory) {
 		Assert.notNull(beanName, "Bean name must not be null");
 		synchronized (this.singletonObjects) {
+			// 从一级缓存中获取
 			Object singletonObject = this.singletonObjects.get(beanName);
+			// 如果一级缓存中没有这个 bean
 			if (singletonObject == null) {
-				if (this.singletonsCurrentlyInDestruction) {   // 销毁阶段？
+				// 判断当前是否在一级缓存的销毁阶段，如果是则抛异常
+				if (this.singletonsCurrentlyInDestruction) {
 					throw new BeanCreationNotAllowedException(beanName,
 							"Singleton bean creation not allowed while singletons of this factory are in destruction " +
 							"(Do not request a bean from a BeanFactory in a destroy method implementation!)");
@@ -247,14 +252,18 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				if (logger.isDebugEnabled()) {
 					logger.debug("Creating shared instance of singleton bean '" + beanName + "'");
 				}
+				// 创建前的处理，将当前要创建的 bean 名称添加到 singletonsCurrentlyInCreation 中
+				// 表示当前这个 beanName 正在创建阶段
 				beforeSingletonCreation(beanName);
+
 				boolean newSingleton = false;
 				boolean recordSuppressedExceptions = (this.suppressedExceptions == null);
 				if (recordSuppressedExceptions) {
 					this.suppressedExceptions = new LinkedHashSet<>();
 				}
 				try {
-					singletonObject = singletonFactory.getObject();  // 调用传进来的bean的创建方法
+					// 根据给进来的 lambda 工厂创建一个单例 bean
+					singletonObject = singletonFactory.getObject();
 					newSingleton = true;
 				}
 				catch (IllegalStateException ex) {
@@ -277,12 +286,16 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					if (recordSuppressedExceptions) {
 						this.suppressedExceptions = null;
 					}
-					afterSingletonCreation(beanName);   // 不用管
+					// 创建后处理
+					// 从 singletonsCurrentlyInCreation 中将当前这个 beanName 移除，表示当前这个 bean 不在创建阶段了
+					afterSingletonCreation(beanName);
 				}
 				if (newSingleton) {
-					addSingleton(beanName, singletonObject);    // 如果是新创建的bean，添加到一级缓存，删除二三级缓存
+					// 单例对象，添加一个缓存，移除二三级缓存
+					addSingleton(beanName, singletonObject);
 				}
 			}
+			// 返回单例对象
 			return singletonObject;
 		}
 	}
@@ -470,6 +483,9 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		}
 	}
 
+	// 检测给定的依赖bean是否已经注册为给定 bean 的依赖或者 bean 的传递依赖
+	// 其实就是检查，是否 beanName 需要被 dependentBeanName 注入，获取所有需要注入 beanName 的 bean，是否需要注入 dependentBeanName
+	// 判断循环依赖
 	/**
 	 * Determine whether the specified dependent bean has been registered as
 	 * dependent on the given bean or on any of its transitive dependencies.
@@ -487,23 +503,29 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		if (alreadySeen != null && alreadySeen.contains(beanName)) {
 			return false;
 		}
+		// 获取到 beanName 的标准名称
 		String canonicalName = canonicalName(beanName);
+		// 获取到所有依赖 beanName 的 bean
 		Set<String> dependentBeans = this.dependentBeanMap.get(canonicalName);
 		if (dependentBeans == null) {
 			return false;
 		}
+		// 如果含有 dependentBeanName，说明 dependentBeanName 需要依赖 beanName，返回 true
 		if (dependentBeans.contains(dependentBeanName)) {
 			return true;
 		}
+		// 遍历所有依赖 beanName 的 bean
 		for (String transitiveDependency : dependentBeans) {
 			if (alreadySeen == null) {
 				alreadySeen = new HashSet<>();
 			}
 			alreadySeen.add(beanName);
+			// 递归调用，返回 transitiveDependency 是否也要被 dependentBeanName 引用, 如果需要则返回 true
 			if (isDependent(transitiveDependency, dependentBeanName, alreadySeen)) {
 				return true;
 			}
 		}
+		// 没有引用关系，返回 false
 		return false;
 	}
 

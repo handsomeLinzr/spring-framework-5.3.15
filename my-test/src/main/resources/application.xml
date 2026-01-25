@@ -27,5 +27,4 @@
 		<my-user:property key="password" value="${password}"/>
 	</my-user:user>
 
-
 </beans>

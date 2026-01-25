@@ -59,6 +59,7 @@ import org.springframework.lang.Nullable;
  */
 public interface Scope {
 
+	// 从对应的作用域中获取这个 bean，如果没有则创建
 	/**
 	 * Return the object with the given name from the underlying scope,
 	 * {@link org.springframework.beans.factory.ObjectFactory#getObject() creating it}

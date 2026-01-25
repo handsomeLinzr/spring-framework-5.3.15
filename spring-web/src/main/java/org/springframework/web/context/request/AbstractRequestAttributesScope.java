@@ -39,10 +39,15 @@ public abstract class AbstractRequestAttributesScope implements Scope {
 
 	@Override
 	public Object get(String name, ObjectFactory<?> objectFactory) {
+		// 获取当前的请求参数
 		RequestAttributes attributes = RequestContextHolder.currentRequestAttributes();
+		// 从这个作用域，获取当前这个 bean 对象
+		// 即表示从当前这个 request/session 获取到这个 value 对象
 		Object scopedObject = attributes.getAttribute(name, getScope());
 		if (scopedObject == null) {
+			// 如果作用域是空的，直接调用 objectFactory.getObject() 创建新的 bean 实例
 			scopedObject = objectFactory.getObject();
+			// 将这个 bean 对象设置回去，并设置作用域
 			attributes.setAttribute(name, scopedObject, getScope());
 			// Retrieve object again, registering it for implicit session attribute updates.
 			// As a bonus, we also allow for potential decoration at the getAttribute level.
@@ -53,6 +58,7 @@ public abstract class AbstractRequestAttributesScope implements Scope {
 				scopedObject = retrievedObject;
 			}
 		}
+		// 返回对应获取到/新创建的对象
 		return scopedObject;
 	}
 

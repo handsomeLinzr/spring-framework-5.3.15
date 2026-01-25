@@ -28,10 +28,10 @@ public class MyConfiguration {
 		return new MyBean5();
 	}
 
-//	@Bean
-//	public MyFactoryBean myFactoryBean() {
-//		return new MyFactoryBean();
-//	}
+	@Bean
+	public MyFactoryBean myFactoryBean() {
+		return new MyFactoryBean();
+	}
 
 	@Bean
 	@Conditional({WindowsCondition.class})

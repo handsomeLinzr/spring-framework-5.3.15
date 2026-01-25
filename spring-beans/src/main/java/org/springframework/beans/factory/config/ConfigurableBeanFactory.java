@@ -147,6 +147,9 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	@Nullable
 	BeanExpressionResolver getBeanExpressionResolver();
 
+	// 在处理方法 finishBeanFactoryInitialization 的时候调用
+	// 如果有bean信息 conversionService 的情况下，会genBean创建，并设置进来
+	// 用来进行JavaBeans的属性类型转换
 	/**
 	 * Specify a Spring 3.0 ConversionService to use for converting
 	 * property values, as an alternative to JavaBeans PropertyEditors.

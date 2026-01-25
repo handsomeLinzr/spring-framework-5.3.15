@@ -116,9 +116,11 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	/** Common lock for the two post-processing fields below. */
 	final Object postProcessingLock = new Object();
 
+	// mdb 的包可见字段是否已经应用
 	/** Package-visible field that indicates MergedBeanDefinitionPostProcessor having been applied. */
 	boolean postProcessed = false;
 
+	// 当在调用方法 resolveBeforeInstantiation 中，只要有执行成功返回不是 null 的情况，就会设置为 true 表示已经执行了
 	/** Package-visible field that indicates a before-instantiation post-processor having kicked in. */
 	@Nullable
 	volatile Boolean beforeInstantiationResolved;

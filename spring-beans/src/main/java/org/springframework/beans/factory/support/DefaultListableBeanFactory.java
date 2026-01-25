@@ -975,6 +975,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 						}
 						if (isEagerInit) {
 							// 如果需要快速创建，马上调用getBean创建对应的内部对象
+							// 所以如果需要定义成factoryBean，且启动的时候就马上进行对象创建，则可以定义成 SmartFactoryBean 类型
+							// 重写 isEagerInit 方法
 							getBean(beanName);
 						}
 					}
@@ -987,7 +989,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		// Trigger post-initialization callback for all applicable beans...
-		// 触发初始化的后置处理方法
+		// 当容器中的所有 bean 实例化后，触发所有 SmartInitializingSingleton 的后置处理方法
 		for (String beanName : beanNames) {
 			// 获取单例对象
 			// 如果是单例bean，这里能获取到了，因为上边已经进行创建了

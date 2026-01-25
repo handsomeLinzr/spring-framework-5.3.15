@@ -65,6 +65,7 @@ public interface MethodMetadata extends AnnotatedTypeMetadata {
 	 */
 	boolean isFinal();
 
+	// 判断是否可以被重写，即未标记为 静态.final 或 私有
 	/**
 	 * Determine whether the underlying method is overridable,
 	 * i.e. not marked as static, final, or private.

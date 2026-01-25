@@ -152,6 +152,7 @@ public abstract class AnnotationUtils {
 		return isCandidateClass(clazz, annotationType.getName());
 	}
 
+	// 判断给定的类是否含有特定注解
 	/**
 	 * Determine whether the given class is a candidate for carrying the specified annotation
 	 * (at type, method or field level).
@@ -164,12 +165,14 @@ public abstract class AnnotationUtils {
 	 * @see #isCandidateClass(Class, Class)
 	 */
 	public static boolean isCandidateClass(Class<?> clazz, String annotationName) {
+		// jdk 自带的注解，返回 true
 		if (annotationName.startsWith("java.")) {
 			return true;
 		}
 		if (AnnotationsScanner.hasPlainJavaAnnotationsOnly(clazz)) {
 			return false;
 		}
+		// 返回 false
 		return true;
 	}
 

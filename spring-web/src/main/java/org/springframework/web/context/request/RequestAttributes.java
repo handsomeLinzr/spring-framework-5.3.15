@@ -59,6 +59,7 @@ public interface RequestAttributes {
 	String REFERENCE_SESSION = "session";
 
 
+	// 返回这个作用域下的 name 对应的值
 	/**
 	 * Return the value for the scoped attribute of the given name, if any.
 	 * @param name the name of the attribute

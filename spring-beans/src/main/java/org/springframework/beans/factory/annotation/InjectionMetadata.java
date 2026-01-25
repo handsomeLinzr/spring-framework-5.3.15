@@ -70,6 +70,7 @@ public class InjectionMetadata {
 
 	private final Collection<InjectedElement> injectedElements;
 
+	// 依赖注入的字段或方法
 	@Nullable
 	private volatile Set<InjectedElement> checkedElements;
 

@@ -150,6 +150,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 	private static final boolean jndiPresent = ClassUtils.isPresent(
 			"javax.naming.InitialContext", CommonAnnotationBeanPostProcessor.class.getClassLoader());
 
+	// 在静态代码块中，已经添加进来 Resource 和 EJB 注解
 	private static final Set<Class<? extends Annotation>> resourceAnnotationTypes = new LinkedHashSet<>(4);
 
 	@Nullable
@@ -158,7 +159,9 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 	@Nullable
 	private static final Class<? extends Annotation> ejbClass;
 
+	// 静态方法，类加载后就执行
 	static {
+		// 给 resourceAnnotationTypes 添加 Resource 注解
 		resourceAnnotationTypes.add(Resource.class);
 
 		webServiceRefClass = loadAnnotationType("javax.xml.ws.WebServiceRef");
@@ -168,6 +171,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 		ejbClass = loadAnnotationType("javax.ejb.EJB");
 		if (ejbClass != null) {
+			// 添加 EJB 注解
 			resourceAnnotationTypes.add(ejbClass);
 		}
 	}
@@ -201,13 +205,18 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 	 * respectively.
 	 */
 	public CommonAnnotationBeanPostProcessor() {
+		// 设置优先级
 		setOrder(Ordered.LOWEST_PRECEDENCE - 3);
+		// 设置 initAnnotationType 为 PostConstruct 注解，表示实例化 bean 后的方法
 		setInitAnnotationType(PostConstruct.class);
+		// 设置 destroyAnnotationType 为 PreDestroy 注解，表示销毁 bean 前的方法
 		setDestroyAnnotationType(PreDestroy.class);
+		// 设置 ignoredResourceTypes 的类型
 		ignoreResourceType("javax.xml.ws.WebServiceContext");
 
 		// java.naming module present on JDK 9+?
 		if (jndiPresent) {
+			// jndi
 			this.jndiFactory = new SimpleJndiBeanFactory();
 		}
 	}
@@ -302,7 +311,10 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		// 调用父类方法，构建生命周期
+		// 解析了 @PostConstruct 和 @PreDestroy 方法
 		super.postProcessMergedBeanDefinition(beanDefinition, beanType, beanName);
+		// 扫描解析 @Resource
 		InjectionMetadata metadata = findResourceMetadata(beanName, beanType, null);
 		metadata.checkConfigMembers(beanDefinition);
 	}
@@ -345,8 +357,10 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 	private InjectionMetadata findResourceMetadata(String beanName, Class<?> clazz, @Nullable PropertyValues pvs) {
 		// Fall back to class name as cache key, for backwards compatibility with custom callers.
+		// 获取缓存的 key
 		String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
 		// Quick check on the concurrent map first, with minimal locking.
+		// 从缓存中获取
 		InjectionMetadata metadata = this.injectionMetadataCache.get(cacheKey);
 		if (InjectionMetadata.needsRefresh(metadata, clazz)) {
 			synchronized (this.injectionMetadataCache) {
@@ -355,7 +369,9 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 					if (metadata != null) {
 						metadata.clear(pvs);
 					}
+					// 构建元数据
 					metadata = buildResourceMetadata(clazz);
+					// 扫描解析后，添加到缓存 injectionMetadataCache 中
 					this.injectionMetadataCache.put(cacheKey, metadata);
 				}
 			}
@@ -363,6 +379,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 		return metadata;
 	}
 
+	// 构建注入原数据，主要是扫描 Resource
 	private InjectionMetadata buildResourceMetadata(Class<?> clazz) {
 		if (!AnnotationUtils.isCandidateClass(clazz, resourceAnnotationTypes)) {
 			return InjectionMetadata.EMPTY;
@@ -374,6 +391,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 		do {
 			final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
 
+			// 检查字段
 			ReflectionUtils.doWithLocalFields(targetClass, field -> {
 				if (webServiceRefClass != null && field.isAnnotationPresent(webServiceRefClass)) {
 					if (Modifier.isStatic(field.getModifiers())) {
@@ -387,16 +405,19 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 					}
 					currElements.add(new EjbRefElement(field, field, null));
 				}
+				// 判断字段是否有注解 Resource
 				else if (field.isAnnotationPresent(Resource.class)) {
 					if (Modifier.isStatic(field.getModifiers())) {
 						throw new IllegalStateException("@Resource annotation is not supported on static fields");
 					}
+					// 有这个注解，且这个注解字段对应的类型不在 ignoredResourceTypes 中，则添加到 currElements 中
 					if (!this.ignoredResourceTypes.contains(field.getType().getName())) {
 						currElements.add(new ResourceElement(field, field, null));
 					}
 				}
 			});
 
+			// 检查方法
 			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
 				Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 				if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
@@ -423,6 +444,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 						PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
 						currElements.add(new EjbRefElement(method, bridgedMethod, pd));
 					}
+					// Resource 注解的方法
 					else if (bridgedMethod.isAnnotationPresent(Resource.class)) {
 						if (Modifier.isStatic(method.getModifiers())) {
 							throw new IllegalStateException("@Resource annotation is not supported on static methods");
@@ -431,6 +453,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 						if (paramTypes.length != 1) {
 							throw new IllegalStateException("@Resource annotation requires a single-arg method: " + method);
 						}
+						// 只要设置的字段的类型不在 ignoredResourceTypes 中，则添加到 currElements 中
 						if (!this.ignoredResourceTypes.contains(paramTypes[0].getName())) {
 							PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
 							currElements.add(new ResourceElement(method, bridgedMethod, pd));
@@ -439,9 +462,12 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 				}
 			});
 
+			// 添加
 			elements.addAll(0, currElements);
+			// 继续扫描父类
 			targetClass = targetClass.getSuperclass();
 		}
+		// 只要父类不是 Object，则就一直扫描
 		while (targetClass != null && targetClass != Object.class);
 
 		return InjectionMetadata.forElements(elements, clazz);

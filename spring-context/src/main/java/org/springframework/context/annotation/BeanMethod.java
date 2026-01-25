@@ -51,6 +51,7 @@ final class BeanMethod extends ConfigurationMethod {
 			// 要动态代理增强，则这个 bean 方法必须能被字类重写
 			if (!getMetadata().isOverridable()) {
 				// instance @Bean methods within @Configuration classes must be overridable to accommodate CGLIB
+				// configuration 中的 bean 方法，必须能被重写，才能应用 cglib 动态代理
 				problemReporter.error(new NonOverridableMethodError());
 			}
 		}

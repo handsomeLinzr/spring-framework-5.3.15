@@ -18,6 +18,7 @@ package org.springframework.core.convert;
 
 import org.springframework.lang.Nullable;
 
+// 转换服务的接口，这是一个转换系统的切入点，调用 convert 调用一个现成安全的转换服务
 /**
  * A service interface for type conversion. This is the entry point into the convert system.
  * Call {@link #convert(Object, Class)} to perform a thread-safe type conversion using this system.
@@ -28,6 +29,10 @@ import org.springframework.lang.Nullable;
  */
 public interface ConversionService {
 
+	// 如果sourceType可以转换为targetType，返回 true
+	// 如果方法返回 true，意味着 convert(Object, Class) 能够将 sourceType 转换为 targetType
+	// 特别说明集合、数组和 map 类型，这个方法将会返回 true,即使底层转换器不可转换，会转换的时候生成 ConversionException
+	// 在调用这个方法处理这几类的时候，调用者需要处理这个异常
 	/**
 	 * Return {@code true} if objects of {@code sourceType} can be converted to the {@code targetType}.
 	 * <p>If this method returns {@code true}, it means {@link #convert(Object, Class)} is capable
@@ -64,6 +69,7 @@ public interface ConversionService {
 	 */
 	boolean canConvert(@Nullable TypeDescriptor sourceType, TypeDescriptor targetType);
 
+	// 转换给定的 source 类型到 targetType 类型
 	/**
 	 * Convert the given {@code source} to the specified {@code targetType}.
 	 * @param source the source object to convert (may be {@code null})
@@ -75,6 +81,7 @@ public interface ConversionService {
 	@Nullable
 	<T> T convert(@Nullable Object source, Class<T> targetType);
 
+	// 转换 source 类型到 targetType 类型
 	/**
 	 * Convert the given {@code source} to the specified {@code targetType}.
 	 * The TypeDescriptors provide additional context about the source and target locations

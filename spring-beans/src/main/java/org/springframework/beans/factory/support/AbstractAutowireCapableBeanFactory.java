@@ -175,6 +175,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	private final NamedThreadLocal<String> currentlyCreatedBean = new NamedThreadLocal<>("Currently created bean");
 
+	// 未完成的 FactoryBean 实例的缓存
 	/** Cache of unfinished FactoryBean instances: FactoryBean name to BeanWrapper. */
 	private final ConcurrentMap<String, BeanWrapper> factoryBeanInstanceCache = new ConcurrentHashMap<>();
 
@@ -471,6 +472,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		return result;
 	}
 
+	// 获取到当前的所有 bpp 对象，调用 postProcessAfterInitialization 方法
 	@Override
 	public Object applyBeanPostProcessorsAfterInitialization(Object existingBean, String beanName)
 			throws BeansException {
@@ -536,7 +538,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Make sure bean class is actually resolved at this point, and
 		// clone the bean definition in case of a dynamically resolved Class
 		// which cannot be stored in the shared merged bean definition.
+		// 获取这个 bean 对应的 class 类
 		Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
+		// 判断 mbd 的 beanClass 属性，如果还没有设置，则进行设置，下次就可以直接拿了
 		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
 			mbdToUse = new RootBeanDefinition(mbd);
 			mbdToUse.setBeanClass(resolvedClass);
@@ -555,8 +559,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		try {
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
-			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);  // 初始化前
+			// 给 bpp 一个机会去返回一个代理实例，即可以定义一个 InstantiationAwareBeanPostProcessor，在
+			// applyBeanPostProcessorsBeforeInstantiation 方法返回一个代理对象，自定义创建过程
+			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
+				// 如果得到的结果不为 null，则直接返回 bean 即可
 				return bean;
 			}
 		}
@@ -566,10 +573,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
-			Object beanInstance = doCreateBean(beanName, mbdToUse, args);  // 真正创建bean
+			// 真正创建bean的过程
+			Object beanInstance = doCreateBean(beanName, mbdToUse, args);
 			if (logger.isTraceEnabled()) {
 				logger.trace("Finished creating instance of bean '" + beanName + "'");
 			}
+			// 返回 bean 实例
 			return beanInstance;
 		}
 		catch (BeanCreationException | ImplicitlyAppearedSingletonException ex) {
@@ -603,27 +612,38 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Instantiate the bean.
 		BeanWrapper instanceWrapper = null;
 		if (mbd.isSingleton()) {
+			// 单例的bean，先从 factoryBeanInstanceCache 中尝试获取到 FactoryBean 实例
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
-			instanceWrapper = createBeanInstance(beanName, mbd, args);  // 创建beanWrapper
+			// 如果真的有，则创建 bean 实例
+			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
-		Object bean = instanceWrapper.getWrappedInstance();  // 从BW中获取对象
-		Class<?> beanType = instanceWrapper.getWrappedClass();  // 包装的类
+		// 从 bw 中获取对应的 bean 实例对象
+		Object bean = instanceWrapper.getWrappedInstance();
+		// 获取 bean 实例的 class 类型
+		Class<?> beanType = instanceWrapper.getWrappedClass();
 		if (beanType != NullBean.class) {
+			// 设置 mbd 的属性 resolvedTargetType，指向得到的 class
 			mbd.resolvedTargetType = beanType;
 		}
 
 		// Allow post-processors to modify the merged bean definition.
+		// 允许 bpp 去修改这个 bd
 		synchronized (mbd.postProcessingLock) {
 			if (!mbd.postProcessed) {
 				try {
+					// 调用所有的 MergedBeanDefinitionPostProcessor 对象，执行 postProcessMergedBeanDefinition 方法
+					// 依赖注入和初始化和销毁前方法的前置扫描就是靠这里的调用，扫描出注解的 @Resource @Autowired
+					// 对应的 bpp 类是 MergedBeanDefinitionPostProcessor、AutowiredAnnotationBeanPostProcessor
+					// 扫描出来后设置到缓存中
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
 				catch (Throwable ex) {
 					throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 							"Post-processing of merged bean definition failed", ex);
 				}
+				// 设置标识为 true，后边不再重复执行
 				mbd.postProcessed = true;
 			}
 		}
@@ -643,8 +663,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Initialize the bean instance.
 		Object exposedObject = bean;
 		try {
-			populateBean(beanName, mbd, instanceWrapper);  // 依赖注入
-			exposedObject = initializeBean(beanName, exposedObject, mbd);   // 初始化
+			// 依赖注入
+			populateBean(beanName, mbd, instanceWrapper);
+			// 初始化
+			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
 			if (ex instanceof BeanCreationException && beanName.equals(((BeanCreationException) ex).getBeanName())) {
@@ -1163,6 +1185,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		return getFactoryBean(beanName, instance);
 	}
 
+	// 调用 MergedBeanDefinitionPostProcessors 方法给对象的 bd
+	// 其实就是调用这个方法可以修改 mbd 对象，设置上一些属性，比如依赖注入
 	/**
 	 * Apply MergedBeanDefinitionPostProcessors to the specified bean definition,
 	 * invoking their {@code postProcessMergedBeanDefinition} methods.
@@ -1173,10 +1197,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	protected void applyMergedBeanDefinitionPostProcessors(RootBeanDefinition mbd, Class<?> beanType, String beanName) {
 		for (MergedBeanDefinitionPostProcessor processor : getBeanPostProcessorCache().mergedDefinition) {
+			// 这里重点看 CommonAnnotationBeanPostProcessor、AutowiredAnnotationBeanPostProcessor
 			processor.postProcessMergedBeanDefinition(mbd, beanType, beanName);
 		}
 	}
 
+	// 应用实例化前的后置处理器
 	/**
 	 * Apply before-instantiation post-processors, resolving whether there is a
 	 * before-instantiation shortcut for the specified bean.
@@ -1189,20 +1215,26 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		Object bean = null;
 		if (!Boolean.FALSE.equals(mbd.beforeInstantiationResolved)) {
 			// Make sure bean class is actually resolved at this point.
+			// 当前这个 bd 是非合成的，且当前 beanFactory 有 hasInstantiationAwareBeanPostProcessor
 			if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
+				// 解析 beanName 对应的 Class 类型，即这个bean的类型
 				Class<?> targetType = determineTargetType(beanName, mbd);
 				if (targetType != null) {
-					bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);  // 执行初始化前处理
+					// 执行初始化前处理，调用所有的 instantiationAware 执行
+					bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
 					if (bean != null) {
+						// 如果其中有应用上的情况，则调用创建后的后置处理
 						bean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
 					}
 				}
 			}
+			// 如果 bean 不为空，则说明中间已经有 bpp 执行成功了，则设置 beforeInstantiationResolved 标识为 true
 			mbd.beforeInstantiationResolved = (bean != null);
 		}
 		return bean;
 	}
 
+	// 处理初始化前的后置处理方法
 	/**
 	 * Apply InstantiationAwareBeanPostProcessors to the specified bean definition
 	 * (by class and name), invoking their {@code postProcessBeforeInstantiation} methods.
