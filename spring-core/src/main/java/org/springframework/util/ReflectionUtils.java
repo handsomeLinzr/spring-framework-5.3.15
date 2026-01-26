@@ -318,9 +318,11 @@ public abstract class ReflectionUtils {
 	 * @see #doWithMethods
 	 */
 	public static void doWithLocalMethods(Class<?> clazz, MethodCallback mc) {
+		// 获取所有方法
 		Method[] methods = getDeclaredMethods(clazz, false);
 		for (Method method : methods) {
 			try {
+				// 遍历所有方法，执行 mc 的操作
 				mc.doWith(method);
 			}
 			catch (IllegalAccessException ex) {

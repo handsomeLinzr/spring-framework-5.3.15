@@ -145,6 +145,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 	@Nullable
 	private ConfigurableListableBeanFactory beanFactory;
 
+	// 缓存所有扫描过 @Lookup 注解的 bean 的名称，都加到这里
 	private final Set<String> lookupMethodsChecked = Collections.newSetFromMap(new ConcurrentHashMap<>(256));
 
 	private final Map<Class<?>, Constructor<?>[]> candidateConstructorsCache = new ConcurrentHashMap<>(256);
@@ -255,25 +256,35 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 		this.injectionMetadataCache.remove(beanName);
 	}
 
+	// 检查自动装配的构造函数 + 无参构造函数
+	// 如果没有自动装配的构造函数，则返回 null
+	// 如果有自动装配的构造函数，则返回所有的自动装配的构造函数 + 无参构造函数
 	@Override
 	@Nullable
 	public Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, final String beanName)
 			throws BeanCreationException {
 
+		// 先看 lookupMethodsChecked 中是否有beanName,检查当前这个 bean 是否已经检查了 @Lookup 注解方法
 		// Let's check for lookup methods here...
 		if (!this.lookupMethodsChecked.contains(beanName)) {
+			// 判断是否有可能有 Lookup 方法
 			if (AnnotationUtils.isCandidateClass(beanClass, Lookup.class)) {
 				try {
 					Class<?> targetClass = beanClass;
 					do {
+						// 扫码这个类，找到 Lookup 注解的方法
 						ReflectionUtils.doWithLocalMethods(targetClass, method -> {
 							Lookup lookup = method.getAnnotation(Lookup.class);
+							// 如果这个 method 是 Lookup 方法
 							if (lookup != null) {
 								Assert.state(this.beanFactory != null, "No BeanFactory available");
+								// 创建 LookupOverride
 								LookupOverride override = new LookupOverride(method, lookup.value());
 								try {
+									// 获取对应的 bd
 									RootBeanDefinition mbd = (RootBeanDefinition)
 											this.beanFactory.getMergedBeanDefinition(beanName);
+									// 给 bd 添加属性，记录这个方法到 overrides 中
 									mbd.getMethodOverrides().addOverride(override);
 								}
 								catch (NoSuchBeanDefinitionException ex) {
@@ -282,6 +293,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 								}
 							}
 						});
+						// 获取父类继续扫描，直到没有父类或者父类是 Object
 						targetClass = targetClass.getSuperclass();
 					}
 					while (targetClass != null && targetClass != Object.class);
@@ -291,18 +303,25 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 					throw new BeanCreationException(beanName, "Lookup method resolution failed", ex);
 				}
 			}
+			// 添加缓存，表示这个 beanName 对应的方法中已经扫描了 Lookup 注解了
 			this.lookupMethodsChecked.add(beanName);
 		}
 
+		// 先从 candidateConstructorsCache 缓存中，尝试获取这个 beanClass 的候选构造函数
 		// Quick check on the concurrent map first, with minimal locking.
 		Constructor<?>[] candidateConstructors = this.candidateConstructorsCache.get(beanClass);
+		// 如果没有这个缓存
 		if (candidateConstructors == null) {
 			// Fully synchronized resolution now...
+			// 先加锁
 			synchronized (this.candidateConstructorsCache) {
+				// 再次从缓存中尝试获取
 				candidateConstructors = this.candidateConstructorsCache.get(beanClass);
+				// 如果此时还是没有缓存
 				if (candidateConstructors == null) {
 					Constructor<?>[] rawCandidates;
 					try {
+						// 获取当前这个类的所有构造函数
 						rawCandidates = beanClass.getDeclaredConstructors();
 					}
 					catch (Throwable ex) {
@@ -310,25 +329,42 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 								"Resolution of declared constructors on bean Class [" + beanClass.getName() +
 								"] from ClassLoader [" + beanClass.getClassLoader() + "] failed", ex);
 					}
+
+					// 候选构造函数
+					// 这里会添加所有自动装配的构造函数
 					List<Constructor<?>> candidates = new ArrayList<>(rawCandidates.length);
+					// 自动装配，且 required = true 的构造函数
 					Constructor<?> requiredConstructor = null;
+					// 默认构造函数（无参构造函数)）
 					Constructor<?> defaultConstructor = null;
+					// 获取优先的构造函数，一般返回 null
 					Constructor<?> primaryConstructor = BeanUtils.findPrimaryConstructor(beanClass);
+					// 统计非合成的构造函数数量（即不是通过代理或者其他运行时生成的构造函数）
 					int nonSyntheticConstructors = 0;
+					// 遍历构造函数
 					for (Constructor<?> candidate : rawCandidates) {
+						// 如果这个构造函数不是合成的，是正常的
 						if (!candidate.isSynthetic()) {
+							// nonSyntheticConstructors 统计自增加 1
 							nonSyntheticConstructors++;
 						}
 						else if (primaryConstructor != null) {
 							continue;
 						}
+						// 判断当前这个构造函数是否是自动装配，@Autowired 或者 @Value
 						MergedAnnotation<?> ann = findAutowiredAnnotation(candidate);
+						// 如果当前这个 method 不是自动装配
 						if (ann == null) {
+							// 如果当前这个构造函数不是自动装配的，没有 @Autowired 和 @Value
+							// 从 beanClass 获取到对应的目标类
 							Class<?> userClass = ClassUtils.getUserClass(beanClass);
+							// 判断如果目标类和beanClass不是同一个，则说明是有代理的情况
 							if (userClass != beanClass) {
 								try {
+									// 获取父类的构造函数，即获取到目标类的构造函数
 									Constructor<?> superCtor =
 											userClass.getDeclaredConstructor(candidate.getParameterTypes());
+									// 重新获得父类的构造函数，拿到自动装配的注解情况
 									ann = findAutowiredAnnotation(superCtor);
 								}
 								catch (NoSuchMethodException ex) {
@@ -336,6 +372,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 								}
 							}
 						}
+						// 如果得到的 ann 不为 null，即当前这个方法是有自动装配的构造函数
 						if (ann != null) {
 							if (requiredConstructor != null) {
 								throw new BeanCreationException(beanName,
@@ -343,7 +380,9 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 										". Found constructor with 'required' Autowired annotation already: " +
 										requiredConstructor);
 							}
+							// 获取对应的自动装配注解的 required 属性
 							boolean required = determineRequiredStatus(ann);
+							// 如果 required = true，则必须用这个构造函数
 							if (required) {
 								if (!candidates.isEmpty()) {
 									throw new BeanCreationException(beanName,
@@ -351,18 +390,26 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 											". Found constructor with 'required' Autowired annotation: " +
 											candidate);
 								}
+								// 设置 requiredConstructor 为当前这个构造函数
 								requiredConstructor = candidate;
 							}
+							// 将当前这个构造函数添加到候选中
 							candidates.add(candidate);
 						}
 						else if (candidate.getParameterCount() == 0) {
+							// 如果当前这个方法不是自动装配，但是是无参构造函数，则当前这个构造函数就是 defaultConstructor
 							defaultConstructor = candidate;
 						}
 					}
+					// 如果有候选的构造函数，即有自动装配的构造函数
 					if (!candidates.isEmpty()) {
 						// Add default constructor to list of optional constructors, as fallback.
+						// 如果没有 required=true 的自动装配构造函数
 						if (requiredConstructor == null) {
+							// 如果有默认的构造函数，即有无参的构造函数
 							if (defaultConstructor != null) {
+								// 如果有候选函数，则无参构造函数也一起加到候选中
+								// 如果没有欧萱函数，则不用加，后边会再拿到这个无参构造函数
 								candidates.add(defaultConstructor);
 							}
 							else if (candidates.size() == 1 && logger.isInfoEnabled()) {
@@ -372,11 +419,14 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 										"default constructor to fall back to: " + candidates.get(0));
 							}
 						}
+						// 候选的构造函数为前边得到的候选，即自动装配的 加 无参构造方法
 						candidateConstructors = candidates.toArray(new Constructor<?>[0]);
 					}
+					// 如果只有一个构造函数，且是有参构造函数，那就是它了
 					else if (rawCandidates.length == 1 && rawCandidates[0].getParameterCount() > 0) {
 						candidateConstructors = new Constructor<?>[] {rawCandidates[0]};
 					}
+					// 下边的逻辑不看了，基本都是这里判断那里判断
 					else if (nonSyntheticConstructors == 2 && primaryConstructor != null &&
 							defaultConstructor != null && !primaryConstructor.equals(defaultConstructor)) {
 						candidateConstructors = new Constructor<?>[] {primaryConstructor, defaultConstructor};
@@ -387,10 +437,12 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 					else {
 						candidateConstructors = new Constructor<?>[0];
 					}
+					// 最后加入缓存，下次就不用再遍历扫描了
 					this.candidateConstructorsCache.put(beanClass, candidateConstructors);
 				}
 			}
 		}
+		// 如果 candidateConstructors 的数量有，则返回，没有则返回 null
 		return (candidateConstructors.length > 0 ? candidateConstructors : null);
 	}
 
@@ -542,7 +594,9 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 	 */
 	@SuppressWarnings({"deprecation", "cast"})
 	protected boolean determineRequiredStatus(MergedAnnotation<?> ann) {
+		// 解析注解的属性
 		AnnotationAttributes attributes = ann.asMap(mergedAnnotation -> new AnnotationAttributes(mergedAnnotation.getType()));
+		// 检测 required 结果
 		return determineRequiredStatus(attributes);
 	}
 

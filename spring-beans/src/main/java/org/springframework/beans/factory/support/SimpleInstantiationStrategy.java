@@ -137,7 +137,8 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 		throw new UnsupportedOperationException("Method Injection not supported in SimpleInstantiationStrategy");
 	}
 
-	// 实例化
+	// 通过给定的实例对象 factoryBean 和 方法参数 factoryMethod、args
+	// 通过反射调用这个实例对象的方法，返回结果
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner,
 			@Nullable Object factoryBean, final Method factoryMethod, Object... args) {
@@ -150,6 +151,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 				});
 			}
 			else {
+				// 设置强制访问
 				ReflectionUtils.makeAccessible(factoryMethod);
 			}
 

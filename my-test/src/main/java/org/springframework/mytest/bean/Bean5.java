@@ -10,8 +10,21 @@ import org.springframework.stereotype.Component;
 @Component
 public class Bean5 {
 
-	@Autowired
 	private Bean6 bean6;
+	private MyBean1 myBean1;
+
+	public Bean5() {
+
+	}
+
+	public Bean5(Bean6 bean6) {
+		this.bean6 = bean6;
+	}
+
+	public Bean5(Bean6 bean6, MyBean1 myBean1) {
+		this.bean6 = bean6;
+		this.myBean1 = myBean1;
+	}
 
 }
 
