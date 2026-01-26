@@ -10,7 +10,7 @@
 
 	<!-- Example Service Bean -->
 	<import resource="application-a.xml" />
-	<bean id="myBean1" class="org.springframework.mytest.bean.MyBean1" />
+<!--	<bean id="myBean1" class="org.springframework.mytest.bean.MyBean1" />-->
 
 <!--	Component Scan-->
 	<context:component-scan base-package="org.springframework.mytest.expand" />

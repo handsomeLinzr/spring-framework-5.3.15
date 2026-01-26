@@ -1,7 +1,10 @@
 package org.springframework.mytest.bean;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 
 /**
  * @author linzherong
@@ -10,7 +13,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class Bean6 {
 
-	@Autowired
+	@Resource
 	private Bean5 bean5;
+
+	@PostConstruct
+	public void init() {
+		System.out.println("=====bean6 init ===");
+	}
+
+	@PreDestroy
+	public void destroy() {
+		System.out.println("========pre destroy========");
+	}
 
 }

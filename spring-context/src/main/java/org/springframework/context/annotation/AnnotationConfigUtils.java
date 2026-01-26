@@ -117,12 +117,15 @@ public abstract class AnnotationConfigUtils {
 	public static final String EVENT_LISTENER_FACTORY_BEAN_NAME =
 			"org.springframework.context.event.internalEventListenerFactory";
 
+	// 是否有用了 Resource 注解的 jdk 版本
 	private static final boolean jsr250Present;
 
+	// 是否用了 jpa，通过检测 EntityManagerFactory
 	private static final boolean jpaPresent;
 
 	static {
 		ClassLoader classLoader = AnnotationConfigUtils.class.getClassLoader();
+		// 如果有 Resource 注解，则 jsr250Present = true
 		jsr250Present = ClassUtils.isPresent("javax.annotation.Resource", classLoader);
 		jpaPresent = ClassUtils.isPresent("javax.persistence.EntityManagerFactory", classLoader) &&
 				ClassUtils.isPresent(PERSISTENCE_ANNOTATION_PROCESSOR_CLASS_NAME, classLoader);
@@ -188,6 +191,7 @@ public abstract class AnnotationConfigUtils {
 		}
 
 		// Check for JSR-250 support, and if present add the CommonAnnotationBeanPostProcessor.
+		// 用了 Resource 注解的 jdk，需要加上 CommonAnnotationBeanPostProcessor 这个 bpp
 		if (jsr250Present && !registry.containsBeanDefinition(COMMON_ANNOTATION_PROCESSOR_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition(CommonAnnotationBeanPostProcessor.class);
 			def.setSource(source);
@@ -195,6 +199,7 @@ public abstract class AnnotationConfigUtils {
 		}
 
 		// Check for JPA support, and if present add the PersistenceAnnotationBeanPostProcessor.
+		// 用了 jpa，需要加上  PersistenceAnnotationBeanPostProcessor 这个 bpp
 		if (jpaPresent && !registry.containsBeanDefinition(PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition();
 			try {

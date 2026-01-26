@@ -4,6 +4,7 @@ apply plugin: "java-library"
 
 dependencies {
 	api(project(":spring-context"))
+	implementation "javax.annotation:javax.annotation-api"
 	testImplementation(testFixtures(project(":spring-context")))
 	testFixturesImplementation(testFixtures(project(":spring-context")))
 }
