@@ -1721,8 +1721,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		String className = mbd.getBeanClassName();
 		// 判断类名是否不为空
 		if (className != null) {
-			// 使用表达式的解析器进行解析得到这个类名
+			// 使用表达式的动态解析器进行解析得到这个类名
 			Object evaluated = evaluateBeanDefinitionString(className, mbd);
+			// 如果解析的结果和这个 mbd 得到的类名不一样
 			if (!className.equals(evaluated)) {
 				// A dynamically resolved expression, supported as of 4.2...
 				if (evaluated instanceof Class) {
@@ -1731,9 +1732,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 				else if (evaluated instanceof String) {
 					// 如果是 String 类型，则说明是类的名称
-					// 赋值成 className
+					// 赋值成 className 为表达式解析后的结果
 					className = (String) evaluated;
-					// 设置方法的标识
+					// 设置解析标识，表示这个 className 表达式解析了，且和原 className 不一样
 					freshResolve = true;
 				}
 				else {
@@ -1746,7 +1747,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				if (dynamicLoader != null) {
 					try {
 						// 如果动态类加载器 dynamicLoader 不为空
-						// 类加载器加载类，然后直接返回
+						// 类加载器加载解析出来的这个 className，直接返回
 						return dynamicLoader.loadClass(className);
 					}
 					catch (ClassNotFoundException ex) {
@@ -1755,7 +1756,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						}
 					}
 				}
-				// 如果没有动态类加载器 dynamicLoader， 则利用反射获取到这个beanClass，然后返回
+				// 如果没有动态类加载器 dynamicLoader， 则利用反射获取到这个解析后的 className，然后返回
 				return ClassUtils.forName(className, dynamicLoader);
 			}
 		}

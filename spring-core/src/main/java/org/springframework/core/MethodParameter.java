@@ -632,6 +632,7 @@ public class MethodParameter {
 	public Annotation[] getParameterAnnotations() {
 		Annotation[] paramAnns = this.parameterAnnotations;
 		if (paramAnns == null) {
+			// 如果 parameterAnnotations 为空，则继续走下去解析
 			Annotation[][] annotationArray = this.executable.getParameterAnnotations();
 			int index = this.parameterIndex;
 			if (this.executable instanceof Constructor &&
@@ -643,8 +644,10 @@ public class MethodParameter {
 			}
 			paramAnns = (index >= 0 && index < annotationArray.length ?
 					adaptAnnotationArray(annotationArray[index]) : EMPTY_ANNOTATION_ARRAY);
+			// 缓存
 			this.parameterAnnotations = paramAnns;
 		}
+		// 返回
 		return paramAnns;
 	}
 

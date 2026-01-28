@@ -8,23 +8,24 @@
            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
 	       http://www.springframework.org/schema/my-user http://www.springframework.org/schema/expand/my-user.xsd">
 
-	<!-- Example Service Bean -->
-	<import resource="application-a.xml" />
+<!--	<import resource="application-a.xml" />-->
 <!--	<bean id="myBean1" class="org.springframework.mytest.bean.MyBean1" />-->
 
 <!--	Component Scan-->
-	<context:component-scan base-package="org.springframework.mytest.expand" />
+	<context:component-scan base-package="org.springframework.mytest" />
 
 <!--	<bean id="fruid" class="org.springframework.mytest.bean.MyBean1">-->
 <!--		<lookup-method></lookup-method>-->
 <!--	</bean>-->
 
 	<!-- Property Placeholder -->
-	<context:property-placeholder location="classpath:application.properties" />
+<!--	<context:property-placeholder location="classpath:application.properties" />-->
 
-	<my-user:user>
-		<my-user:property key="username" value="${username}"/>
-		<my-user:property key="password" value="${password}"/>
-	</my-user:user>
+<!--	<my-user:user>-->
+<!--		<my-user:property key="username" value="${username}"/>-->
+<!--		<my-user:property key="password" value="${password}"/>-->
+<!--	</my-user:user>-->
+
+<!--	<bean id="bean1" class="org.springframework.mytest.bean.components.Bean1" autowire="constructor"></bean>-->
 
 </beans>

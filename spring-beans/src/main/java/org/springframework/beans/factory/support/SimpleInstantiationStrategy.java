@@ -106,6 +106,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 		throw new UnsupportedOperationException("Method Injection not supported in SimpleInstantiationStrategy");
 	}
 
+	// 实例化对象
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner,
 			final Constructor<?> ctor, Object... args) {
@@ -118,9 +119,11 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 					return null;
 				});
 			}
+			// 反射，调用构造函数
 			return BeanUtils.instantiateClass(ctor, args);
 		}
 		else {
+			// 有 methodOverrides 方法覆盖的情况
 			return instantiateWithMethodInjection(bd, beanName, owner, ctor, args);
 		}
 	}

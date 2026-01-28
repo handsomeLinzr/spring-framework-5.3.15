@@ -51,10 +51,13 @@ public class ContextAnnotationAutowireCandidateResolver extends QualifierAnnotat
 	@Override
 	@Nullable
 	public Object getLazyResolutionProxyIfNecessary(DependencyDescriptor descriptor, @Nullable String beanName) {
+		// 是否对应的参数是有 Lazy 注解标识，表示懒加载
+		// 如果是有懒加载，则创建一个代理对应用于延迟解析，如果没有，返回 null
 		return (isLazy(descriptor) ? buildLazyResolutionProxy(descriptor, beanName) : null);
 	}
 
 	protected boolean isLazy(DependencyDescriptor descriptor) {
+		// 先获取对应的参数注解
 		for (Annotation ann : descriptor.getAnnotations()) {
 			Lazy lazy = AnnotationUtils.getAnnotation(ann, Lazy.class);
 			if (lazy != null && lazy.value()) {

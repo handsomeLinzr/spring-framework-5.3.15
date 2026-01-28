@@ -1336,21 +1336,33 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	public Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName,
 			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
 
+		// 初始化，这里就是设置属性而已
 		descriptor.initParameterNameDiscovery(getParameterNameDiscoverer());
+
+		// Optional 类型的处理
 		if (Optional.class == descriptor.getDependencyType()) {
 			return createOptionalDependency(descriptor, requestingBeanName);
 		}
+
+		// ObjectFactory 类型的处理
 		else if (ObjectFactory.class == descriptor.getDependencyType() ||
 				ObjectProvider.class == descriptor.getDependencyType()) {
 			return new DependencyObjectProvider(descriptor, requestingBeanName);
 		}
+
+		// 这个不管，一般得到 null
 		else if (javaxInjectProviderClass == descriptor.getDependencyType()) {
 			return new Jsr330Factory().createDependencyProvider(descriptor, requestingBeanName);
 		}
 		else {
+
+			// getAutowireCandidateResolver() ==> ContextAnnotationAutowireCandidateResolver
+			// 如果参数是懒加载，则创建一个延迟解析的代理
+			// 如果没有 @Lazy 注解标记，不需要延迟加载，这里范湖 null，如果有则返回代理对象
 			Object result = getAutowireCandidateResolver().getLazyResolutionProxyIfNecessary(
 					descriptor, requestingBeanName);
 			if (result == null) {
+				// 没有懒加载，马上解析依赖
 				result = doResolveDependency(descriptor, requestingBeanName, autowiredBeanNames, typeConverter);
 			}
 			return result;
@@ -1361,6 +1373,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	public Object doResolveDependency(DependencyDescriptor descriptor, @Nullable String beanName,
 			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
 
+		// 设置当前的注入是 descriptor
 		InjectionPoint previousInjectionPoint = ConstructorResolver.setCurrentInjectionPoint(descriptor);
 		try {
 			Object shortcut = descriptor.resolveShortcut(this);
@@ -1368,17 +1381,24 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				return shortcut;
 			}
 
+			// 获取这个参数的类
 			Class<?> type = descriptor.getDependencyType();
+			// 获取建议值，获取对应的 @Value 注解的 value
 			Object value = getAutowireCandidateResolver().getSuggestedValue(descriptor);
 			if (value != null) {
+				// 如果有
+				// 如果这个 value 是字符串
 				if (value instanceof String) {
+					// 内置的值处理器解析 value
 					String strVal = resolveEmbeddedValue((String) value);
 					BeanDefinition bd = (beanName != null && containsBean(beanName) ?
 							getMergedBeanDefinition(beanName) : null);
 					value = evaluateBeanDefinitionString(strVal, bd);
 				}
+				// 类型装换器转换
 				TypeConverter converter = (typeConverter != null ? typeConverter : getTypeConverter());
 				try {
+					// 转换后返回
 					return converter.convertIfNecessary(value, type, descriptor.getTypeDescriptor());
 				}
 				catch (UnsupportedOperationException ex) {
@@ -1389,8 +1409,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				}
 			}
 
+			// 如果没有 @Value
+			// 解析多数据 bean 的类型，数组、list、map 这些
 			Object multipleBeans = resolveMultipleBeans(descriptor, beanName, autowiredBeanNames, typeConverter);
 			if (multipleBeans != null) {
+				// 如果真的解析出来了，返回
 				return multipleBeans;
 			}
 
@@ -1431,6 +1454,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				autowiredBeanNames.add(autowiredBeanName);
 			}
 			if (instanceCandidate instanceof Class) {
+				// DependencyDescriptor 中直接调用 getBean 获取
 				instanceCandidate = descriptor.resolveCandidate(autowiredBeanName, type, this);
 			}
 			Object result = instanceCandidate;

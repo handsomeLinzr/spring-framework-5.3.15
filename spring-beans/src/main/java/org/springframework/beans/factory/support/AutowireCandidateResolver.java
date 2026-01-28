@@ -85,6 +85,7 @@ public interface AutowireCandidateResolver {
 		return null;
 	}
 
+	// 如果注入的参数需要，为实际的依赖目标创建一个延迟解析的代理
 	/**
 	 * Build a proxy for lazy resolution of the actual dependency target,
 	 * if demanded by the injection point.

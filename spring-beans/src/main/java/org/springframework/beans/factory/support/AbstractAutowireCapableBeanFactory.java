@@ -612,11 +612,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Instantiate the bean.
 		BeanWrapper instanceWrapper = null;
 		if (mbd.isSingleton()) {
-			// 单例的bean，先从 factoryBeanInstanceCache 中尝试获取到 FactoryBean 实例
+			// 单例的bean，先从 factoryBeanInstanceCache 中尝试获取到实例
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
-			// 如果真的有，调用 defaultConstructor 创建 实例
+			// 如果真的有，调用 createBeanInstance 创建实例
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
 		// 从 bw 中获取对应的 bean 实例对象
@@ -809,18 +809,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// 先设置对应的静态方法标识为 true
 			boolean isStatic = true;
 
-			// 获取方法名称
+			// 获取方法所在的类的名称
 			String factoryBeanName = mbd.getFactoryBeanName();
 			if (factoryBeanName != null) {
-				// 如果设置了factoryBeanName
+				// 对应的 bean 的名称，不能和所在的类名称一样，不然就是构造函数了
 				if (factoryBeanName.equals(beanName)) {
 					throw new BeanDefinitionStoreException(mbd.getResourceDescription(), beanName,
 							"factory-bean reference points back to the same bean definition");
 				}
 				// Check declared factory method return type on factory class.
-				// 获取对应的这个方法的返回类型
+				// 获取对应的类的 Class
 				factoryClass = getType(factoryBeanName);
-				// 则该bean方法不是静态方法
+				// 走到这里，说明这个 bean 方法不是静态方法
 				isStatic = false;
 			}
 			else {
@@ -840,16 +840,22 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 			// If all factory methods have the same return type, return that type.
 			// Can't clearly figure out exact method due to type converting / autowiring!
-			// 获取最少的参数数量
+			// 获取最少的参数数量，默认没有则是 0
 			int minNrOfArgs =
 					(mbd.hasConstructorArgumentValues() ? mbd.getConstructorArgumentValues().getArgumentCount() : 0);
+			// 获取这个类的所有普通方法
 			Method[] candidates = this.factoryMethodCandidateCache.computeIfAbsent(factoryClass,
 					clazz -> ReflectionUtils.getUniqueDeclaredMethods(clazz, ReflectionUtils.USER_DECLARED_METHODS));
 
+			// 遍历所有的方法
 			for (Method candidate : candidates) {
+				// 静态/非静态类型和上边得到的结果一样
+				// mbd.isFactoryMethod(candidate) 这个方法名称和这个 bean 对应的方法名称一样
+				// 这个方法的参数个数大于等于最小的参数个数
 				if (Modifier.isStatic(candidate.getModifiers()) == isStatic && mbd.isFactoryMethod(candidate) &&
 						candidate.getParameterCount() >= minNrOfArgs) {
 					// Declared type variables to inspect?
+					// 判断如果这个是否有包含泛型
 					if (candidate.getTypeParameters().length > 0) {
 						try {
 							// Fully resolve parameter names and argument values.
@@ -890,7 +896,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 						}
 					}
 					else {
+						// 如果这个方法没有泛型
+						// uniqueCandidate 赋值给当前这个方法，无参的 bean 方法无需注入，所以这里是可以直接赋值
 						uniqueCandidate = (commonType == null ? candidate : null);
+						// 获取这个方法的返回类型和commonType 的共同父类，如果其中一个是 null 则返回另一个
+						// 这里一般上边得到的 commonType 为 null，所以下边执行后得到的 commonType 就是 candidate.getReturnType()
 						commonType = ClassUtils.determineCommonAncestor(candidate.getReturnType(), commonType);
 						if (commonType == null) {
 							// Ambiguous return types found: return null to indicate "not determinable".
@@ -900,6 +910,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				}
 			}
 
+			// 设置 mbd 的 factoryMethodToIntrospect，指向当前的方法
 			mbd.factoryMethodToIntrospect = uniqueCandidate;
 			if (commonType == null) {
 				return null;
@@ -1272,9 +1283,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	protected BeanWrapper createBeanInstance(String beanName, RootBeanDefinition mbd, @Nullable Object[] args) {
 		// Make sure bean class is actually resolved at this point.
-		// beanClass类型
+		// 确保 beanClass 到这里已经解析出来了
+		// 获取到正确的这个 bean 的 Class 类
 		Class<?> beanClass = resolveBeanClass(mbd, beanName);
 
+		// 检验 class 必须是 public 的
 		if (beanClass != null && !Modifier.isPublic(beanClass.getModifiers()) && !mbd.isNonPublicAccessAllowed()) {
 			throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 					"Bean class isn't public, and non-public access not allowed: " + beanClass.getName());
@@ -1286,7 +1299,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			return obtainFromSupplier(instanceSupplier, beanName);
 		}
 
-		// 判断有没有 factoryMethod，有则调用然后也是返回
+		// 判断有没有 factoryMethodName，有则调用然后也是返回
+		// @Bean 注解方法的情况走的这里
 		if (mbd.getFactoryMethodName() != null) {
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
 		}
@@ -1444,7 +1458,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 						getAccessControlContext());
 			}
 			else {
-				beanInstance = getInstantiationStrategy().instantiate(mbd, beanName, this);  // CglibSubclassingInstantiationStrategy.instantiate，构建示例对象
+				// CglibSubclassingInstantiationStrategy.instantiate，构建示例对象
+				beanInstance = getInstantiationStrategy().instantiate(mbd, beanName, this);
 			}
 			BeanWrapper bw = new BeanWrapperImpl(beanInstance);   // 构建BW对象
 			initBeanWrapper(bw);
