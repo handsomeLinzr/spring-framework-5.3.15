@@ -69,7 +69,9 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 			synchronized (bd.constructorArgumentLock) {
 				constructorToUse = (Constructor<?>) bd.resolvedConstructorOrFactoryMethod;
 				if (constructorToUse == null) {
-					final Class<?> clazz = bd.getBeanClass();  // 获取Class
+					// 获取Class
+					final Class<?> clazz = bd.getBeanClass();
+					// 如果是一个接口，抛异常
 					if (clazz.isInterface()) {
 						throw new BeanInstantiationException(clazz, "Specified class is an interface");
 					}
@@ -79,19 +81,23 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 									(PrivilegedExceptionAction<Constructor<?>>) clazz::getDeclaredConstructor);
 						}
 						else {
-							constructorToUse = clazz.getDeclaredConstructor();  // 获取构造函数
+							// 获取无参构造函数
+							constructorToUse = clazz.getDeclaredConstructor();
 						}
-						bd.resolvedConstructorOrFactoryMethod = constructorToUse;  // 设置构造器
+						// 设置构造器
+						bd.resolvedConstructorOrFactoryMethod = constructorToUse;
 					}
 					catch (Throwable ex) {
 						throw new BeanInstantiationException(clazz, "No default constructor found", ex);
 					}
 				}
 			}
-			return BeanUtils.instantiateClass(constructorToUse);  // 创建示例对象
+			// 创建实例函数，用空参数
+			return BeanUtils.instantiateClass(constructorToUse);
 		}
 		else {
 			// Must generate CGLIB subclass.
+			// 如果有 methodOverrides，则需要创建代理
 			return instantiateWithMethodInjection(bd, beanName, owner);
 		}
 	}

@@ -242,6 +242,7 @@ public abstract class BeanFactoryUtils {
 		return result;
 	}
 
+	// 根据类型寻找对应的所有bean名称
 	/**
 	 * Get all bean names for the given type, including those defined in ancestor
 	 * factories. Will return unique names in case of overridden bean definitions.
@@ -267,8 +268,10 @@ public abstract class BeanFactoryUtils {
 			ListableBeanFactory lbf, Class<?> type, boolean includeNonSingletons, boolean allowEagerInit) {
 
 		Assert.notNull(lbf, "ListableBeanFactory must not be null");
+		// 获取 type 类型的所有bean名称
 		String[] result = lbf.getBeanNamesForType(type, includeNonSingletons, allowEagerInit);
 		if (lbf instanceof HierarchicalBeanFactory) {
+			// 如果当前这个 beanFactory 是一个有层级类型的工厂，则继续查看父类工厂
 			HierarchicalBeanFactory hbf = (HierarchicalBeanFactory) lbf;
 			if (hbf.getParentBeanFactory() instanceof ListableBeanFactory) {
 				String[] parentResult = beanNamesForTypeIncludingAncestors(

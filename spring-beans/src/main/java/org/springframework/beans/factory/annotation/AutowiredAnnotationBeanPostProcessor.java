@@ -374,7 +374,10 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 						}
 						// 如果得到的 ann 不为 null，即当前这个方法是有自动装配的构造函数
 						if (ann != null) {
+							// 如果此时 ann 不为空，说明当前这个方法有加了自动装配的注解
 							if (requiredConstructor != null) {
+								// 如果 requiredConstructor 不为空，说明在这个方法之前也有自动装配注解的构造函数
+								// 则抛出异常，不能同时有多个自动装配的构造函数
 								throw new BeanCreationException(beanName,
 										"Invalid autowire-marked constructor: " + candidate +
 										". Found constructor with 'required' Autowired annotation already: " +
@@ -409,7 +412,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 							// 如果有默认的构造函数，即有无参的构造函数
 							if (defaultConstructor != null) {
 								// 如果有候选函数，则无参构造函数也一起加到候选中
-								// 如果没有欧萱函数，则不用加，后边会再拿到这个无参构造函数
+								// 如果没有无参构造函数，则不用加，后边会再拿到这个无参构造函数
 								candidates.add(defaultConstructor);
 							}
 							else if (candidates.size() == 1 && logger.isInfoEnabled()) {
@@ -426,15 +429,17 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 					else if (rawCandidates.length == 1 && rawCandidates[0].getParameterCount() > 0) {
 						candidateConstructors = new Constructor<?>[] {rawCandidates[0]};
 					}
-					// 下边的逻辑不看了，基本都是这里判断那里判断
+					// 非合成的，普通的构造函数如果有两个，且 primaryConstructor 不为 null，这个不知道是什么东东，一般是 null，不走这里
 					else if (nonSyntheticConstructors == 2 && primaryConstructor != null &&
 							defaultConstructor != null && !primaryConstructor.equals(defaultConstructor)) {
 						candidateConstructors = new Constructor<?>[] {primaryConstructor, defaultConstructor};
 					}
+					// primaryConstructor 也是同上，一般是 null，不走
 					else if (nonSyntheticConstructors == 1 && primaryConstructor != null) {
 						candidateConstructors = new Constructor<?>[] {primaryConstructor};
 					}
 					else {
+						// 最后，候选空
 						candidateConstructors = new Constructor<?>[0];
 					}
 					// 最后加入缓存，下次就不用再遍历扫描了
@@ -572,9 +577,14 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 		return InjectionMetadata.forElements(elements, clazz);
 	}
 
+	// 获取有自动装配注解的构造函数
 	@Nullable
 	private MergedAnnotation<?> findAutowiredAnnotation(AccessibleObject ao) {
+		// 获取构造函数的注解
 		MergedAnnotations annotations = MergedAnnotations.from(ao);
+		// 遍历注解 @Autowired 和 @Value，查看当前构造函数是否有这个注解
+		// 如果有，就返回这个注解
+		// 如果没有，返回 null
 		for (Class<? extends Annotation> type : this.autowiredAnnotationTypes) {
 			MergedAnnotation<?> annotation = annotations.get(type);
 			if (annotation.isPresent()) {

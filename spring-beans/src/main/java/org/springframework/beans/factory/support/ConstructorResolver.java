@@ -146,7 +146,7 @@ class ConstructorResolver {
 			argsToUse = explicitArgs;
 		}
 		else {
-			// 生命一个 argsToResolve
+			// 声明一个 argsToResolve
 			Object[] argsToResolve = null;
 			// 加锁
 			synchronized (mbd.constructorArgumentLock) {
@@ -227,11 +227,11 @@ class ConstructorResolver {
 				// 如果传进来的参数是空的，则没有参数
 				ConstructorArgumentValues cargs = mbd.getConstructorArgumentValues();
 				resolvedValues = new ConstructorArgumentValues();
-				// 解析构造函数，得到最少的参数个数
+				// 解析构造函数，得到最少的参数个数，如果是默认的则是 0
 				minNrOfArgs = resolveConstructorArguments(beanName, mbd, bw, cargs, resolvedValues);
 			}
 
-			// 候选的构造函数排序
+			// 候选的构造函数排序，按照参数的个数，从多到少
 			AutowireUtils.sortConstructors(candidates);
 			int minTypeDiffWeight = Integer.MAX_VALUE;
 			Set<Constructor<?>> ambiguousConstructors = null;
@@ -258,13 +258,18 @@ class ConstructorResolver {
 				Class<?>[] paramTypes = candidate.getParameterTypes();
 				if (resolvedValues != null) {
 					try {
+						// 计算获取参数的名称
 						String[] paramNames = ConstructorPropertiesChecker.evaluate(candidate, parameterCount);
 						if (paramNames == null) {
+							// 如果拿不到，则获取 beanFactory 的 ParameterNameDiscoverer，进行解析参数名称
 							ParameterNameDiscoverer pnd = this.beanFactory.getParameterNameDiscoverer();
 							if (pnd != null) {
+								// 解析获取参数名称，得到构造函数的参数名称
 								paramNames = pnd.getParameterNames(candidate);
 							}
 						}
+
+						// 创建参数值，返回所有参数包含的一个包装类
 						argsHolder = createArgumentArray(beanName, mbd, resolvedValues, bw, paramTypes, paramNames,
 								getUserDeclaredConstructor(candidate), autowiring, candidates.length == 1);
 					}
@@ -332,6 +337,8 @@ class ConstructorResolver {
 		}
 
 		Assert.state(argsToUse != null, "Unresolved constructor arguments");
+		// 梳理话 bean，通过上边得到的构造函数和参数
+		// 设置给 bw
 		bw.setBeanInstance(instantiate(beanName, mbd, constructorToUse, argsToUse));
 		return bw;
 	}
@@ -340,6 +347,7 @@ class ConstructorResolver {
 			String beanName, RootBeanDefinition mbd, Constructor<?> constructorToUse, Object[] argsToUse) {
 
 		try {
+			// 获取实例化策略
 			InstantiationStrategy strategy = this.beanFactory.getInstantiationStrategy();
 			if (System.getSecurityManager() != null) {
 				return AccessController.doPrivileged((PrivilegedAction<Object>) () ->
@@ -347,6 +355,7 @@ class ConstructorResolver {
 						this.beanFactory.getAccessControlContext());
 			}
 			else {
+				// 实例化
 				return strategy.instantiate(mbd, beanName, this.beanFactory, constructorToUse, argsToUse);
 			}
 		}
@@ -364,30 +373,41 @@ class ConstructorResolver {
 	public void resolveFactoryMethodIfPossible(RootBeanDefinition mbd) {
 		Class<?> factoryClass;
 		boolean isStatic;
+		// 先获取这个方法对应的外部的配置类的 Class
 		if (mbd.getFactoryBeanName() != null) {
 			factoryClass = this.beanFactory.getType(mbd.getFactoryBeanName());
+			// 非静态工厂
 			isStatic = false;
 		}
 		else {
+			// 静态工厂
 			factoryClass = mbd.getBeanClass();
 			isStatic = true;
 		}
 		Assert.state(factoryClass != null, "Unresolvable factory class");
+		// 获取真正的类，比如代理则会返回目标类
 		factoryClass = ClassUtils.getUserClass(factoryClass);
 
+		// 从 factoryClass 这个配置类中获取到候选的方法
 		Method[] candidates = getCandidateMethods(factoryClass, mbd);
 		Method uniqueCandidate = null;
+		// 遍历所有的方法
 		for (Method candidate : candidates) {
+			// 1.修饰符一样 （静态 和 非静态)）
+			// 2.是否方法名一样、有@Bean 注解、对应的 beanName 能匹配上
 			if (Modifier.isStatic(candidate.getModifiers()) == isStatic && mbd.isFactoryMethod(candidate)) {
 				if (uniqueCandidate == null) {
+					// 如果是，则将该方法赋值给 uniqueCandidate
 					uniqueCandidate = candidate;
 				}
 				else if (isParamMismatch(uniqueCandidate, candidate)) {
+					// 不匹配，则没有
 					uniqueCandidate = null;
 					break;
 				}
 			}
 		}
+		// 设置对应的方法
 		mbd.factoryMethodToIntrospect = uniqueCandidate;
 	}
 
@@ -769,7 +789,7 @@ class ConstructorResolver {
 		}
 	}
 
-	// 将此bean的构造函数参数解析到resolvedValues对象中。这可能涉及到查找其他bean。
+	// 解析这个构造函数参数的数量，作为最小的参数数量
 	/**
 	 * Resolve the constructor arguments for this bean into the resolvedValues object.
 	 * This may involve looking up other beans.
@@ -789,7 +809,7 @@ class ConstructorResolver {
 		// 默认是 0
 		int minNrOfArgs = cargs.getArgumentCount();
 
-		// todo 后边继续注释解析，先跳过
+		// 如果是没有数据的情况，跳过
 		for (Map.Entry<Integer, ConstructorArgumentValues.ValueHolder> entry : cargs.getIndexedArgumentValues().entrySet()) {
 			int index = entry.getKey();
 			if (index < 0) {
@@ -813,7 +833,7 @@ class ConstructorResolver {
 			}
 		}
 
-		//  todo 值处理，后边继续注释分析，先跳过
+		//  没有数据的情况，跳过
 		for (ConstructorArgumentValues.ValueHolder valueHolder : cargs.getGenericArgumentValues()) {
 			if (valueHolder.isConverted()) {
 				resolvedValues.addGenericArgumentValue(valueHolder);
@@ -828,6 +848,7 @@ class ConstructorResolver {
 			}
 		}
 
+		// 如果上边都没有，则直接返回这个值，默认是 0
 		return minNrOfArgs;
 	}
 
@@ -913,15 +934,18 @@ class ConstructorResolver {
 							"] - did you specify the correct bean references as arguments?");
 				}
 				try {
-					// 处理注入的参数
+					// 处理注入的参数，得到对应的这个要注入的对象
 					Object autowiredArgument = resolveAutowiredArgument(
 							methodParam, beanName, autowiredBeanNames, converter, fallback);
+
+					// 设置参数，填到数组中，最后要返回的
 					args.rawArguments[paramIndex] = autowiredArgument;
 					args.arguments[paramIndex] = autowiredArgument;
 					args.preparedArguments[paramIndex] = autowiredArgumentMarker;
 					args.resolveNecessary = true;
 				}
 				catch (BeansException ex) {
+					// 如果拿不到，则抛异常，外部方法会捕获
 					throw new UnsatisfiedDependencyException(
 							mbd.getResourceDescription(), beanName, new InjectionPoint(methodParam), ex);
 				}
@@ -929,6 +953,8 @@ class ConstructorResolver {
 		}
 
 		for (String autowiredBeanName : autowiredBeanNames) {
+			// 走到这里，则没有抛出异常，说明是正常获取
+			// 所以这里进行依赖的缓存记录
 			this.beanFactory.registerDependentBean(autowiredBeanName, beanName);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Autowiring by type from bean name '" + beanName +
@@ -937,6 +963,7 @@ class ConstructorResolver {
 			}
 		}
 
+		// 返回参数
 		return args;
 	}
 
@@ -1012,7 +1039,8 @@ class ConstructorResolver {
 			return injectionPoint;
 		}
 		try {
-			// 调用 beanFactory，处理这个参数依赖，返回处理后的结果参数
+			// 调用 beanFactory，解析这个依赖参数，返回处理后的结果参数
+			// 一般如果参数也是被 Spring 管理的 bean，这里最后会调用到 getBean 方法，拿到对应的 bean
 			return this.beanFactory.resolveDependency(
 					// 这个可以看成是对应的方法和参数的一个包装
 					new DependencyDescriptor(param, true), beanName, autowiredBeanNames, typeConverter);

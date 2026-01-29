@@ -22,6 +22,10 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.PropertyValues;
 import org.springframework.lang.Nullable;
 
+// BPP 的字类，在 bpp 的基础上增加了 before-instantiation 方法回调，在实例化 bean，但是还没依赖注入设置属性的
+// 时候调用
+// 通常用于替换默认的初始化目标 bean 的实现，例如去创建一个具体特殊目标源的代理、池化目标或者懒加载目标等。
+// 或者实现去增加特定逻辑如字段的注入
 /**
  * Subinterface of {@link BeanPostProcessor} that adds a before-instantiation callback,
  * and a callback after instantiation but before explicit properties are set or

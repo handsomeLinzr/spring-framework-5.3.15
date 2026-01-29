@@ -197,16 +197,22 @@ public abstract class BeanUtils {
 				return KotlinDelegate.instantiateClass(ctor, args);
 			}
 			else {
-				// 构造函数的参数
+				// 构造函数的参数类型
 				Class<?>[] parameterTypes = ctor.getParameterTypes();
 				Assert.isTrue(args.length <= parameterTypes.length, "Can't specify more arguments than constructor parameters");
 				Object[] argsWithDefaultValues = new Object[args.length];
+				// 遍历参数类型
 				for (int i = 0 ; i < args.length; i++) {
+					// 如果对应的入参是 null
 					if (args[i] == null) {
+						// 获取类型
 						Class<?> parameterType = parameterTypes[i];
+						// 如果是基本数据类型（DEFAULT_TYPE_VALUES 这里的类型)，就用默认值
+						// 如果非基本数据类型，则用 null
 						argsWithDefaultValues[i] = (parameterType.isPrimitive() ? DEFAULT_TYPE_VALUES.get(parameterType) : null);
 					}
 					else {
+						// 否则将对应的入参作为构造函数的参数
 						argsWithDefaultValues[i] = args[i];
 					}
 				}

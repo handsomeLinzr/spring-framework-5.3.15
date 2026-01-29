@@ -524,6 +524,9 @@ class ConfigurationClassBeanDefinitionReader {
 
 		@Override
 		public boolean isFactoryMethod(Method candidate) {
+			// 1.是否方法名称能匹配上
+			// 2.是否有 @Bean 注解
+			// 3.这个 bean 的 beanName 是否和要求的一样
 			return (super.isFactoryMethod(candidate) && BeanAnnotationHelper.isBeanAnnotated(candidate) &&
 					BeanAnnotationHelper.determineBeanNameFor(candidate).equals(this.derivedBeanName));
 		}

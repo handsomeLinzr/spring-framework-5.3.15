@@ -1301,6 +1301,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// 判断有没有 factoryMethodName，有则调用然后也是返回
 		// @Bean 注解方法的情况走的这里
+		// 有多个重载 @Bean 方法的情况下：优先用参数多，且参数都是 Spring 管理的那个方法
 		if (mbd.getFactoryMethodName() != null) {
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
 		}
@@ -1461,7 +1462,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				// CglibSubclassingInstantiationStrategy.instantiate，构建示例对象
 				beanInstance = getInstantiationStrategy().instantiate(mbd, beanName, this);
 			}
-			BeanWrapper bw = new BeanWrapperImpl(beanInstance);   // 构建BW对象
+			// 构建BW对象
+			BeanWrapper bw = new BeanWrapperImpl(beanInstance);
 			initBeanWrapper(bw);
 			return bw;
 		}
@@ -1508,6 +1510,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected BeanWrapper autowireConstructor(
 			String beanName, RootBeanDefinition mbd, @Nullable Constructor<?>[] ctors, @Nullable Object[] explicitArgs) {
 
+		// 选择指定的构造函数实例化
 		return new ConstructorResolver(this).autowireConstructor(beanName, mbd, ctors, explicitArgs);
 	}
 
