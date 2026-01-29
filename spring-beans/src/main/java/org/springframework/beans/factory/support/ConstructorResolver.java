@@ -66,6 +66,9 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 // 用来解析构造函数和工厂方法的解析器，通过参数匹配来解析构造函数
+// 总结：
+// 1.默认是用加了自动装配注解的构造函数 —— 如果存在多个自动装配构造函数，抛异常
+// 2.用无参构造函数  —— 如果没有无参构造函数，抛异常
 /**
  * Delegate for resolving constructors and factory methods.
  *

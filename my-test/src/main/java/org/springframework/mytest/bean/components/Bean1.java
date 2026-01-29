@@ -18,7 +18,6 @@ public class Bean1 {
 		this.bean3 = bean3;
 	}
 
-	@Autowired
 	public Bean1(Bean2 bean2) {
 		this.bean2 = bean2;
 	}
