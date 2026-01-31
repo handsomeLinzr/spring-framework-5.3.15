@@ -204,6 +204,8 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 */
 	void setTypeConverter(TypeConverter typeConverter);
 
+	// 获取该 beanFactory 的类型转换器，这可能每次都是一个新的实例，因为类型转换器通常不是线程安全的
+	// 如果默认的 PropertyEditor 是激活的，返回的 TypeConverter 将会适配所有的主持的自定义编辑器
 	/**
 	 * Obtain a type converter as used by this BeanFactory. This may be a fresh
 	 * instance for each call, since TypeConverters are usually <i>not</i> thread-safe.

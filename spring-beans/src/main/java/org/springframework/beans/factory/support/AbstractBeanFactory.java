@@ -168,6 +168,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	//  	ApplicationContextAwareProcessor
 	//  	ApplicationListenerDetector
 	//  	LoadTimeWeaverAwareProcessor（有 LoadTimeWeaver 这个bean 的时候）
+	// 记录了所有的当前 bean 工厂的 bpp
 	/** BeanPostProcessors to apply. */
 	private final List<BeanPostProcessor> beanPostProcessors = new BeanPostProcessorCacheAwareList();
 
@@ -273,7 +274,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 		// Eagerly check singleton cache for manually registered singletons.
 		// 先从缓存中获取，获取到的可能是提前暴露的半成品对象
-		// 从一二三级缓冲中获取
+		// 从一二三级缓存中获取，第一次获取bean，或者非单例的，则拿不到，
+		// 一二三级缓存方法 DefaultSingletonBeanRegistry
+		// factoryBean 的内部实际实例缓存放在 FactoryBeanRegistrySupport
 		Object sharedInstance = getSingleton(beanName);
 
 		// 判断从缓存中能得到对象
@@ -384,6 +387,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// 单例模式，创建一个单例对象
 				if (mbd.isSingleton()) {
 					// getSingleton 方法获取 bean
+					// getSingleton 方法：
+					//	1.先从一级缓存中获取 bean
+					//	2.如果一级缓存中没有
+					//		2.1.设置当前这个 bean 正在创建中
+					// 		2.2.调用 singletonFactory.getObject() 获取 bean，其实就是走的这里传进去的 lambda 表达式的逻辑，调用到了 createBean 方法
+					//		2.3.移除回去 2.1 中设置的当前正在创建这个 bean 的操作
+					//		2.4.创建好了 bean，添加到一级缓存，清除二三级缓存
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
 							// 创建 bean 的过程
@@ -465,6 +475,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 		}
 
+		// 根据 bean 类型和 bean 实例，进行类型转换
 		return adaptBeanInstance(name, beanInstance, requiredType);
 	}
 
@@ -987,14 +998,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 	@Override
 	public TypeConverter getTypeConverter() {
+		// 优先获取自定义的类型转换器,如果有则用这个
 		TypeConverter customConverter = getCustomTypeConverter();
 		if (customConverter != null) {
 			return customConverter;
 		}
 		else {
+			// 如果没有自定义的类型转换器，则用默认的类型转换器
 			// Build default TypeConverter, registering custom editors.
 			SimpleTypeConverter typeConverter = new SimpleTypeConverter();
 			typeConverter.setConversionService(getConversionService());
+			// 注入默认的类型转换器
 			registerCustomEditors(typeConverter);
 			return typeConverter;
 		}
@@ -1027,6 +1041,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		return result;
 	}
 
+	// 添加 bpp
 	@Override
 	public void addBeanPostProcessor(BeanPostProcessor  beanPostProcessor) {
 		Assert.notNull(beanPostProcessor, "BeanPostProcessor must not be null");
@@ -1407,8 +1422,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			((PropertyEditorRegistrySupport) registry).useConfigValueEditors();
 		}
 		if (!this.propertyEditorRegistrars.isEmpty()) {
+			// 默认这个 propertyEditorRegistrars 中会有 ResourceEditorRegistrar
 			for (PropertyEditorRegistrar registrar : this.propertyEditorRegistrars) {
 				try {
+					// 进行注册
 					registrar.registerCustomEditors(registry);
 				}
 				catch (BeanCreationException ex) {
@@ -2033,7 +2050,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// Don't let calling code try to dereference the factory if the bean isn't a factory.
 		// 是否是 & 开头
 		if (BeanFactoryUtils.isFactoryDereference(name)) {
-			// 如果是 & 开头
+			// 如果是 null
 			if (beanInstance instanceof NullBean) {
 				// 如果是属于 NullBean，直接放回
 				// factoryBean的情况，且getObject放回null，则就是返回NullBean对象

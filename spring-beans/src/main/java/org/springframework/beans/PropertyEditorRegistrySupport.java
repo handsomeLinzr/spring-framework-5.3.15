@@ -164,6 +164,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 		this.configValueEditorsActive = true;
 	}
 
+	// 用给定的属性编辑器，来覆盖默认的属性编辑器
 	/**
 	 * Override the default editor for the specified type with the given property editor.
 	 * <p>Note that this is different from registering a custom editor in that the editor

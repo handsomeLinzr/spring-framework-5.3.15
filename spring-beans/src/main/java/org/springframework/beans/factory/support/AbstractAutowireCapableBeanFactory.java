@@ -557,6 +557,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					beanName, "Validation of method overrides failed", ex);
 		}
 
+		// 实例化 bean 请（创建 bean 前)，调用
+		// InstantiationAwareBeanPostProcessor.applyBeanPostProcessorsBeforeInstantiation
+		//		如果得到的结果不为 null，则调用 InstantiationAwareBeanPostProcessor.applyBeanPostProcessorsAfterInitialization
 		try {
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
 			// 给 bpp 一个机会去返回一个代理实例，即可以定义一个 InstantiationAwareBeanPostProcessor，在
@@ -630,12 +633,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Allow post-processors to modify the merged bean definition.
 		// 允许 bpp 去修改这个 bd
+		// 调用 MergedBeanDefinitionPostProcessor.postProcessMergedBeanDefinition,
+		//		这里可以调用到 MergedBeanDefinitionPostProcessor、CommonAnnotationBeanPostProcessor、AutowiredAnnotationBeanPostProcessor
+		//		解析 @PostConstruct 和 @PreDestroy 初始化和销毁前的方法（CommonAnnotationBeanPostProcessor -> InitDestroyAnnotationBeanPostProcessor）
+		//		解析 @Resource 注解（CommonAnnotationBeanPostProcessor）
+		//		解析 @Autowired 和 @Value 注解（AutowiredAnnotationBeanPostProcessor）
+		//   以上只是解析出来，放到声明周期的缓存中，而缓存放在各自的 bpp 实例中
 		synchronized (mbd.postProcessingLock) {
 			if (!mbd.postProcessed) {
 				try {
 					// 调用所有的 MergedBeanDefinitionPostProcessor 对象，执行 postProcessMergedBeanDefinition 方法
 					// 依赖注入和初始化和销毁前方法的前置扫描就是靠这里的调用，扫描出注解的 @Resource @Autowired
-					// 对应的 bpp 类是 MergedBeanDefinitionPostProcessor、AutowiredAnnotationBeanPostProcessor
+					// 对应的 bpp 类是 MergedBeanDefinitionPostProcessor、AutowiredAnnotationBeanPostProcessor、CommonAnnotationBeanPostProcessor
 					// 扫描出来后设置到缓存中
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
@@ -657,7 +666,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				logger.trace("Eagerly caching bean '" + beanName +
 						"' to allow for resolving potential circular references");
 			}
-			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));  // 添加三级缓存
+			// 创建完 bean 了，将对象和一个 lambda 表达式的逻辑，一起放到三级缓存中
+			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
 		// Initialize the bean instance.
@@ -1269,6 +1279,21 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	}
 
 	// 根据给定的 bean，用合适的策略创建一个实例对象，包括有：factoryMethod, autowiring 构造函数或者简单的实例化
+	// 1.如果对应的 bean 有 instanceSupplier，则用 instanceSupplier 创建 bean
+	// 2.如果对应的 bean 有 factoryMethod,如静态工厂、或者是 Configuration 里的 @Bean 注解的方法，则用这个方法创建 bean
+	//		2.1. 如果这个 bean（有@Bean 指定名称则是这个名称，没有则是方法名）有 @Autowired 注解自动装配
+	//			2.1.1.如果是只有一个，则用这个，则用这个方法进行创建 bean
+	//				2.1.1.1.如果有参数，参数类型是引用类型，则通过这个类型在 beanFactory 中找到对应的 beanName，然后通过 beanName 获取到 bean
+	//				2.1.1.2.如果有参数，参数类型是基本类型，则匹配对应的默认数据，如 0，false 等
+	//				2.1.1.3.如果没有参数，直接调用
+	//			2.1.2.如果有多个，抛异常
+	//		2.2.如果对应的 bean 只有1个方法，则直接用这个方法
+	//		2.3.如果对应的 bean 只有多个方法，重载，则优先用参数多的那个
+	//	3.如果对应的 bean 上边两种都不命中
+	//		3.1.如果对应的 bean 有1个构造函数有 @Autowired 注解，则用这个构造函数，有参数的话，则和上边一样获取参数
+	//		3.2.如果对应的 bean 有多个构造函数有 @Autowired 注解，抛异常
+	//		3.3.如果对应的 bean 有无参构造函数，用无参构造函数
+	//		3.4.如果对应的 bean 没有无参构造函数，抛异常
 	/**
 	 * Create a new instance for the specified bean, using an appropriate instantiation strategy:
 	 * factory method, constructor autowiring, or simple instantiation.

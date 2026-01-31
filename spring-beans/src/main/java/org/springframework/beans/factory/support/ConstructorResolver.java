@@ -167,7 +167,7 @@ class ConstructorResolver {
 			}
 			// 如果参数不为空
 			if (argsToResolve != null) {
-				// 处理参数
+				// 解析参数，得到对应的参数数据
 				argsToUse = resolvePreparedArguments(beanName, mbd, bw, constructorToUse, argsToResolve);
 			}
 		}
@@ -261,7 +261,8 @@ class ConstructorResolver {
 				Class<?>[] paramTypes = candidate.getParameterTypes();
 				if (resolvedValues != null) {
 					try {
-						// 计算获取参数的名称
+						// 解析是否有注解 ConstructorProperties，有的话解析得到对应的参数名
+						// 这个注解以前很久的了，现在基本都不会用了，所以一般这里返回 null
 						String[] paramNames = ConstructorPropertiesChecker.evaluate(candidate, parameterCount);
 						if (paramNames == null) {
 							// 如果拿不到，则获取 beanFactory 的 ParameterNameDiscoverer，进行解析参数名称
@@ -856,6 +857,8 @@ class ConstructorResolver {
 	}
 
 	// 解析给定的构造函数的参数值，创建一个用于进行构造函数或工厂方法调用的参数数组
+	// 最后得到的参数数组中，如果是 bean 的情况下，则会去调用 getBean 得到对应的实例对象
+	// 通过对应的 type 得到对应的 beanName，再通过 beanName 调用 getBean 方法得到对象
 	/**
 	 * Create an array of arguments to invoke a constructor or factory method,
 	 * given the resolved constructor argument values.
