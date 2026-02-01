@@ -475,7 +475,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 		}
 
-		// 根据 bean 类型和 bean 实例，进行类型转换
+		// 如果有传进来 requiredType 类型，根据 bean 类型和 bean 实例，进行类型转换
 		return adaptBeanInstance(name, beanInstance, requiredType);
 	}
 

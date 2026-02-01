@@ -1,6 +1,8 @@
 package org.springframework.mytest;
 
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.mytest.bean.components.aop.Bean1;
+import org.springframework.mytest.bean.components.aop.Bean2;
 
 /**
  * @author linzherong
@@ -10,15 +12,16 @@ public class MyTest {
 
 	public static void main(String[] args) {
 		ClassPathXmlApplicationContext ac = new ClassPathXmlApplicationContext("classpath:application.xml");
-		Object bean1 = ac.getBean("bean1");
-		Object bean2 = ac.getBean("bean2");
-		Object bean3 = ac.getBean("bean3");
-		Object bean32 = ac.getBean("bean3");
-		Object bean4 = ac.getBean("factoryBean4Bean4");
-		Object bean42 = ac.getBean("factoryBean4Bean4");
-		Object factoryBean4Bean4 = ac.getBean("&factoryBean4Bean4");
-		Object factoryBean4Bean2 = ac.getBean("&factoryBean4Bean4");
-		System.out.println(bean1);
+		Bean1 bean1 = (Bean1) ac.getBean("bean1");
+		Bean2 bean2 = (Bean2) ac.getBean("bean2");
+//		Object bean3 = ac.getBean("bean3");
+//		Object bean32 = ac.getBean("bean3");
+//		Object bean4 = ac.getBean("factoryBean4Bean4");
+//		Object bean42 = ac.getBean("factoryBean4Bean4");
+//		Object factoryBean4Bean4 = ac.getBean("&factoryBean4Bean4");
+//		Object factoryBean4Bean2 = ac.getBean("&factoryBean4Bean4");
+		bean1.run();
+		bean2.say();
 	}
 
 }

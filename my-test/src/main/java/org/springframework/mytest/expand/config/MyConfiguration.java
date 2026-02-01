@@ -1,22 +1,16 @@
 package org.springframework.mytest.expand.config;
 
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Scope;
-import org.springframework.mytest.bean.components.Bean1;
-import org.springframework.mytest.bean.components.Bean2;
+import org.springframework.mytest.bean.components.aop.Bean2;
 import org.springframework.mytest.bean.components.Bean3;
-import org.springframework.mytest.expand.anno.bean.*;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.mytest.expand.anno.condition.MacCondition;
-import org.springframework.mytest.expand.anno.condition.WindowsCondition;
 
 /**
  * @author linzherong
  * @date 2026/1/4 11:25
 // */
-@Configuration
+//@Configuration
 public class MyConfiguration {
 
 	@Bean

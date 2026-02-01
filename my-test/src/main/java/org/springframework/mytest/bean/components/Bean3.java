@@ -1,6 +1,6 @@
 package org.springframework.mytest.bean.components;
 
-import org.springframework.stereotype.Component;
+import org.springframework.mytest.bean.components.aop.Bean2;
 
 /**
  * @author linzherong

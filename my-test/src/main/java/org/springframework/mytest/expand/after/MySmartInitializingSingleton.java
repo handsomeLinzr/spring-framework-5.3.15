@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
  * @author linzherong
  * @date 2026/1/24 14:06
  */
-@Component
+//@Component
 public class MySmartInitializingSingleton implements SmartInitializingSingleton {
 
 	@Override

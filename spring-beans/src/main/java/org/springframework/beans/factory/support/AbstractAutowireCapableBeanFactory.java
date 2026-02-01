@@ -613,7 +613,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			throws BeanCreationException {
 
 		// Instantiate the bean.
-		BeanWrapper instanceWrapper = null;
+ 		BeanWrapper instanceWrapper = null;
 		if (mbd.isSingleton()) {
 			// 单例的bean，先从 factoryBeanInstanceCache 中尝试获取到实例
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
@@ -666,7 +666,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				logger.trace("Eagerly caching bean '" + beanName +
 						"' to allow for resolving potential circular references");
 			}
-			// 创建完 bean 了，将对象和一个 lambda 表达式的逻辑，一起放到三级缓存中
+			// 放入三级缓存
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
@@ -675,7 +675,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		try {
 			// 依赖注入
 			populateBean(beanName, mbd, instanceWrapper);
-			// 初始化
+			// 初始化，动态代理也是在这里
+			// 如果有动态代理，且前边没有被因为被依赖而提前动态代理了，则这里会进行动态代理处理
+			// 如果有动态代理，而前边有因为被依赖而已经提前动态代理了，这里则直接从动态代理缓存中拿到动态代理对象
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -688,16 +690,31 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}
 		}
 
+		// 判断是否单例且支持提前暴露 bean，一般是 true
 		if (earlySingletonExposure) {
+			// 获取没有循环依赖的情况，这里是返回 null 的，因为没有需要这个 bean 提前暴露；
+			// 而如果有循环依赖，则在这个 bean 因为循环依赖而第二次调用 getBean 的时候，会从三级缓存的 factory 中获取并执行得到对应的提前暴露的实例，
+			// 可能是自身，也可能是代理对象，然后放到二级缓存中，从这里就能得到对应提前暴露的实例
 			Object earlySingletonReference = getSingleton(beanName, false);
+			// 如果这里 earlySingletonReference 不为空，说明循环依赖，且这个 bean 被其他 bean 注入了，前边已经先提前暴露了
 			if (earlySingletonReference != null) {
+				// exposedObject 这个是初始化后的 bean，
+				// 这个是原本的 bean
+				// 如果 exposedObject 和 bean 还是相等的，说明在initializeBean期间没有动态代理，实例还是原来的那个实例（有可能没有动态代理，也有可能已经提前动态代理）
 				if (exposedObject == bean) {
+					// 直接用从二级缓存中拿到的 bean 作为最终 bean
 					exposedObject = earlySingletonReference;
 				}
+				// 如果 exposedObject 和 bean 不相等了，说明当前这个 bean 被增强了
+				// hasDependentBean(beanName) 判断当前正在创建的 bean 是否有引用对象
 				else if (!this.allowRawInjectionDespiteWrapping && hasDependentBean(beanName)) {
+					// 获取到截止到当前所有需要注入这个 bean 的所有 bean
 					String[] dependentBeans = getDependentBeans(beanName);
 					Set<String> actualDependentBeans = new LinkedHashSet<>(dependentBeans.length);
+					// 遍历当前的所有依赖对象，
 					for (String dependentBean : dependentBeans) {
+						// removeSingletonIfCreatedForTypeCheckOnly 方法返回 false 的话，说明当前这个
+						// dependentBean 对象还没有创建好
 						if (!removeSingletonIfCreatedForTypeCheckOnly(dependentBean)) {
 							actualDependentBeans.add(dependentBean);
 						}
@@ -1930,6 +1947,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	}
 
 
+	// 对已经实例化和依赖注入后的 bean 做初始化操作
+	// 这里包括：
+	//	BeanNameAware、BeanClassLoaderAware、BeanFactoryAware 这三个 bean 的设置
+	//	bpp.postProcessBeforeInitialization 调用，包括 @@PostConstruct 注解方法多的运行
+	//	InitializingBean.afterPropertiesSet 调用
+	//	init-method 的执行
+	//
 	/**
 	 * Initialize the given bean instance, applying factory callbacks
 	 * as well as init methods and bean post processors.
@@ -2035,6 +2059,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			String initMethodName = mbd.getInitMethodName();
 			if (StringUtils.hasLength(initMethodName) &&
 					!(isInitializingBean && "afterPropertiesSet".equals(initMethodName)) &&
+					// 判断是否 initMethodName 这个方法不在 externallyManagedInitMethods 中
+					// 如果在 externallyManagedInitMethods 中，说明在前边 @PostConstruct 方法已经执行了，不用再重复执行
 					!mbd.isExternallyManagedInitMethod(initMethodName)) {
 				invokeCustomInitMethod(beanName, bean, mbd);
 			}

@@ -836,7 +836,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// 转为标准 beanName
 		String bdName = BeanFactoryUtils.transformedBeanName(beanName);
-		// 判断当前 beanFactory 中是否有这个 beanNaem
+		// 判断当前 beanFactory 中是否有这个 beanName
 		if (containsBeanDefinition(bdName)) {
 			// 判断是否可以自动装配
 			return isAutowireCandidate(beanName, getMergedLocalBeanDefinition(bdName), descriptor, resolver);
