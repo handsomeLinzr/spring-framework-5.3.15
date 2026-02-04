@@ -107,7 +107,10 @@ abstract public class AbstractClassGenerator<T> implements ClassGenerator {
 			Function<AbstractClassGenerator, Object> load =
 					new Function<AbstractClassGenerator, Object>() {
 						public Object apply(AbstractClassGenerator gen) {
+							// 生成具体的代理类
+							// gen 是一个代理生成器，如 Enhancer
 							Class klass = gen.generate(ClassLoaderData.this);
+							// Enhancer 的处理：包装，将 klass 封装到 EnhancerFactoryData 中，最后返回一个弱引用
 							return gen.wrapCachedClass(klass);
 						}
 					};
@@ -131,6 +134,7 @@ abstract public class AbstractClassGenerator<T> implements ClassGenerator {
 				return gen.generate(ClassLoaderData.this);
 			}
 			else {
+				// 获取缓存对象，如果没有缓存对象则会调用 load 回调函数进行生成代理类，最后实例化一个代理对象
 				Object cachedValue = generatedClasses.get(gen);
 				return gen.unwrapCachedValue(cachedValue);
 			}
@@ -174,6 +178,8 @@ abstract public class AbstractClassGenerator<T> implements ClassGenerator {
 	}
 
 	private String generateClassName(Predicate nameTestPredicate) {
+		// 生成代理类的类名，一般用 DefaultNamingPolicy 策略
+		// 生成的类名是   原类名$$EnhancerKeyByCGLIB$$hashcode
 		return namingPolicy.getClassName(namePrefix, source.name, key, nameTestPredicate);
 	}
 
@@ -300,15 +306,19 @@ abstract public class AbstractClassGenerator<T> implements ClassGenerator {
 
 	protected Object create(Object key) {
 		try {
+			// 获取类加载器
 			ClassLoader loader = getClassLoader();
+			// 获取缓存对象
 			Map<ClassLoader, ClassLoaderData> cache = CACHE;
+			// 获取这个类加载器对应的 ClassLoaderData 对象，
+			// 这个 ClassLoaderData 中有两个 function 方法，可以进行回调
 			ClassLoaderData data = cache.get(loader);
 			if (data == null) {
 				synchronized (AbstractClassGenerator.class) {
 					cache = CACHE;
 					data = cache.get(loader);
 					if (data == null) {
-						Map<ClassLoader, ClassLoaderData> newCache = new WeakHashMap<ClassLoader, ClassLoaderData>(cache);
+						Map<ClassLoader, ClassLoaderData> newCache = new WeakHashMap <ClassLoader, ClassLoaderData>(cache);
 						data = new ClassLoaderData(loader);
 						newCache.put(loader, data);
 						CACHE = newCache;
@@ -316,10 +326,18 @@ abstract public class AbstractClassGenerator<T> implements ClassGenerator {
 				}
 			}
 			this.key = key;
+			// 第一次刚进来，就是加载完 Enhancer 类后，这个类在：
+			// 		private static final EnhancerKey KEY_FACTORY = (EnhancerKey) KeyFactory.create(EnhancerKey.class, KeyFactory.HASH_ASM_TYPE, null);
+			// 所以会马上先创建的是 EnhancerKey 对象
+			// 走到这里得到的是 EnhancerKey 的 Class 对象
+			// 第二次进来，就是调用 Enhancer.create() 方法后，调用到这里，这里的 this 对象是 Enhancer 对象
+			// 然后这里的 obj 得到的是 EnhancerFactoryData 对对象
 			Object obj = data.get(this, getUseCache());
 			if (obj instanceof Class) {
+				// 第一次先调用这类，传进去的 obj 是 EnhancerKey 的 代理对象的 Class 对象
 				return firstInstance((Class) obj);
 			}
+			// 第二次的时候，由于得到的 obj 是EnhancerFactoryData对象，所以走这里，实例化真正的代理对象
 			return nextInstance(obj);
 		}
 		catch (RuntimeException | Error ex) {
@@ -335,6 +353,7 @@ abstract public class AbstractClassGenerator<T> implements ClassGenerator {
 		Object save = CURRENT.get();
 		CURRENT.set(this);
 		try {
+			// 获取类加载器
 			ClassLoader classLoader = data.getClassLoader();
 			if (classLoader == null) {
 				throw new IllegalStateException("ClassLoader is null while trying to define class " +
@@ -342,8 +361,11 @@ abstract public class AbstractClassGenerator<T> implements ClassGenerator {
 						"Please file an issue at cglib's issue tracker.");
 			}
 			synchronized (classLoader) {
+				// 调用生成类名的策略，生成代理类的类名
 				String name = generateClassName(data.getUniqueNamePredicate());
+				// 记录代理类名，避免哈希碰撞的情况类处理
 				data.reserveName(name);
+				// 设置类名
 				this.setClassName(name);
 			}
 			if (attemptLoad) {
@@ -355,14 +377,18 @@ abstract public class AbstractClassGenerator<T> implements ClassGenerator {
 					// ignore
 				}
 			}
+			// 编写动态 class 类，得到 byte 数组
 			byte[] b = strategy.generate(this);
+			// 获取对应的 class 类名
 			String className = ClassNameReader.getClassName(new ClassReader(b));
 			ProtectionDomain protectionDomain = getProtectionDomain();
 			synchronized (classLoader) { // just in case
 				// SPRING PATCH BEGIN
+				// 加载类
 				gen = ReflectUtils.defineClass(className, b, classLoader, protectionDomain, contextClass);
 				// SPRING PATCH END
 			}
+			// 加载完，返回这个类对象
 			return gen;
 		}
 		catch (RuntimeException | Error ex) {

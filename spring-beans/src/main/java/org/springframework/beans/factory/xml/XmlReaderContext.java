@@ -138,6 +138,8 @@ public class XmlReaderContext extends ReaderContext {
 		return this.reader.getBeanNameGenerator().generateBeanName(beanDefinition, getRegistry());
 	}
 
+	// 调用 beanName 生成器生成对应 bd 的名称 beanName
+	// 用给定的注册期注册这个 bd
 	/**
 	 * Call the bean name generator for the given bean definition
 	 * and register the bean definition under the generated name.

@@ -16,9 +16,6 @@
 <!--	Component Scan-->
 	<context:component-scan base-package="org.springframework.mytest" />
 
-	<!-- AOP Configuration -->
-	<aop:aspectj-autoproxy />
-
 <!--	<bean id="fruid" class="org.springframework.mytest.bean.MyBean1">-->
 <!--		<lookup-method></lookup-method>-->
 <!--	</bean>-->
@@ -32,5 +29,22 @@
 <!--	</my-user:user>-->
 
 <!--	<bean id="bean1" class="org.springframework.mytest.bean.components.aop.Bean1" autowire="constructor"></bean>-->
+
+	<!-- AOP Configuration -->
+	<!--	<aop:aspectj-autoproxy />-->
+
+	<bean id="loggingAspect" class="org.springframework.mytest.expand.aspect.LoggingAspect"/>
+	<bean id="bean1" class="org.springframework.mytest.bean.components.aop.Bean1" />
+
+	<aop:config>
+		<aop:aspect ref="loggingAspect">
+			<aop:pointcut id="myPoint" expression="execution(* org.springframework.mytest.bean.components.aop..*(..))"/>
+			<aop:before method="beforeMethod" pointcut-ref="myPoint" />
+			<aop:after method="afterMethod" pointcut-ref="myPoint" />
+			<aop:around method="aroundMethod" pointcut-ref="myPoint" />
+			<aop:after-returning method="afterReturningMethod" pointcut-ref="myPoint" />
+			<aop:after-throwing method="afterThrowingMethod" pointcut-ref="myPoint" />
+		</aop:aspect>
+	</aop:config>
 
 </beans>

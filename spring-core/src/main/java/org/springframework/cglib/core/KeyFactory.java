@@ -246,6 +246,7 @@ abstract public class KeyFactory {
 		}
 
 		protected Object firstInstance(Class type) {
+			// 根据给的 Class，调用无参构造函数
 			return ReflectUtils.newInstance(type);
 		}
 
@@ -254,31 +255,41 @@ abstract public class KeyFactory {
 		}
 
 		public void generateClass(ClassVisitor v) {
+			// 创建一个 Class 编辑器
 			ClassEmitter ce = new ClassEmitter(v);
 
+			// 获取这个接口的 newInstance 方法，而且必须是只有 1 个
+			// EnhancerKey 本身就是一个接口，且只有一个方法 newInstance，这里就是拿到这个方法
 			Method newInstance = ReflectUtils.findNewInstance(keyInterface);
 			if (!newInstance.getReturnType().equals(Object.class)) {
 				throw new IllegalArgumentException("newInstance method must return Object");
 			}
 
+			// 获取参数的类型
 			Type[] parameterTypes = TypeUtils.getTypes(newInstance.getParameterTypes());
+			// 开始编写这个实现类
 			ce.begin_class(Constants.V1_8,
 					Constants.ACC_PUBLIC,
 					getClassName(),
 					KEY_FACTORY,
 					new Type[]{Type.getType(keyInterface)},
 					Constants.SOURCE_FILE);
+			// 编辑无参构造函数
 			EmitUtils.null_constructor(ce);
+			// 编辑 newInstance 方法
 			EmitUtils.factory_method(ce, ReflectUtils.getSignature(newInstance));
 
 			int seed = 0;
+			// 编辑 有参构造方法，参数是 parameterTypes 的类型，即 newInstance 的所有参数
 			CodeEmitter e = ce.begin_method(Constants.ACC_PUBLIC,
 					TypeUtils.parseConstructor(parameterTypes),
 					null);
 			e.load_this();
+			// 方法调用 super 构造方法
 			e.super_invoke_constructor();
 			e.load_this();
 			List<FieldTypeCustomizer> fieldTypeCustomizers = getCustomizers(FieldTypeCustomizer.class);
+			// 参数编辑处理
 			for (int i = 0; i < parameterTypes.length; i++) {
 				Type parameterType = parameterTypes[i];
 				Type fieldType = parameterType;
@@ -297,10 +308,13 @@ abstract public class KeyFactory {
 				}
 				e.putfield(getFieldName(i));
 			}
+			// 编辑 return 返回
 			e.return_value();
+			// 结束方法的编辑
 			e.end_method();
 
-			// hash code
+			// hash code、
+			// 创建 hashcode 方法
 			e = ce.begin_method(Constants.ACC_PUBLIC, HASH_CODE, null);
 			int hc = (constant != 0) ? constant : PRIMES[(Math.abs(seed) % PRIMES.length)];
 			int hm = (multiplier != 0) ? multiplier : PRIMES[(Math.abs(seed * 13) % PRIMES.length)];
@@ -314,6 +328,7 @@ abstract public class KeyFactory {
 			e.end_method();
 
 			// equals
+			// 创建 equals 方法
 			e = ce.begin_method(Constants.ACC_PUBLIC, EQUALS, null);
 			Label fail = e.make_label();
 			e.load_arg(0);
@@ -335,6 +350,7 @@ abstract public class KeyFactory {
 			e.end_method();
 
 			// toString
+			// 创建 toString 方法
 			e = ce.begin_method(Constants.ACC_PUBLIC, TO_STRING, null);
 			e.new_instance(Constants.TYPE_STRING_BUFFER);
 			e.dup();
@@ -352,7 +368,10 @@ abstract public class KeyFactory {
 			e.return_value();
 			e.end_method();
 
+			// class 编辑结束
 			ce.end_class();
+
+			// 此时这个类一共有：无参构造函数，有参构造函数、newInstance 方法，以及 equals、hashcode、toString 方法
 		}
 
 		private String getFieldName(int arg) {

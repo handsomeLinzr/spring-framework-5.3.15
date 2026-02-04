@@ -194,6 +194,7 @@ public class Enhancer extends AbstractClassGenerator {
 
 	private EnhancerFactoryData currentData;
 
+	// EnhancerKey 代理对象
 	private Object currentKey;
 
 
@@ -247,6 +248,8 @@ public class Enhancer extends AbstractClassGenerator {
 		super(SOURCE);
 	}
 
+
+	// 设置父类，也就是代理的类
 	/**
 	 * Set the class which the generated class will extend. As a convenience,
 	 * if the supplied superclass is actually an interface, <code>setInterfaces</code>
@@ -257,19 +260,24 @@ public class Enhancer extends AbstractClassGenerator {
 	 * @see #setInterfaces(Class[])
 	 */
 	public void setSuperclass(Class superclass) {
+		// 如果代理的类是接口，则调用 setInterfaces 设置这个代理接口到 interfaces 属性
 		if (superclass != null && superclass.isInterface()) {
 			setInterfaces(new Class[]{superclass});
 			// SPRING PATCH BEGIN
 			setContextClass(superclass);
 			// SPRING PATCH END
 		}
+		// 如果代理类是 Object 类，则 superclass 属性是 null，没有代理类
 		else if (superclass != null && superclass.equals(Object.class)) {
 			// affects choice of ClassLoader
 			this.superclass = null;
 		}
 		else {
+			// 如果以上都不是，也就是代理类是一个普通类
+			// 则设置 superclass 属性为代理类
 			this.superclass = superclass;
 			// SPRING PATCH BEGIN
+			// 设置 contextClass 属性也是这个代理类
 			setContextClass(superclass);
 			// SPRING PATCH END
 		}
@@ -298,6 +306,7 @@ public class Enhancer extends AbstractClassGenerator {
 	}
 
 
+	// 设置回调函数 Callback
 	/**
 	 * Set the single {@link Callback} to use.
 	 * Ignored if you use {@link #createClass}.
@@ -305,6 +314,7 @@ public class Enhancer extends AbstractClassGenerator {
 	 * @see #setCallbacks
 	 */
 	public void setCallback(final Callback callback) {
+		// 设置 callbacks 属性是这个 callback 回调对象
 		setCallbacks(new Callback[]{callback});
 	}
 
@@ -384,6 +394,7 @@ public class Enhancer extends AbstractClassGenerator {
 	public Object create() {
 		classOnly = false;
 		argumentTypes = null;
+		// 创建代理对象
 		return createHelper();
 	}
 
@@ -436,6 +447,7 @@ public class Enhancer extends AbstractClassGenerator {
 			if (callbackTypes.length > 1) {
 				throw new IllegalStateException("Multiple callback types possible but no filter specified");
 			}
+			// 设置 filter
 			filter = ALL_ZERO;
 		}
 	}
@@ -534,6 +546,7 @@ public class Enhancer extends AbstractClassGenerator {
 						Arrays.equals(primaryConstructorArgTypes, argumentTypes)) {
 					// If we have relevant Constructor instance at hand, just call it
 					// This skips "get constructors" machinery
+					// 根据构造函数 primaryConstructor 数理化对象
 					return ReflectUtils.newInstance(primaryConstructor, arguments);
 				}
 				// Take a slow path if observing unexpected argument types
@@ -560,28 +573,38 @@ public class Enhancer extends AbstractClassGenerator {
 	}
 
 	private Object createHelper() {
+		// 前置校验
 		preValidate();
-		Object key = KEY_FACTORY.newInstance((superclass != null) ? superclass.getName() : null,
+		// KEY_FACTORY 就是一个 EnhancerKey 的代理对象，这个代理对象只有默认的属性
+		// 调用 newInstance 方法，设置下边的这些属性进去
+		Object key = KEY_FACTORY.newInstance((superclass != null) ? superclass.getName() : null,  // superclass =>> 代理目标类
+				// interface 代理类不是接口的情况，interface 是 null
 				ReflectUtils.getNames(interfaces),
+				// filter == ALL_ZERO ==>> true
 				filter == ALL_ZERO ? null : new WeakCacheKey<CallbackFilter>(filter),
 				callbackTypes,
 				useFactory,
 				interceptDuringConstruction,
 				serialVersionUID);
 		this.currentKey = key;
+		// 创建对应的代理对象
 		Object result = super.create(key);
+		// 返回代理对象
 		return result;
 	}
 
 	@Override
 	protected Class generate(ClassLoaderData data) {
+		// 先进行校验
 		validate();
+		// 设置类前缀，就是代理类的名称，包括包路径
 		if (superclass != null) {
 			setNamePrefix(superclass.getName());
 		}
 		else if (interfaces != null) {
 			setNamePrefix(interfaces[ReflectUtils.findPackageProtected(interfaces)].getName());
 		}
+		// 调用父类，进行生成代理对象逻辑
 		return super.generate(data);
 	}
 
@@ -631,10 +654,13 @@ public class Enhancer extends AbstractClassGenerator {
 		getMethods(superclass, interfaces, methods, null, null);
 	}
 
+	// 收集所有的方法
 	private static void getMethods(Class superclass, Class[] interfaces, List methods, List interfaceMethods, Set forcePublic) {
+		// 得到 superclass 的所有方法，包括父类和接口
 		ReflectUtils.addAllMethods(superclass, methods);
 		List target = (interfaceMethods != null) ? interfaceMethods : methods;
 		if (interfaces != null) {
+			// 如果有接口，则继续收集所有接口的所有方法，到接口的集合中
 			for (int i = 0; i < interfaces.length; i++) {
 				if (interfaces[i] != Factory.class) {
 					ReflectUtils.addAllMethods(interfaces[i], target);
@@ -643,33 +669,46 @@ public class Enhancer extends AbstractClassGenerator {
 		}
 		if (interfaceMethods != null) {
 			if (forcePublic != null) {
+				// 接口的方法都强制设置为 public 修饰
 				forcePublic.addAll(MethodWrapper.createSet(interfaceMethods));
 			}
 			methods.addAll(interfaceMethods);
 		}
+
+		// 过滤静态方法
 		CollectionUtils.filter(methods, new RejectModifierPredicate(Constants.ACC_STATIC));
+		// 过滤
 		CollectionUtils.filter(methods, new VisibilityPredicate(superclass, true));
+		// 过滤重复方法
 		CollectionUtils.filter(methods, new DuplicatesPredicate());
+		// 过滤 final 方法
 		CollectionUtils.filter(methods, new RejectModifierPredicate(Constants.ACC_FINAL));
 	}
 
 	// 动态代理类生成的过程
 	public void generateClass(ClassVisitor v) throws Exception {
+		// 获取设置进来，要代理的类，作为父类
 		Class sc = (superclass == null) ? Object.class : superclass;
 
+		// final 类型的类不能代理
 		if (TypeUtils.isFinal(sc.getModifiers()))
 			throw new IllegalArgumentException("Cannot subclass final class " + sc.getName());
+		// 获取父类的构造函数
 		List constructors = new ArrayList(Arrays.asList(sc.getDeclaredConstructors()));
+		// 过滤掉一些构造函数
 		filterConstructors(sc, constructors);
 
 		// Order is very important: must add superclass, then
 		// its superclass chain, then each interface and
 		// its superinterfaces.
+		// 定义三个收集集合
 		List actualMethods = new ArrayList();
 		List interfaceMethods = new ArrayList();
 		final Set forcePublic = new HashSet();
+		// 对父类和接口的方法进行分类收集和过滤，收集到上边定义的几个集合中，
 		getMethods(sc, interfaces, actualMethods, interfaceMethods, forcePublic);
 
+		// 方法处理
 		List methods = CollectionUtils.transform(actualMethods, new Transformer() {
 			public Object transform(Object value) {
 				Method method = (Method) value;
@@ -685,11 +724,14 @@ public class Enhancer extends AbstractClassGenerator {
 			}
 		});
 
+		// 获取 class 编辑器
 		ClassEmitter e = new ClassEmitter(v);
+		// 开始编辑 class
 		if (currentData == null) {
-			e.begin_class(Constants.V1_8,
-					Constants.ACC_PUBLIC,
-					getClassName(),
+			// 设置类的基本信息
+			e.begin_class(Constants.V1_8,  // 版本 1.8
+					Constants.ACC_PUBLIC,  // 限定符 public
+					getClassName(),        // 类名
 					Type.getType(sc),
 					(useFactory ?
 							TypeUtils.add(TypeUtils.getTypes(interfaces), FACTORY) :
@@ -704,8 +746,10 @@ public class Enhancer extends AbstractClassGenerator {
 					new Type[]{FACTORY},
 					Constants.SOURCE_FILE);
 		}
+		// 构造函数
 		List constructorInfo = CollectionUtils.transform(constructors, MethodInfoTransformer.getInstance());
 
+		// 属性
 		e.declare_field(Constants.ACC_PRIVATE, BOUND_FIELD, Type.BOOLEAN_TYPE, null);
 		e.declare_field(Constants.ACC_PUBLIC | Constants.ACC_STATIC, FACTORY_DATA_FIELD, OBJECT_TYPE, null);
 		if (!interceptDuringConstruction) {
@@ -717,6 +761,7 @@ public class Enhancer extends AbstractClassGenerator {
 			e.declare_field(Constants.PRIVATE_FINAL_STATIC, Constants.SUID_FIELD_NAME, Type.LONG_TYPE, serialVersionUID);
 		}
 
+		// 将回调方法也设置到属性中
 		for (int i = 0; i < callbackTypes.length; i++) {
 			e.declare_field(Constants.ACC_PRIVATE, getCallbackField(i), callbackTypes[i], null);
 		}
@@ -724,7 +769,9 @@ public class Enhancer extends AbstractClassGenerator {
 		e.declare_field(Constants.ACC_PRIVATE | Constants.ACC_STATIC, CALLBACK_FILTER_FIELD, OBJECT_TYPE, null);
 
 		if (currentData == null) {
+			// 编辑方法
 			emitMethods(e, methods, actualMethods);
+			// 编辑构造函数
 			emitConstructors(e, constructorInfo);
 		}
 		else {
@@ -745,6 +792,7 @@ public class Enhancer extends AbstractClassGenerator {
 			emitSetCallbacks(e);
 		}
 
+		// 生成完成
 		e.end_class();
 	}
 
@@ -789,26 +837,33 @@ public class Enhancer extends AbstractClassGenerator {
 			return data.generatedClass;
 		}
 
+		// 获取参数类型
 		Class[] argumentTypes = this.argumentTypes;
+		// 获取参数
 		Object[] arguments = this.arguments;
 		if (argumentTypes == null) {
+			// 一般都是为空
 			argumentTypes = Constants.EMPTY_CLASS_ARRAY;
 			arguments = null;
 		}
+		// 实例化代理对象
 		return data.newInstance(argumentTypes, arguments, callbacks);
 	}
 
 	@Override
 	protected Object wrapCachedClass(Class klass) {
+		// 参数类型
 		Class[] argumentTypes = this.argumentTypes;
 		if (argumentTypes == null) {
 			argumentTypes = Constants.EMPTY_CLASS_ARRAY;
 		}
+		// 构建 EnhancerFactoryData 对象，将代理类放到里边
 		EnhancerFactoryData factoryData = new EnhancerFactoryData(klass, argumentTypes, classOnly);
 		Field factoryDataField = null;
 		try {
 			// The subsequent dance is performed just once for each class,
 			// so it does not matter much how fast it goes
+			// 设置属性，存放这个 factoryData
 			factoryDataField = klass.getField(FACTORY_DATA_FIELD);
 			factoryDataField.set(null, factoryData);
 			Field callbackFilterField = klass.getDeclaredField(CALLBACK_FILTER_FIELD);
@@ -821,6 +876,7 @@ public class Enhancer extends AbstractClassGenerator {
 		catch (IllegalAccessException e) {
 			throw new CodeGenerationException(e);
 		}
+		// 返回弱引用
 		return new WeakReference<EnhancerFactoryData>(factoryData);
 	}
 
@@ -1212,6 +1268,7 @@ public class Enhancer extends AbstractClassGenerator {
 		Iterator it1 = methods.iterator();
 		Iterator it2 = (actualMethods != null) ? actualMethods.iterator() : null;
 
+		// 遍历方法处理
 		while (it1.hasNext()) {
 			MethodInfo method = (MethodInfo) it1.next();
 			Method actualMethod = (it2 != null) ? (Method) it2.next() : null;

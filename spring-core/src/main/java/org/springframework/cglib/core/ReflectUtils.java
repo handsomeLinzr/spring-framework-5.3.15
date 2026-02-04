@@ -440,22 +440,29 @@ public class ReflectUtils {
 		throw new NoSuchMethodException(methodName);
 	}
 
+	// 收集 type 这个类的所有方法，包括父类和父接口的
 	public static List addAllMethods(final Class type, final List list) {
+		// Object 的情况，添加固定的 Object 的方法
 		if (type == Object.class) {
 			list.addAll(OBJECT_METHODS);
 		}
 		else
+			// 添加所有的方法
 			list.addAll(java.util.Arrays.asList(type.getDeclaredMethods()));
 
+		// 获取父类
 		Class superclass = type.getSuperclass();
+		// 父类不为空，则添加父类的所有方法
 		if (superclass != null) {
 			addAllMethods(superclass, list);
 		}
+		//  获取接口，如果有接口，也添加接口的方法
 		Class[] interfaces = type.getInterfaces();
 		for (int i = 0; i < interfaces.length; i++) {
 			addAllMethods(interfaces[i], list);
 		}
 
+		// 放回收集到的所有方法
 		return list;
 	}
 

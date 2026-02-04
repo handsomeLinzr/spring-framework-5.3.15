@@ -7,10 +7,10 @@ import org.springframework.stereotype.Component;
  * @author linzherong
  * @date 2026/1/28 21:11
  */
-@Component
+//@Component
 public class Bean1 {
 
-	@Autowired
+//	@Autowired
 	private Bean2 bean2;
 
 	public void run() {
