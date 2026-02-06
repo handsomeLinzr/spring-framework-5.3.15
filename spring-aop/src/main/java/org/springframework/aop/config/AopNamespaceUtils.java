@@ -68,8 +68,10 @@ public abstract class AopNamespaceUtils {
 		// 注册 aop 扫描注册器 AspectJAwareAdvisorAutoProxyCreator
 		BeanDefinition beanDefinition = AopConfigUtils.registerAspectJAutoProxyCreatorIfNecessary(
 				parserContext.getRegistry(), parserContext.extractSource(sourceElement));
-		// 一般默认是 sourceElement 为 null
+		// 解析属性
+		// 解析 proxy-target-class 和 expose-proxy 属性，设置到这个 bd 中
 		useClassProxyingIfNecessary(parserContext.getRegistry(), sourceElement);
+		// 注册
 		registerComponentIfNecessary(beanDefinition, parserContext);
 	}
 
@@ -86,8 +88,10 @@ public abstract class AopNamespaceUtils {
 		if (sourceElement != null) {
 			boolean proxyTargetClass = Boolean.parseBoolean(sourceElement.getAttribute(PROXY_TARGET_CLASS_ATTRIBUTE));
 			if (proxyTargetClass) {
+				// proxy-target-class 属性，强制代理，设置属性
 				AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);
 			}
+			// expose-proxy 属性，是否强制暴露代理，如果 true，则方法之间的直接调用也都走代理
 			boolean exposeProxy = Boolean.parseBoolean(sourceElement.getAttribute(EXPOSE_PROXY_ATTRIBUTE));
 			if (exposeProxy) {
 				AopConfigUtils.forceAutoProxyCreatorToExposeProxy(registry);
@@ -97,6 +101,7 @@ public abstract class AopNamespaceUtils {
 
 	private static void registerComponentIfNecessary(@Nullable BeanDefinition beanDefinition, ParserContext parserContext) {
 		if (beanDefinition != null) {
+			// 注册 bd
 			parserContext.registerComponent(
 					new BeanComponentDefinition(beanDefinition, AopConfigUtils.AUTO_PROXY_CREATOR_BEAN_NAME));
 		}

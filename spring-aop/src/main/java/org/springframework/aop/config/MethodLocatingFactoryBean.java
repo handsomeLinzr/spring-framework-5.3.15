@@ -25,6 +25,9 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
+// aop配置中的记录 method 用
+// 这是一个 factoryBean 对象，getObject 方法返回对应的 method 通知方法
+// 且实现了 beanFactoryAware，实例化后有 setBeanFactory 的方法回调
 /**
  * {@link FactoryBean} implementation that locates a {@link Method} on a specified bean.
  *
@@ -33,12 +36,15 @@ import org.springframework.util.StringUtils;
  */
 public class MethodLocatingFactoryBean implements FactoryBean<Method>, BeanFactoryAware {
 
+	// 解析的时候会设置进来对应的通知 bean 的名称，也就是通知的方法 method 所在的 bean 对象名称
 	@Nullable
 	private String targetBeanName;
 
+	// 在解析的时候会设置进来通知方法名称
 	@Nullable
 	private String methodName;
 
+	// 在 setBeanFactory 这个回调方法中，会根据 beanFactory、targetBeanName、methodName 来找到对应的 method 对象
 	@Nullable
 	private Method method;
 
@@ -70,10 +76,12 @@ public class MethodLocatingFactoryBean implements FactoryBean<Method>, BeanFacto
 			throw new IllegalArgumentException("Property 'methodName' is required");
 		}
 
+		// 从当前的 beanFactory 中获取 targetBeanName 的类型
 		Class<?> beanClass = beanFactory.getType(this.targetBeanName);
 		if (beanClass == null) {
 			throw new IllegalArgumentException("Can't determine type of bean with name '" + this.targetBeanName + "'");
 		}
+		//
 		this.method = BeanUtils.resolveSignature(this.methodName, beanClass);
 
 		if (this.method == null) {

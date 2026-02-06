@@ -86,6 +86,7 @@ class BeanDefinitionValueResolver {
 	}
 
 
+	// 通过给定的 value 值的对象类型，进行解析处理
 	/**
 	 * Given a PropertyValue, return a value, resolving any references to other
 	 * beans in the factory if necessary. The value could be:
@@ -108,33 +109,47 @@ class BeanDefinitionValueResolver {
 	public Object resolveValueIfNecessary(Object argName, @Nullable Object value) {
 		// We must check each value to see whether it requires a runtime reference
 		// to another bean to be resolved.
+		// 如果是一个 RuntimeBeanReference 运行时引用
 		if (value instanceof RuntimeBeanReference) {
 			RuntimeBeanReference ref = (RuntimeBeanReference) value;
+			// 解析运行时引用类型的处理，得到对应的 bean 对象
 			return resolveReference(argName, ref);
 		}
+		// 如果是属于 RuntimeBeanNameReference 类型，运行时 beanName 引用类型
 		else if (value instanceof RuntimeBeanNameReference) {
+			// 获取对应的 beanName
 			String refName = ((RuntimeBeanNameReference) value).getBeanName();
+			// 进行表达式的解析
 			refName = String.valueOf(doEvaluate(refName));
+			// 校验，当前这个 bean 工厂必须要有这个 bean 或者 bd
 			if (!this.beanFactory.containsBean(refName)) {
 				throw new BeanDefinitionStoreException(
 						"Invalid bean name '" + refName + "' in bean reference for " + argName);
 			}
+			// 返回这个 beanName，这里不需要解析
 			return refName;
 		}
+		// BeanDefinitionHolder 类型，继续解析
 		else if (value instanceof BeanDefinitionHolder) {
 			// Resolve BeanDefinitionHolder: contains BeanDefinition with name and aliases.
 			BeanDefinitionHolder bdHolder = (BeanDefinitionHolder) value;
+			// 解析，也是调用 getBean 或者 beanFactory.createBean，最后得到 bean 对象
 			return resolveInnerBean(argName, bdHolder.getBeanName(), bdHolder.getBeanDefinition());
 		}
+		// 如果是属于 bd 对象
 		else if (value instanceof BeanDefinition) {
 			// Resolve plain BeanDefinition, without contained name: use dummy name.
 			BeanDefinition bd = (BeanDefinition) value;
+			// 生成一个内部 bean 的 beanName
 			String innerBeanName = "(inner bean)" + BeanFactoryUtils.GENERATED_BEAN_NAME_SEPARATOR +
 					ObjectUtils.getIdentityHexString(bd);
+			// 处理内部 bean，调用到 getBean 得到对象
 			return resolveInnerBean(argName, innerBeanName, bd);
 		}
+		// DependencyDescriptor 类型的情况
 		else if (value instanceof DependencyDescriptor) {
 			Set<String> autowiredBeanNames = new LinkedHashSet<>(4);
+			// 处理 beanName，也是调用 getBean，得到 bean 对象
 			Object result = this.beanFactory.resolveDependency(
 					(DependencyDescriptor) value, this.beanName, autowiredBeanNames, this.typeConverter);
 			for (String autowiredBeanName : autowiredBeanNames) {
@@ -223,6 +238,7 @@ class BeanDefinitionValueResolver {
 			return null;
 		}
 		else {
+			// 如果是普通的 bean 对象，则走这里
 			return evaluate(value);
 		}
 	}
@@ -248,24 +264,30 @@ class BeanDefinitionValueResolver {
 	 */
 	@Nullable
 	protected Object evaluate(@Nullable Object value) {
+		// 如果是 String 类型，则进行表达式解析，返回
 		if (value instanceof String) {
 			return doEvaluate((String) value);
 		}
+		// 如果是 String 数组的类型
 		else if (value instanceof String[]) {
 			String[] values = (String[]) value;
 			boolean actuallyResolved = false;
 			Object[] resolvedValues = new Object[values.length];
+			// 遍历解析表达式
 			for (int i = 0; i < values.length; i++) {
 				String originalValue = values[i];
+				// 解析表达式
 				Object resolvedValue = doEvaluate(originalValue);
 				if (resolvedValue != originalValue) {
 					actuallyResolved = true;
 				}
 				resolvedValues[i] = resolvedValue;
 			}
+			// 返回解析后的值
 			return (actuallyResolved ? resolvedValues : values);
 		}
 		else {
+			// 直接返回本身，因为本身就是需要的 bean 对象
 			return value;
 		}
 	}
@@ -295,6 +317,7 @@ class BeanDefinitionValueResolver {
 		return value.resolveTargetType(this.beanFactory.getBeanClassLoader());
 	}
 
+	// 解析运行时引用的处理，得到对应的 bean 对象
 	/**
 	 * Resolve a reference to another bean in the factory.
 	 */
@@ -302,6 +325,7 @@ class BeanDefinitionValueResolver {
 	private Object resolveReference(Object argName, RuntimeBeanReference ref) {
 		try {
 			Object bean;
+			// 获取对应的类型
 			Class<?> beanType = ref.getBeanType();
 			if (ref.isToParent()) {
 				BeanFactory parent = this.beanFactory.getParentBeanFactory();
@@ -321,12 +345,15 @@ class BeanDefinitionValueResolver {
 			else {
 				String resolvedName;
 				if (beanType != null) {
+					// 这里 beanFactory.resolveNamedBean 方法也会调用到 getBean 方法，得到 bean 对象
 					NamedBeanHolder<?> namedBean = this.beanFactory.resolveNamedBean(beanType);
 					bean = namedBean.getBeanInstance();
 					resolvedName = namedBean.getBeanName();
 				}
 				else {
+					// 获取 beanName
 					resolvedName = String.valueOf(doEvaluate(ref.getBeanName()));
+					// 从当前工厂获取到 bean
 					bean = this.beanFactory.getBean(resolvedName);
 				}
 				this.beanFactory.registerDependentBean(resolvedName, this.beanName);

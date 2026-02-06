@@ -96,6 +96,7 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 		return true;
 	}
 
+	// 在给定的 bean 属性被设置之前，再做一次处理
 	/**
 	 * Post-process the given property values before the factory applies them
 	 * to the given bean, without any need for property descriptors.

@@ -82,6 +82,7 @@ abstract class AutowireUtils {
 		Arrays.sort(factoryMethods, EXECUTABLE_COMPARATOR);
 	}
 
+	// 检查给的 bean 属性是否是排除在依赖项之外
 	/**
 	 * Determine whether the given bean property is excluded from dependency checks.
 	 * <p>This implementation excludes properties defined by CGLIB.
@@ -89,16 +90,19 @@ abstract class AutowireUtils {
 	 * @return whether the bean property is excluded
 	 */
 	public static boolean isExcludedFromDependencyCheck(PropertyDescriptor pd) {
+		// 如果没有 setter 方法，返回 false
 		Method wm = pd.getWriteMethod();
 		if (wm == null) {
 			return false;
 		}
+		// 如果这个属性的类型名称，不包含了 $$，表示不是一个 cglib 动态代理，也返回 false
 		if (!wm.getDeclaringClass().getName().contains("$$")) {
 			// Not a CGLIB method so it's OK.
 			return false;
 		}
 		// It was declared by CGLIB, but we might still want to autowire it
 		// if it was actually declared by the superclass.
+		// 获取父类
 		Class<?> superclass = wm.getDeclaringClass().getSuperclass();
 		return !ClassUtils.hasMethod(superclass, wm);
 	}
@@ -111,11 +115,16 @@ abstract class AutowireUtils {
 	 * @return whether the setter method is defined by an interface
 	 */
 	public static boolean isSetterDefinedInInterface(PropertyDescriptor pd, Set<Class<?>> interfaces) {
+		// 获取 setter 方法
 		Method setter = pd.getWriteMethod();
 		if (setter != null) {
+			// 获取这个方法所在的 class 对象
 			Class<?> targetClass = setter.getDeclaringClass();
+			// 遍历给定的接口类
 			for (Class<?> ifc : interfaces) {
+				// 如果这个 setter 方法所在的类是这个忽略接口的实现类，且 setter 方法在接口上
 				if (ifc.isAssignableFrom(targetClass) && ClassUtils.hasMethod(ifc, setter)) {
+					// 返回 true
 					return true;
 				}
 			}

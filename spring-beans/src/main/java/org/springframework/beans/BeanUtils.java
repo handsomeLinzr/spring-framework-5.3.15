@@ -627,6 +627,7 @@ public abstract class BeanUtils {
 			return new MethodParameter(((GenericTypeAwarePropertyDescriptor) pd).getWriteMethodParameter());
 		}
 		else {
+			// 获取到 setter 方法
 			Method writeMethod = pd.getWriteMethod();
 			Assert.state(writeMethod != null, "No write method available");
 			return new MethodParameter(writeMethod, 0);
@@ -667,6 +668,7 @@ public abstract class BeanUtils {
 	 */
 	public static boolean isSimpleProperty(Class<?> type) {
 		Assert.notNull(type, "'type' must not be null");
+		// 判断该类型是简单类型 或者 是数组类型，但是对应的泛型是简单类型
 		return isSimpleValueType(type) || (type.isArray() && isSimpleValueType(type.getComponentType()));
 	}
 

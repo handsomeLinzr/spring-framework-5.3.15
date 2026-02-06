@@ -244,12 +244,19 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 
 	@Override
 	public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) {
+		// 获取对应要进行缓存的 key 值
 		Object cacheKey = getCacheKey(beanClass, beanName);
 
+		// 判断如果 beanName 为空，或者 targetSourcedBeans 中已经存在这个 beanName
 		if (!StringUtils.hasLength(beanName) || !this.targetSourcedBeans.contains(beanName)) {
+			// 如果 advisedBeans 中已经有了这个缓存，则说明这个 beanName 是一个 advise，且这个 advise 已经处理过了
+			// 所以这里直接返回，不需要重复处理
 			if (this.advisedBeans.containsKey(cacheKey)) {
 				return null;
 			}
+			// 如果当前 bean 是 aop 基础类：Advice、Pointcut、Advisor、AopInfrastructureBean
+			// 如果 shouldSkip 得到 true
+			//		以上两种情况只要符合一个，则需要进行缓存到 advisedBeans，设置 FALSE，然后直接返回
 			if (isInfrastructureClass(beanClass) || shouldSkip(beanClass, beanName)) {
 				this.advisedBeans.put(cacheKey, Boolean.FALSE);
 				return null;
@@ -372,6 +379,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		return retVal;
 	}
 
+	// 子类重写这个方法，当给定的 bean 不考虑做自动代理的时候，需要返回 true
 	/**
 	 * Subclasses should override this method to return {@code true} if the
 	 * given bean should not be considered for auto-proxying by this post-processor.

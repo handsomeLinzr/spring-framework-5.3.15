@@ -428,7 +428,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 		// 根据跟定的 adviceBD 标签，选择对应的 class，选择以下 5 种
 		// AspectJMethodBeforeAdvice、AspectJAfterAdvice、AspectJAfterReturningAdvice、AspectJAfterThrowingAdvice、AspectJAroundAdvice
 		RootBeanDefinition adviceDefinition = new RootBeanDefinition(getAdviceClass(adviceElement, parserContext));
-		// 设置属性 sourcce
+		// 设置属性 source
 		adviceDefinition.setSource(parserContext.extractSource(adviceElement));
 
 		// 设置 adviceBD 对应的属性值：
@@ -565,7 +565,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 					element, this.parseState.snapshot());
 			return null;
 		}
-		// pointcut 的情况
+		// pointcut 的情况，也就是直接指定了表达式的情况
 		else if (element.hasAttribute(POINTCUT)) {
 			// Create a pointcut for the anonymous pc and register it.
 			// 获取表达式
@@ -575,7 +575,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 			pointcutDefinition.setSource(parserContext.extractSource(element));
 			return pointcutDefinition;
 		}
-		// pointcut-ref 的情况
+		// pointcut-ref 的情况，引用了一个定义的 bean
 		else if (element.hasAttribute(POINTCUT_REF)) {
 			// 获取对应的 pointcut-ref 的值
 			String pointcutRef = element.getAttribute(POINTCUT_REF);

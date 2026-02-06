@@ -123,6 +123,7 @@ public class MethodParameter {
 	public MethodParameter(Method method, int parameterIndex, int nestingLevel) {
 		Assert.notNull(method, "Method must not be null");
 		this.executable = method;
+		// 校验 parameterIndex
 		this.parameterIndex = validateIndex(method, parameterIndex);
 		this.nestingLevel = nestingLevel;
 	}
@@ -856,6 +857,7 @@ public class MethodParameter {
 	}
 
 	private static int validateIndex(Executable executable, int parameterIndex) {
+		// 获取参数数量
 		int count = executable.getParameterCount();
 		Assert.isTrue(parameterIndex >= -1 && parameterIndex < count,
 				() -> "Parameter index needs to be between -1 and " + (count - 1));

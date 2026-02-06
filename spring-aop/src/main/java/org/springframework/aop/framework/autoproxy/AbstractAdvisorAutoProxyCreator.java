@@ -102,12 +102,14 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 		return eligibleAdvisors;
 	}
 
+	// 获取所有的候选 Advisor
 	/**
 	 * Find all candidate Advisors to use in auto-proxying.
 	 * @return the List of candidate Advisors
 	 */
 	protected List<Advisor> findCandidateAdvisors() {
 		Assert.state(this.advisorRetrievalHelper != null, "No BeanFactoryAdvisorRetrievalHelper available");
+		// 获取并创建所有的 Advisor
 		return this.advisorRetrievalHelper.findAdvisorBeans();
 	}
 

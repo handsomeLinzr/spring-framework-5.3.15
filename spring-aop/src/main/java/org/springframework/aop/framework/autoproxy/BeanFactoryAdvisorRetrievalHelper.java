@@ -57,7 +57,7 @@ public class BeanFactoryAdvisorRetrievalHelper {
 		this.beanFactory = beanFactory;
 	}
 
-
+	// 从当前的 beanFactory 中获取的候选 Advisor，忽略 factoryBean 和 正在创建中的 bean
 	/**
 	 * Find all eligible Advisor beans in the current bean factory,
 	 * ignoring FactoryBeans and excluding beans that are currently in creation.
@@ -66,27 +66,37 @@ public class BeanFactoryAdvisorRetrievalHelper {
 	 */
 	public List<Advisor> findAdvisorBeans() {
 		// Determine list of advisor bean names, if not cached already.
+		// 先得到缓存的 Advisor bean 名称
 		String[] advisorNames = this.cachedAdvisorBeanNames;
+		// 第一次调用进来，这个 advisorNames 是空的
 		if (advisorNames == null) {
 			// Do not initialize FactoryBeans here: We need to leave all regular beans
 			// uninitialized to let the auto-proxy creator apply to them!
+			// 获取 beanFactory 中的所有 Advisor 的 bd 的 beanName
 			advisorNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 					this.beanFactory, Advisor.class, true, false);
+			// 重新设置回去缓存对象
 			this.cachedAdvisorBeanNames = advisorNames;
 		}
+		// 如果没有找到 Advisor，则直接返回空列表
 		if (advisorNames.length == 0) {
 			return new ArrayList<>();
 		}
 
+		// 遍历所有的 advisorNames
 		List<Advisor> advisors = new ArrayList<>();
 		for (String name : advisorNames) {
+			// 判断是否符合候选，默认都是直接返回 true
 			if (isEligibleBean(name)) {
+				// 如果当前这个 advisor 正在创建中，则跳过
 				if (this.beanFactory.isCurrentlyInCreation(name)) {
 					if (logger.isTraceEnabled()) {
 						logger.trace("Skipping currently created advisor '" + name + "'");
 					}
 				}
 				else {
+					// 否则，调用 beanFactory.getBean 方法，进行创建
+					// 并将创建后的 advisor 添加到 advisors 缓存中
 					try {
 						advisors.add(this.beanFactory.getBean(name, Advisor.class));
 					}
@@ -110,6 +120,7 @@ public class BeanFactoryAdvisorRetrievalHelper {
 				}
 			}
 		}
+		// 返回所有创建后的 advisors
 		return advisors;
 	}
 

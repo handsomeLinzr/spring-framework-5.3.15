@@ -35,6 +35,7 @@ import org.springframework.util.ClassUtils;
  */
 public class SimpleBeanFactoryAwareAspectInstanceFactory implements AspectInstanceFactory, BeanFactoryAware {
 
+	// aop 代理通知的 bean
 	@Nullable
 	private String aspectBeanName;
 
@@ -57,6 +58,7 @@ public class SimpleBeanFactoryAwareAspectInstanceFactory implements AspectInstan
 	}
 
 
+	// 从当前的 beanFactory 中获取到 aspectBeanName 对象
 	/**
 	 * Look up the aspect bean from the {@link BeanFactory} and returns it.
 	 * @see #setAspectBeanName

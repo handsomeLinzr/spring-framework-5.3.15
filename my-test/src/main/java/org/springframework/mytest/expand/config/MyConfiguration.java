@@ -2,7 +2,7 @@ package org.springframework.mytest.expand.config;
 
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
-import org.springframework.mytest.bean.components.aop.Bean2;
+import org.springframework.mytest.bean.components.Bean2;
 import org.springframework.mytest.bean.components.Bean3;
 import org.springframework.context.annotation.Bean;
 

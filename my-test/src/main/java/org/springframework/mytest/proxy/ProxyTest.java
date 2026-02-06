@@ -1,6 +1,6 @@
 package org.springframework.mytest.proxy;
 
-import org.springframework.cglib.core.DebuggingClassWriter;
+import org.springframework.mytest.bean.components.aop.MyCalculate;
 
 /**
  * @author linzherong

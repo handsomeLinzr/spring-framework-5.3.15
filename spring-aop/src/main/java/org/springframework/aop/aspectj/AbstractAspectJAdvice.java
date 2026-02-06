@@ -103,6 +103,7 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 
 	private final AspectInstanceFactory aspectInstanceFactory;
 
+	// aop 配置直播个对应的通知的 beanName
 	/**
 	 * The name of the aspect (ref bean) in which this advice was defined
 	 * (used when determining advice precedence so that we can determine

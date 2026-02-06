@@ -32,7 +32,9 @@ public class LoggingAspect {
 	public Object aroundMethod(ProceedingJoinPoint joinPoint) throws Throwable {
 		String methodName = joinPoint.getSignature().getName();
 		System.out.println("around，执行方法 " + methodName);
-		return joinPoint.proceed();
+		Object proceed = joinPoint.proceed();
+		System.out.println("around，执行方法，结束");
+		return proceed;
 	}
 
 //	@AfterThrowing("myPoint()")

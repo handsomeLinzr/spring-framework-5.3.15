@@ -28,13 +28,13 @@
 <!--		<my-user:property key="password" value="${password}"/>-->
 <!--	</my-user:user>-->
 
-<!--	<bean id="bean1" class="org.springframework.mytest.bean.components.aop.Bean1" autowire="constructor"></bean>-->
+<!--	<bean id="bean1" class="org.springframework.mytest.bean.components.Bean1" autowire="constructor"></bean>-->
 
 	<!-- AOP Configuration -->
 	<!--	<aop:aspectj-autoproxy />-->
 
 	<bean id="loggingAspect" class="org.springframework.mytest.expand.aspect.LoggingAspect"/>
-	<bean id="bean1" class="org.springframework.mytest.bean.components.aop.Bean1" />
+	<bean id="bean1" class="org.springframework.mytest.bean.components.Bean1" />
 
 	<aop:config>
 		<aop:aspect ref="loggingAspect">

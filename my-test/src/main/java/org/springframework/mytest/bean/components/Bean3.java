@@ -1,7 +1,5 @@
 package org.springframework.mytest.bean.components;
 
-import org.springframework.mytest.bean.components.aop.Bean2;
-
 /**
  * @author linzherong
  * @date 2026/1/29 20:45

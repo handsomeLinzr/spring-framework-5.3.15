@@ -1,26 +1,26 @@
-package org.springframework.mytest.proxy;
+package org.springframework.mytest.bean.components.aop;
+
+import org.springframework.mytest.proxy.Calculate;
+import org.springframework.stereotype.Component;
 
 /**
  * @author linzherong
  * @date 2026/2/2 20:42
  */
-public class MyCalculate implements Calculate{
-	@Override
+@Component
+public class MyCalculate {
 	public int add(int a, int b) {
 		return a+b;
 	}
 
-	@Override
 	public int subtract(int a, int b) {
 		return a-b;
 	}
 
-	@Override
 	public int multiply(int a, int b) {
 		return a*b;
 	}
 
-	@Override
 	public int divide(int a, int b) {
 		return a/b;
 	}
