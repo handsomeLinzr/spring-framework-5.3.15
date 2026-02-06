@@ -172,7 +172,7 @@ class ConstructorResolver {
 			}
 		}
 
-		// 如果到这里还没找到对应的构造函数或者构造函数的参数
+		// 如果到这里还没找到对应的构造函数或者构造函数的参数，正常走这里
 		if (constructorToUse == null || argsToUse == null) {
 			// Take specified constructors, if any.
 			// 获取到当前传进来的所有候选构造函数
@@ -231,6 +231,8 @@ class ConstructorResolver {
 				ConstructorArgumentValues cargs = mbd.getConstructorArgumentValues();
 				resolvedValues = new ConstructorArgumentValues();
 				// 解析构造函数，得到最少的参数个数，如果是默认的则是 0
+				// 这个方法会解析这个 bean 所需要的构造函数的属性的值
+				// 并将得到的解析后的值，设置添加到 resolvedValues 中
 				minNrOfArgs = resolveConstructorArguments(beanName, mbd, bw, cargs, resolvedValues);
 			}
 
@@ -259,6 +261,7 @@ class ConstructorResolver {
 				ArgumentsHolder argsHolder;
 				// 获取这个构造函数的参数类型
 				Class<?>[] paramTypes = candidate.getParameterTypes();
+				// 判断是否解析得到的 value 值不为空
 				if (resolvedValues != null) {
 					try {
 						// 解析是否有注解 ConstructorProperties，有的话解析得到对应的参数名
@@ -290,6 +293,7 @@ class ConstructorResolver {
 					}
 				}
 				else {
+					// 如果解析不了，没有得到解析后的构造器注入的属性值的情况，也需要包装一个参数的包装器
 					// Explicit arguments given -> arguments length must match exactly.
 					if (parameterCount != explicitArgs.length) {
 						continue;
@@ -302,7 +306,9 @@ class ConstructorResolver {
 				// Choose this constructor if it represents the closest match.
 				if (typeDiffWeight < minTypeDiffWeight) {
 					constructorToUse = candidate;
+					// 赋值参数值包装器
 					argsHolderToUse = argsHolder;
+					// 赋值构造器属性注入的值
 					argsToUse = argsHolder.arguments;
 					minTypeDiffWeight = typeDiffWeight;
 					ambiguousConstructors = null;
@@ -341,7 +347,7 @@ class ConstructorResolver {
 		}
 
 		Assert.state(argsToUse != null, "Unresolved constructor arguments");
-		// 梳理话 bean，通过上边得到的构造函数和参数
+		// 实例化 bean，通过上边得到的构造函数和参数
 		// 设置给 bw
 		bw.setBeanInstance(instantiate(beanName, mbd, constructorToUse, argsToUse));
 		return bw;
@@ -359,7 +365,7 @@ class ConstructorResolver {
 						this.beanFactory.getAccessControlContext());
 			}
 			else {
-				// 实例化
+				// 通过给定的构造函数和属性值，实例化 bean
 				return strategy.instantiate(mbd, beanName, this.beanFactory, constructorToUse, argsToUse);
 			}
 		}
@@ -794,6 +800,7 @@ class ConstructorResolver {
 	}
 
 	// 解析这个构造函数参数的数量，作为最小的参数数量
+	// 这里会解析这个构造函数需要的参数信息
 	/**
 	 * Resolve the constructor arguments for this bean into the resolvedValues object.
 	 * This may involve looking up other beans.
@@ -823,26 +830,36 @@ class ConstructorResolver {
 			if (index + 1 > minNrOfArgs) {
 				minNrOfArgs = index + 1;
 			}
+			// 属性值
 			ConstructorArgumentValues.ValueHolder valueHolder = entry.getValue();
 			if (valueHolder.isConverted()) {
 				resolvedValues.addIndexedArgumentValue(index, valueHolder);
 			}
 			else {
+				// 解析这个构造函数的属性，一般走这里，进行数据的处理
+				// 这个方法会解析当前给的属性类型，然后对应类型进行不同的处理，如 RuntimeBeanNameReference、RuntimeBeanReference 等
+				// 会调用到 getBean 获取或者创建对应的 bean
+				// 构造器注入的方式，解析属性并注入，就是在这里进行调用 getBean 获取属性对象来注入的
 				Object resolvedValue =
 						valueResolver.resolveValueIfNecessary("constructor argument", valueHolder.getValue());
+				// 创建一个值的包装器
 				ConstructorArgumentValues.ValueHolder resolvedValueHolder =
 						new ConstructorArgumentValues.ValueHolder(resolvedValue, valueHolder.getType(), valueHolder.getName());
+				// 给 resolvedValueHolder 设置 source
 				resolvedValueHolder.setSource(valueHolder);
+				// 给 resolvedValues 设置上这个解析出来的 bean 的包装 resolvedValueHolder
 				resolvedValues.addIndexedArgumentValue(index, resolvedValueHolder);
 			}
 		}
 
-		//  没有数据的情况，跳过
+		//  处理构造器属性值的另一个存放属性的地方，也是和上边处理参数值一样的逻辑和流程
 		for (ConstructorArgumentValues.ValueHolder valueHolder : cargs.getGenericArgumentValues()) {
 			if (valueHolder.isConverted()) {
+				// 如果已经做了类型的适配覆盖，则直接添加值
 				resolvedValues.addGenericArgumentValue(valueHolder);
 			}
 			else {
+				// 否则进行解析，设置到 bd 的构造器值对象中
 				Object resolvedValue =
 						valueResolver.resolveValueIfNecessary("constructor argument", valueHolder.getValue());
 				ConstructorArgumentValues.ValueHolder resolvedValueHolder = new ConstructorArgumentValues.ValueHolder(
@@ -979,10 +996,14 @@ class ConstructorResolver {
 	private Object[] resolvePreparedArguments(String beanName, RootBeanDefinition mbd, BeanWrapper bw,
 			Executable executable, Object[] argsToResolve) {
 
+		// 获取自定义类型转换器
 		TypeConverter customConverter = this.beanFactory.getCustomTypeConverter();
+		// 如果自定义类型转换器是空的，则用默认的类型转换器，也就是 bw 对象
 		TypeConverter converter = (customConverter != null ? customConverter : bw);
+		// 创建一个属性值解析器
 		BeanDefinitionValueResolver valueResolver =
 				new BeanDefinitionValueResolver(this.beanFactory, beanName, mbd, converter);
+		// 获取到这个构造器的参数类型
 		Class<?>[] paramTypes = executable.getParameterTypes();
 
 		Object[] resolvedArgs = new Object[argsToResolve.length];
