@@ -1651,7 +1651,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// 属性值不为空
 		if (pvs != null) {
-			// 设置应用
+			// 设置属性值，最后调用了 setter 方法设置属性
 			applyPropertyValues(beanName, mbd, bw, pvs);
 		}
 	}
@@ -1930,11 +1930,16 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// 创建一个 List 集合，用于进行深拷贝，不影响原 original 的对象
 		List<PropertyValue> deepCopy = new ArrayList<>(original.size());
 		boolean resolveNecessary = false;
+
+		// 遍历所有的属性处理
 		for (PropertyValue pv : original) {
+			// 如果当前这个属性已经处理过类型的适配
+			// 则直接放入 deepCopy 中
 			if (pv.isConverted()) {
 				deepCopy.add(pv);
 			}
 			else {
+				// 如果是第一次进来，还没有进行过类型的适配处理
 				// 获取属性名
 				String propertyName = pv.getName();
 				// 获取属性值
@@ -1947,19 +1952,28 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					originalValue = new DependencyDescriptor(new MethodParameter(writeMethod, 0), true);
 				}
 				// 解析属性值，这里会根据值的类型，分别进行处理，最后得到的是对应的对象
+				// 或者是一个 beanName（RuntimeBeanNameReference的情况）
 				Object resolvedValue = valueResolver.resolveValueIfNecessary(pv, originalValue);
+				// 赋值 convertedValue
 				Object convertedValue = resolvedValue;
+				// 判断 propertyName 这个属性是否可以写
 				boolean convertible = bw.isWritableProperty(propertyName) &&
+						// 判断给定的属性是否不是嵌套索引
 						!PropertyAccessorUtils.isNestedOrIndexedProperty(propertyName);
 				if (convertible) {
+					// 如果这个能写且正常的非索引嵌套，一般都是能走到这里
+					// 根据 value 和属性的类型，调用 convertForProperty 进行值和类型的适配转换
 					convertedValue = convertForProperty(resolvedValue, propertyName, bw, converter);
 				}
 				// Possibly store converted value in merged bean definition,
 				// in order to avoid re-conversion for every created bean instance.
+				// 判断如果处理后的对象，和原本的对象是一样的，说明本身就是适配的
 				if (resolvedValue == originalValue) {
+					// 如果已经调用过适配的方法，则将结果设置到适配的结果值中
 					if (convertible) {
 						pv.setConvertedValue(convertedValue);
 					}
+					// 将这个值属性设置到深拷贝的 deepCopy 中
 					deepCopy.add(pv);
 				}
 				else if (convertible && originalValue instanceof TypedStringValue &&
@@ -1974,12 +1988,16 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				}
 			}
 		}
+
+		// 如果 mpvs 不为空且处理过适配了
 		if (mpvs != null && !resolveNecessary) {
+			// 设置属性 converted = true，表示已经适配过
 			mpvs.setConverted();
 		}
 
 		// Set our (possibly massaged) deep copy.
 		try {
+			// 设置深拷贝的这个 value 给到 bw，这里最终会调用到 setter 方法，设置这个属性值
 			bw.setPropertyValues(new MutablePropertyValues(deepCopy));
 		}
 		catch (BeansException ex) {

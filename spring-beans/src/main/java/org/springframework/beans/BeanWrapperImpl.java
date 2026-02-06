@@ -206,16 +206,16 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	 */
 	@Nullable
 	public Object convertForProperty(@Nullable Object value, String propertyName) throws TypeMismatchException {
-		CachedIntrospectionResults cachedIntrospectionResults = getCachedIntrospectionResults();
-		PropertyDescriptor pd = cachedIntrospectionResults.getPropertyDescriptor(propertyName);
+		CachedIntrospectionResults cachedIntrospectionResults = getCachedIntrospectionResults();  // 获取这个包装类对应目标类的类信息
+		PropertyDescriptor pd = cachedIntrospectionResults.getPropertyDescriptor(propertyName);  // 获取这个属性的属性描述器
 		if (pd == null) {
 			throw new InvalidPropertyException(getRootClass(), getNestedPath() + propertyName,
 					"No property '" + propertyName + "' found");
 		}
-		TypeDescriptor td = cachedIntrospectionResults.getTypeDescriptor(pd);
-		if (td == null) {
+		TypeDescriptor td = cachedIntrospectionResults.getTypeDescriptor(pd);  // 或者这个属性的类型描述器
+		if (td == null) {   // 第一次获取是空的，则进行新增，对应 new TypeDescriptor(property(pd))
 			td = cachedIntrospectionResults.addTypeDescriptor(pd, new TypeDescriptor(property(pd)));
-		}
+		}   // 覆盖
 		return convertForProperty(propertyName, null, value, td);
 	}
 
@@ -311,6 +311,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 
 		@Override
 		public void setValue(@Nullable Object value) throws Exception {
+			// 获取这个属性的 setter 方法
 			Method writeMethod = (this.pd instanceof GenericTypeAwarePropertyDescriptor ?
 					((GenericTypeAwarePropertyDescriptor) this.pd).getWriteMethodForActualAccess() :
 					this.pd.getWriteMethod());
@@ -328,6 +329,8 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 				}
 			}
 			else {
+				// 终于走到这里了，调用属性的 setter 方法，设置属性值
+				// 到此，这个属性就被注入到这个 bw 包装的实际对象的属性值里边
 				ReflectionUtils.makeAccessible(writeMethod);
 				writeMethod.invoke(getWrappedInstance(), value);
 			}

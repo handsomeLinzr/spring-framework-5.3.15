@@ -249,6 +249,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	@Override
 	public void setPropertyValue(PropertyValue pv) throws BeansException {
 		PropertyTokenHolder tokens = (PropertyTokenHolder) pv.resolvedTokens;
+		// tokens 为空的情况，一般都是空的
 		if (tokens == null) {
 			String propertyName = pv.getName();
 			AbstractNestablePropertyAccessor nestedPa;
@@ -263,9 +264,11 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			if (nestedPa == this) {
 				pv.getOriginalPropertyValue().resolvedTokens = tokens;
 			}
+			// 进行属性设置
 			nestedPa.setPropertyValue(tokens, pv);
 		}
 		else {
+			// tokens 不为空，属性设置
 			setPropertyValue(tokens, pv);
 		}
 	}
@@ -275,6 +278,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			processKeyedProperty(tokens, pv);
 		}
 		else {
+			// 设置属性，一般走的这里
 			processLocalProperty(tokens, pv);
 		}
 	}
@@ -416,6 +420,9 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 
 	private void processLocalProperty(PropertyTokenHolder tokens, PropertyValue pv) {
 		PropertyHandler ph = getLocalPropertyHandler(tokens.actualName);
+		// 判断 ph 是否为空
+		// 判断这个属性是否可写
+		//		以上只要有 1 个命中，则走下边的逻辑，一般是不会命中走这里的逻辑的
 		if (ph == null || !ph.isWritable()) {
 			if (pv.isOptional()) {
 				if (logger.isDebugEnabled()) {
@@ -434,9 +441,13 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 
 		Object oldValue = null;
 		try {
+			// 获取值
 			Object originalValue = pv.getValue();
+			// 获取原始值
 			Object valueToApply = originalValue;
 			if (!Boolean.FALSE.equals(pv.conversionNecessary)) {
+				// 如果已经有处理了类型适配覆盖，则用类型适配覆盖后的那个对象，做诶目标设置对象
+				// 一般也是走这里
 				if (pv.isConverted()) {
 					valueToApply = pv.getConvertedValue();
 				}
@@ -460,6 +471,8 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 				}
 				pv.getOriginalPropertyValue().conversionNecessary = (valueToApply != originalValue);
 			}
+			// 开始进行属性值的设置
+			// ph 一般走的 BeanPropertyHandler 的逻辑
 			ph.setValue(valueToApply);
 		}
 		catch (TypeMismatchException ex) {
@@ -561,21 +574,26 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 		return false;
 	}
 
+	// 解析判断这个属性能否写
 	@Override
 	public boolean isWritableProperty(String propertyName) {
 		try {
+			// 获取属性的持有器
 			PropertyHandler ph = getPropertyHandler(propertyName);
 			if (ph != null) {
+				// 返回这个属性是否有能写
 				return ph.isWritable();
 			}
 			else {
 				// Maybe an indexed/mapped property...
+				// 尝试获取这个属性，如果没异常，则是能写
 				getPropertyValue(propertyName);
 				return true;
 			}
 		}
 		catch (InvalidPropertyException ex) {
 			// Cannot be evaluated, so can't be writable.
+			// 如果有异常，则表示不能写
 		}
 		return false;
 	}
@@ -586,7 +604,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			throws TypeMismatchException {
 
 		Assert.state(this.typeConverterDelegate != null, "No TypeConverterDelegate");
-		try {
+		try {  // 转换
 			return this.typeConverterDelegate.convertIfNecessary(propertyName, oldValue, newValue, requiredType, td);
 		}
 		catch (ConverterNotFoundException | IllegalStateException ex) {
