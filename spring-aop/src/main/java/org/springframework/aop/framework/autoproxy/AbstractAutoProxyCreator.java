@@ -254,7 +254,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			if (this.advisedBeans.containsKey(cacheKey)) {
 				return null;
 			}
-			// 如果当前 bean 是 aop 基础类：Advice、Pointcut、Advisor、AopInfrastructureBean
+			// 如果当前 bean 是 aop 基础类：Advice、Pointcut、Advisor、AopInfrastructureBean，这几种都不需要进行代理
 			// 如果 shouldSkip 得到 true
 			//		以上两种情况只要符合一个，则需要进行缓存到 advisedBeans，设置 FALSE，然后直接返回
 			if (isInfrastructureClass(beanClass) || shouldSkip(beanClass, beanName)) {
@@ -293,7 +293,11 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	@Override
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
 		if (bean != null) {
+			// 获取这个 bean 对应的 cacheKey
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
+			// 查询 cacheKey 是否在 earlyProxyReferences 这个早起引用中
+			// 如果有，则说明前边已经经过循环依赖的提前曝光步骤，进行过动态代理了，直接跳过即可
+			// 如果没有，则 earlyProxyReferences.remove 会返回 null，所以能进行 if 中的逻辑，进行动态代理判断处理
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
@@ -323,6 +327,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		}
 	}
 
+	// 判断是否能应用上动态代理包装替换
 	/**
 	 * Wrap the given bean if necessary, i.e. if it is eligible for being proxied.
 	 * @param bean the raw bean instance
@@ -331,27 +336,36 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * @return a proxy wrapping the bean, or the raw bean instance as-is
 	 */
 	protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+		// 如果 targetSourcedBeans 已经包含了这个 beanName，说明已经代理过了，直接返回即可
 		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
 			return bean;
 		}
+		// 如果 advisedBeans 中记录了这个 cacheKey，说明这个在前边也判断过不需要做动态代理，也是直接返回
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
+		// 再次进行判断是否需要进行动态代理，如果不需要则把对应的记录加到 advisedBeans 中
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
 		}
 
 		// Create proxy if we have advice.
+		// 构建动态代理的代理责任链
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+		// 判断如果得到的责任链不是空的，则表示需要进行代理
 		if (specificInterceptors != DO_NOT_PROXY) {
+			// 将需要动态代理的这个缓存加到 advisedBeans 中
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
+			// 创建动态代理对象
 			Object proxy = createProxy(
 					bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
+			// 添加动态代理类到 proxyTypes 中
 			this.proxyTypes.put(cacheKey, proxy.getClass());
 			return proxy;
 		}
 
+		// 如果责任链是空的，则表示不需要进行动态代理，将这个结果加到 advisedBeans 中，然后返回这个 bean
 		this.advisedBeans.put(cacheKey, Boolean.FALSE);
 		return bean;
 	}

@@ -136,7 +136,7 @@ class BeanDefinitionValueResolver {
 			// 解析，也是调用 getBean 或者 beanFactory.createBean，最后得到 bean 对象
 			return resolveInnerBean(argName, bdHolder.getBeanName(), bdHolder.getBeanDefinition());
 		}
-		// 如果是属于 bd 对象
+		// 如果是属于 bd 对象，则会注册并生成一个 bean，作为内部 bean
 		else if (value instanceof BeanDefinition) {
 			// Resolve plain BeanDefinition, without contained name: use dummy name.
 			BeanDefinition bd = (BeanDefinition) value;
@@ -356,6 +356,7 @@ class BeanDefinitionValueResolver {
 					// 从当前工厂获取到 bean
 					bean = this.beanFactory.getBean(resolvedName);
 				}
+				// 记录依赖关系
 				this.beanFactory.registerDependentBean(resolvedName, this.beanName);
 			}
 			if (bean instanceof NullBean) {
@@ -370,6 +371,7 @@ class BeanDefinitionValueResolver {
 		}
 	}
 
+	// 处理内部 bean
 	/**
 	 * Resolve an inner bean definition.
 	 * @param argName the name of the argument that the inner bean is defined for
@@ -380,7 +382,7 @@ class BeanDefinitionValueResolver {
 	@Nullable
 	private Object resolveInnerBean(Object argName, String innerBeanName, BeanDefinition innerBd) {
 		RootBeanDefinition mbd = null;
-		try {
+		try {   // 获取这个 bean 的 mnd 对象，并且给这个内部 bean 添加 beanName 为这个内部定义的的 beanName
 			mbd = this.beanFactory.getMergedBeanDefinition(innerBeanName, innerBd, this.beanDefinition);
 			// Check given bean name whether it is unique. If not already unique,
 			// add counter - increasing the counter until the name is unique.
@@ -388,25 +390,37 @@ class BeanDefinitionValueResolver {
 			if (mbd.isSingleton()) {
 				actualInnerBeanName = adaptInnerBeanName(innerBeanName);
 			}
+
+			// 注册记录这个两个 bean 之间的包含和依赖关系
 			this.beanFactory.registerContainedBean(actualInnerBeanName, this.beanName);
+
 			// Guarantee initialization of beans that the inner bean depends on.
+			// 获取这个 bd 中声明的依赖
 			String[] dependsOn = mbd.getDependsOn();
+			// 如果有声明依赖，则记录依赖关系，然后调用 getBean 进行创建
 			if (dependsOn != null) {
 				for (String dependsOnBean : dependsOn) {
+					// 分别调用 registerDependentBean 记录依赖关系 和 getBean 创建依赖 bean
 					this.beanFactory.registerDependentBean(dependsOnBean, actualInnerBeanName);
 					this.beanFactory.getBean(dependsOnBean);
 				}
 			}
 			// Actually create the inner bean instance now...
+			// 调用 createBean 创建这个内部 bean
 			Object innerBean = this.beanFactory.createBean(actualInnerBeanName, mbd, null);
+			// 如果是属于 factoryBean 对象
 			if (innerBean instanceof FactoryBean) {
+				// 是否是内部合成的 bean 对象
 				boolean synthetic = mbd.isSynthetic();
+				// 如果是 factoryBean 对象，则需要调用到这个方法，最后调用到 getObject 方法，得到目标的对象
 				innerBean = this.beanFactory.getObjectFromFactoryBean(
 						(FactoryBean<?>) innerBean, actualInnerBeanName, !synthetic);
 			}
+			// 如果是空对象，则直接返回
 			if (innerBean instanceof NullBean) {
 				innerBean = null;
 			}
+			// 返回这个创建的内部 bean
 			return innerBean;
 		}
 		catch (BeansException ex) {

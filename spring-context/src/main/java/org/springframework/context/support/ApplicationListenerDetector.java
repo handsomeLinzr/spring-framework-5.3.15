@@ -58,8 +58,11 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 	}
 
 
+	// 监听器处理
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		// 如果这个 bean 是一个 ApplicationListener 监听器
+		// 则添加到 singletonNames 中，并缓存这个监听起是否是单例 bean
 		if (ApplicationListener.class.isAssignableFrom(beanType)) {
 			this.singletonNames.put(beanName, beanDefinition.isSingleton());
 		}
@@ -70,15 +73,22 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 		return bean;
 	}
 
+	// 监听器处理
+	// bean 初始化后的后置处理
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) {
+		// 判断你如果当前这个 bean 是一个监听器 ApplicationListener
 		if (bean instanceof ApplicationListener) {
 			// potentially not detected as a listener by getBeanNamesForType retrieval
+			// 检查当前这个监听器是否是单例的
+			// singletonNames 在前边实例化后，依赖注入前，已经调用了 postProcessMergedBeanDefinition 放进来了
 			Boolean flag = this.singletonNames.get(beanName);
 			if (Boolean.TRUE.equals(flag)) {
 				// singleton bean (top-level or inner): register on the fly
+				// 如果是单例的，则将该监听器添加到 applicationContext 中
 				this.applicationContext.addApplicationListener((ApplicationListener<?>) bean);
 			}
+			// 如果非单例的，从 singletonNames 中移除
 			else if (Boolean.FALSE.equals(flag)) {
 				if (logger.isWarnEnabled() && !this.applicationContext.containsBean(beanName)) {
 					// inner bean with other scope - can't reliably process events
@@ -87,9 +97,11 @@ class ApplicationListenerDetector implements DestructionAwareBeanPostProcessor, 
 							"because it does not have singleton scope. Only top-level listener beans are allowed " +
 							"to be of non-singleton scope.");
 				}
+				// 从 singletonNames 中移除
 				this.singletonNames.remove(beanName);
 			}
 		}
+		// 返回这个 bean
 		return bean;
 	}
 

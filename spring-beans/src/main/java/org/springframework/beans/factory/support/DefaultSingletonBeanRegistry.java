@@ -106,6 +106,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	/** Disposable bean instances: bean name to disposable instance. */
 	private final Map<String, Object> disposableBeans = new LinkedHashMap<>();
 
+	// 记录 bean 之间的包含关系
 	/** Map between containing bean names: bean name to Set of bean names that the bean contains. */
 	private final Map<String, Set<String>> containedBeanMap = new ConcurrentHashMap<>(16);
 
@@ -426,6 +427,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		}
 	}
 
+	// 注册两个 bean 之间的包含关系
 	/**
 	 * Register a containment relationship between two beans,
 	 * e.g. between an inner bean and its containing outer bean.
@@ -436,6 +438,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @see #registerDependentBean
 	 */
 	public void registerContainedBean(String containedBeanName, String containingBeanName) {
+		// 记录这两个 bean 之间的包含关系
 		synchronized (this.containedBeanMap) {
 			Set<String> containedBeans =
 					this.containedBeanMap.computeIfAbsent(containingBeanName, k -> new LinkedHashSet<>(8));
@@ -443,6 +446,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				return;
 			}
 		}
+		// 记录依赖关系
 		registerDependentBean(containedBeanName, containingBeanName);
 	}
 

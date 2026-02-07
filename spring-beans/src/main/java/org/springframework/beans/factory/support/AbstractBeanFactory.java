@@ -1293,6 +1293,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	@SuppressWarnings("unchecked")
 	protected void beforePrototypeCreation(String beanName) {
+		// 记录当前正在进行创建的原型多例模式的bean
+		// 如果当前还没有正在创建的，则设置；如果有了，则改为 Set，然后添加之前和当前beanName进去
 		Object curVal = this.prototypesCurrentlyInCreation.get();
 		if (curVal == null) {
 			this.prototypesCurrentlyInCreation.set(beanName);
@@ -1317,6 +1319,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	@SuppressWarnings("unchecked")
 	protected void afterPrototypeCreation(String beanName) {
+		// 移除当前正在创建的原型多例模式的 bean
+		// 和添加的时候一样的逻辑，只有自己则删除；如果是 set，则强转，然后在里边移除这个 beanName
 		Object curVal = this.prototypesCurrentlyInCreation.get();
 		if (curVal instanceof String) {
 			this.prototypesCurrentlyInCreation.remove();

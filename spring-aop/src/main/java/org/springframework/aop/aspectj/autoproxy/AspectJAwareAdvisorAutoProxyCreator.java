@@ -102,8 +102,8 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
 		// 遍历所有的 advisor
 		for (Advisor advisor : candidateAdvisors) {
-			// 如果属于 AspectJPointcutAdvisor 类型 且对应的这个 aspectName 等于这个 beanName
-			// 则返回 true
+			// 如果当前正在判断是否需要跳过的 bean，就是 advisor 通知管理器的关联的通知，且 advisor 是 AspectJPointcutAdvisor 类型
+			// 则需要返回 true，跳过代理，因为这个本身就是增强类，不需要被代理了
 			if (advisor instanceof AspectJPointcutAdvisor &&
 					((AspectJPointcutAdvisor) advisor).getAspectName().equals(beanName)) {
 				return true;

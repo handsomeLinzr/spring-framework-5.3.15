@@ -462,6 +462,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			throws BeansException {
 
 		Object result = existingBean;
+		// 获取所有的 bpp 对象，处理 postProcessBeforeInitialization 方法
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
 			Object current = processor.postProcessBeforeInitialization(result, beanName);
 			if (current == null) {
@@ -478,7 +479,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			throws BeansException {
 
 		Object result = existingBean;
+		// 遍历所有的 bpp 对象，处理实例化后的后置处理
+		// 动态代理的替换也是在这里处理
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
+			// 如果有 aop 动态代理的情况下，会走到 AspectJAwareAdvisorAutoProxyCreator 进行动态代理的处理和替换
 			Object current = processor.postProcessAfterInitialization(result, beanName);
 			if (current == null) {
 				return result;
@@ -564,6 +568,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
 			// 给 bpp 一个机会去返回一个代理实例，即可以定义一个 InstantiationAwareBeanPostProcessor，在
 			// applyBeanPostProcessorsBeforeInstantiation 方法返回一个代理对象，自定义创建过程
+			// 这个过程中，如果有 aop 代理，也会在 AspectJAwareAdvisorAutoProxyCreator 中创建所有的 advisor 对象
+			// 实例化前
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
 				// 如果得到的结果不为 null，则直接返回 bean 即可
@@ -667,6 +673,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 						"' to allow for resolving potential circular references");
 			}
 			// 放入三级缓存
+			// 放入的是一个 lambda 表达式，逻辑是调用 getEarlyBeanReference 方法
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
@@ -675,9 +682,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		try {
 			// 依赖注入
 			populateBean(beanName, mbd, instanceWrapper);
-			// 初始化，动态代理也是在这里
-			// 如果有动态代理，且前边没有被因为被依赖而提前动态代理了，则这里会进行动态代理处理
-			// 如果有动态代理，而前边有因为被依赖而已经提前动态代理了，这里则直接从动态代理缓存中拿到动态代理对象
+			// 初始化，调用了 3 个逻辑：
+			//	1.bpp.postProcessBeforeInitialization —— @PostConstruct 注解方法
+			//	2.调用 init-method
+			//	3.bpp.postProcessAfterInitialization  —— aop 动态代理
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -705,7 +713,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					// 直接用从二级缓存中拿到的 bean 作为最终 bean
 					exposedObject = earlySingletonReference;
 				}
-				// 如果 exposedObject 和 bean 不相等了，说明当前这个 bean 被增强了
+				// 如果 exposedObject 和 bean 不相等了，说明当前这个 bean 被代理
 				// hasDependentBean(beanName) 判断当前正在创建的 bean 是否有引用对象
 				else if (!this.allowRawInjectionDespiteWrapping && hasDependentBean(beanName)) {
 					// 获取到截止到当前所有需要注入这个 bean 的所有 bean
@@ -1090,6 +1098,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		return getTypeForFactoryBean(beanName, mbd, true).resolve();
 	}
 
+	// 获取一个提前曝光的对象，如果需要动态代理，则这里先进行动态代理，代理后放入二级缓存中
 	/**
 	 * Obtain a reference for early access to the specified bean,
 	 * typically for the purpose of resolving a circular reference.
@@ -1100,11 +1109,16 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
 		Object exposedObject = bean;
+		// 判断如果这个 bd 不是合成的（合成的不需要进行动态代理了），且有 InstantiationAwareBeanPostProcessor
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
+			// 遍历当前的 beanFactory，拿到所有的 SmartInstantiationAwareBeanPostProcessor
 			for (SmartInstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().smartInstantiationAware) {
+				// 调用 getEarlyBeanReference 方法
+				// 这里重点看 AspectJAwareAdvisorAutoProxyCreator，动态代理的判断与处理
 				exposedObject = bp.getEarlyBeanReference(exposedObject, beanName);
 			}
 		}
+		// 返回提前引用的对象
 		return exposedObject;
 	}
 
@@ -1261,7 +1275,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					// 执行初始化前处理，调用所有的 instantiationAware 执行
 					bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
 					if (bean != null) {
-						// 如果其中有应用上的情况，则调用创建后的后置处理
+						// 如果其中有在 applyBeanPostProcessorsBeforeInstantiation 应用上的情况，
+						// 则这里已经创建出了 bean 对象
+						// 因此则这里直接就可以调用 applyBeanPostProcessorsAfterInitialization 创建后的后置处理
 						bean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
 					}
 				}
@@ -1288,7 +1304,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	@Nullable
 	protected Object applyBeanPostProcessorsBeforeInstantiation(Class<?> beanClass, String beanName) {
+		// 调用所有的 InstantiationAwareBeanPostProcessor，执行 postProcessBeforeInstantiation 方法
 		for (InstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().instantiationAware) {
+			// 进行初始化前的处理，主要可以看 AspectJAwareAdvisorAutoProxyCreator 这个 bpp 的处理
+			// 如果加了 AspectJ aop 动态代理，则 AspectJAwareAdvisorAutoProxyCreator 会创建所有的 advisor 对象
 			Object result = bp.postProcessBeforeInstantiation(beanClass, beanName);
 			if (result != null) {
 				return result;
@@ -1583,6 +1602,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		// 给所有的实例化 aware 对象一个机会在这个 bean 进行属性设置前，修改 bean 的状态，这里可以用来修改注入的方式
+		// 实例化后处理
 		// Give any InstantiationAwareBeanPostProcessors the opportunity to modify the
 		// state of the bean before properties are set. This can be used, for example,
 		// to support styles of field injection.
@@ -1628,7 +1648,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				pvs = mbd.getPropertyValues();
 			}
 			for (InstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().instantiationAware) {
-				// 处理属性
+				// 处理属性注入
+				// @Resource  CommonAnnotationBeanPostProcessor
+				// @Autowired AutowiredAnnotationBeanPostProcessor
 				PropertyValues pvsToUse = bp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);
 				if (pvsToUse == null) {
 					if (filteredPds == null) {
@@ -1879,6 +1901,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 	}
 
+	// 将给定的属性值，设置到对应的 bean 中
 	/**
 	 * Apply the given property values, resolving any runtime references
 	 * to other beans in this bean factory. Must use deep copy, so we
@@ -1960,7 +1983,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				Object convertedValue = resolvedValue;
 				// 判断 propertyName 这个属性是否可以写
 				boolean convertible = bw.isWritableProperty(propertyName) &&
-						// 判断给定的属性是否不是嵌套索引
+						// 判断给定的属性是否不是嵌套索引，其实就是判断这个 propertyName 有没有 .或者 [字符，一般是没有
 						!PropertyAccessorUtils.isNestedOrIndexedProperty(propertyName);
 				if (convertible) {
 					// 如果这个能写且正常的非索引嵌套，一般都是能走到这里
@@ -2058,15 +2081,27 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}, getAccessControlContext());
 		}
 		else {
+			// aware 方法的调用
+			// BeanNameAware、BeanClassLoaderAware、BeanFactoryAware 这三个 bean 的设置
+			// 在前边一共忽略了 9 个 aware 处理，这里三个，还有下边 applyBeanPostProcessorsBeforeInitialization 会处理 6 个
 			invokeAwareMethods(beanName, bean);
 		}
 
 		Object wrappedBean = bean;
 		if (mbd == null || !mbd.isSynthetic()) {
+			// 开始调用 postProcessBeforeInitialization
+			// 调用 init-method 之前的处理
+			// 这里的处理包括：
+			//	ApplicationContextAwareProcessor  设置 aware
+			//	  处理 EnvironmentAware、EmbeddedValueResolverAware、ResourceLoaderAware、ApplicationEventPublisherAware、MessageSourceAware、ApplicationContextAware
+			//  ImportAwareBeanPostProcessor  —— ImportAware bean 的处理
+			//  CommonAnnotationBeanPostProcessor  —— 调用 @PostConstruct 方法
 			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
 		}
 
 		try {
+			// 调用 init-method 方法，这里调用的是通过配置或者手动设置指定的 init-method
+			// 不会执行 @PostConstruct 这个方法，这个方法在前边 applyBeanPostProcessorsBeforeInitialization 的时候已经执行了
 			invokeInitMethods(beanName, wrappedBean, mbd);
 		}
 		catch (Throwable ex) {
@@ -2075,9 +2110,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					beanName, "Invocation of init method failed", ex);
 		}
 		if (mbd == null || !mbd.isSynthetic()) {
+			// 开始调用 postProcessAfterInitialization
+			// 调用 init-method 之后的处理
+			// 这里的处理包括：
+			// 	AspectJAwareAdvisorAutoProxyCreator   —— aop 动态代理处理
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 
+		// 最后返回包装对象
 		return wrappedBean;
 	}
 

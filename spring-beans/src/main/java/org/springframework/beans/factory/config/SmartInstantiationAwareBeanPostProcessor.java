@@ -67,6 +67,7 @@ public interface SmartInstantiationAwareBeanPostProcessor extends InstantiationA
 		return null;
 	}
 
+	// 获取提前暴露的对象作为早期引用，一般是为了解决循环依赖动态代理情况用
 	/**
 	 * Obtain a reference for early access to the specified bean,
 	 * typically for the purpose of resolving a circular reference.

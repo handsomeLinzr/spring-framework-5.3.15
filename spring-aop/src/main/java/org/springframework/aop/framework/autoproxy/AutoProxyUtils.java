@@ -127,10 +127,15 @@ public abstract class AutoProxyUtils {
 	 * @see AutowireCapableBeanFactory#ORIGINAL_INSTANCE_SUFFIX
 	 */
 	static boolean isOriginalInstance(String beanName, Class<?> beanClass) {
+		// 如果 beanName 有值，且长度不为 这个 beanName 对应的 class 长度+.ORIGINAL的长度
+		// 则返回 false，不需要跳过
+		// 其实就是判断当前的这个 beanName 是不是等于 当前这个 beanName 对应的 Class 名称+.ORIGINAL
+		// 如果不是，则不需要跳过，如果是则需要跳过，因为 .ORIGINAL 这个 bean 也不需要做代理
 		if (!StringUtils.hasLength(beanName) || beanName.length() !=
 				beanClass.getName().length() + AutowireCapableBeanFactory.ORIGINAL_INSTANCE_SUFFIX.length()) {
 			return false;
 		}
+		// 这里就是判断给的 beanName 是不是等于这个 bean 的 Class 对象的名称+.ORIGINAL
 		return (beanName.startsWith(beanClass.getName()) &&
 				beanName.endsWith(AutowireCapableBeanFactory.ORIGINAL_INSTANCE_SUFFIX));
 	}
