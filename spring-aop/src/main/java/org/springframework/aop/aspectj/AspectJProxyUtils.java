@@ -45,22 +45,31 @@ public abstract class AspectJProxyUtils {
 	 * otherwise {@code false}
 	 */
 	public static boolean makeAdvisorChainAspectJCapableIfNecessary(List<Advisor> advisors) {
+		// 判断当前的 advisors 是否不为空，不为空才需要添加，空则直接返回
 		// Don't add advisors to an empty list; may indicate that proxying is just not required
 		if (!advisors.isEmpty()) {
 			boolean foundAspectJAdvice = false;
+			// 遍历所有的 advisor 对象
 			for (Advisor advisor : advisors) {
 				// Be careful not to get the Advice without a guard, as this might eagerly
 				// instantiate a non-singleton AspectJ aspect...
+				// 判断如果找到了 aspectJAdvice 对象
+				// 则设置 foundAspectJAdvice = true，表示有 aspectJAdvice，跳出循环
 				if (isAspectJAdvice(advisor)) {
 					foundAspectJAdvice = true;
 					break;
 				}
 			}
+			// 判断如果找到了 AspectJ aspect 对象，且还没添加 ExposeInvocationInterceptor.ADVISOR
+			// 则需要在前边添加上这个 advisor，作为串联整个责任链的 advisor
+			// DefaultPointcutAdvisor(pointCut[true],ExposeInvocationInterceptor)
 			if (foundAspectJAdvice && !advisors.contains(ExposeInvocationInterceptor.ADVISOR)) {
 				advisors.add(0, ExposeInvocationInterceptor.ADVISOR);
+				// 返回 true
 				return true;
 			}
 		}
+		// 返回 false
 		return false;
 	}
 

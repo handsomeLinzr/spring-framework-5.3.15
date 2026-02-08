@@ -94,6 +94,7 @@ public abstract class MethodMatchers {
 	 */
 	public static boolean matches(MethodMatcher mm, Method method, Class<?> targetClass, boolean hasIntroductions) {
 		Assert.notNull(mm, "MethodMatcher must not be null");
+		       // 调用 matches 匹配
 		return (mm instanceof IntroductionAwareMethodMatcher ?
 				((IntroductionAwareMethodMatcher) mm).matches(method, targetClass, hasIntroductions) :
 				mm.matches(method, targetClass));
@@ -344,11 +345,15 @@ public abstract class MethodMatchers {
 			super(mm1, mm2);
 		}
 
+		// mm1 和 mm2 都进行匹配，都匹配上则才能匹配
 		@Override
 		public boolean matches(Method method, Class<?> targetClass, boolean hasIntroductions) {
+			       // AbstractAspectJAdvice$AdviceExcludingMethodMatcher
 			return (MethodMatchers.matches(this.mm1, method, targetClass, hasIntroductions) &&
+					// AspectJExpressionPointcut
 					MethodMatchers.matches(this.mm2, method, targetClass, hasIntroductions));
 		}
 	}
+
 
 }

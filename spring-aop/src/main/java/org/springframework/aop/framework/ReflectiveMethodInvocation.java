@@ -79,12 +79,14 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	@Nullable
 	private Map<String, Object> userAttributes;
 
+	// 记录增强的切面数量
 	/**
 	 * List of MethodInterceptor and InterceptorAndDynamicMethodMatcher
 	 * that need dynamic checks.
 	 */
 	protected final List<?> interceptorsAndDynamicMethodMatchers;
 
+	// 当前执行到的拦截器链的上一个位置
 	/**
 	 * Index from 0 of the current interceptor we're invoking.
 	 * -1 until we invoke: then the current interceptor.
@@ -92,6 +94,7 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	private int currentInterceptorIndex = -1;
 
 
+	// 构造函数，继续拦截器 MethodInterceptor 的所有需要的参数和信息
 	/**
 	 * Construct a new ReflectiveMethodInvocation with the given arguments.
 	 * @param proxy the proxy object that the invocation was made on
@@ -109,11 +112,17 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 			Object proxy, @Nullable Object target, Method method, @Nullable Object[] arguments,
 			@Nullable Class<?> targetClass, List<Object> interceptorsAndDynamicMethodMatchers) {
 
+		// 代理对象
 		this.proxy = proxy;
+		// 目标对象
 		this.target = target;
+		// 目标类
 		this.targetClass = targetClass;
+		// 方法
 		this.method = BridgeMethodResolver.findBridgedMethod(method);
+		// 参数
 		this.arguments = AopProxyUtils.adaptArgumentsIfNecessary(method, arguments);
+		// 拦截器链
 		this.interceptorsAndDynamicMethodMatchers = interceptorsAndDynamicMethodMatchers;
 	}
 
@@ -155,19 +164,37 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	}
 
 
+	/**
+	 * 总结：
+	 * 1.切面通知的顺序：before->after->around->afterReturning->afterThrowing
+	 *
+	 * 2.执行顺序：
+	 * 	before链——>before的方法 ——> after链 ——> around链——>around上半部分逻辑 ——> afterReturning链 ——>afterThrowing链
+	 * 	                                                                                              ｜
+	 * 	 返回结果结束 <—— before链 <—— after增强方法 <—— around下半部分逻辑 <—— afterReturning方法 <—— try{被代理method}
+	 * 	                                                                                               ｜
+	 * 	                                                                                    catch{afterThrowing方法}
+	 * @return
+	 * @throws Throwable
+	 */
 	@Override
 	@Nullable
 	public Object proceed() throws Throwable {
 		// We start with an index of -1 and increment early.
+		// 判断如果当前执行到的拦截器链的上一个位置，刚好是拦截器链的数量-1，即可以理解为，当前所有的拦截器都已经执行过一次了
+		// 则可以调用 invoke 方法去调用真正被代理类的 method 了
 		if (this.currentInterceptorIndex == this.interceptorsAndDynamicMethodMatchers.size() - 1) {
+			// 这里就是调用被代理类的真正方法了
 			return invokeJoinpoint();
 		}
-
+        // 如果拦截器链还没有执行到最后一个，则这次先获取当前需要执行的拦截器
 		Object interceptorOrInterceptionAdvice =
 				this.interceptorsAndDynamicMethodMatchers.get(++this.currentInterceptorIndex);
+		// 判断这个拦截器是否属于 InterceptorAndDynamicMethodMatcher
 		if (interceptorOrInterceptionAdvice instanceof InterceptorAndDynamicMethodMatcher) {
 			// Evaluate dynamic method matcher here: static part will already have
 			// been evaluated and found to match.
+			// 强转
 			InterceptorAndDynamicMethodMatcher dm =
 					(InterceptorAndDynamicMethodMatcher) interceptorOrInterceptionAdvice;
 			Class<?> targetClass = (this.targetClass != null ? this.targetClass : this.method.getDeclaringClass());
@@ -183,6 +210,9 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 		else {
 			// It's an interceptor, so we just invoke it: The pointcut will have
 			// been evaluated statically before this object was constructed.
+			// 否则，直接调用拦截器的 invoke 方法，然后走到各自的拦截器的逻辑
+			// 这里就有 6 种不同的链，包括第一个工具拦截器 + 5种实际用的拦截器
+			// 默认也是走这里
 			return ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(this);
 		}
 	}
@@ -199,6 +229,7 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	}
 
 
+	// 克隆一份当前对象+当前参数
 	/**
 	 * This implementation returns a shallow copy of this invocation object,
 	 * including an independent copy of the original arguments array.
@@ -209,11 +240,13 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	 */
 	@Override
 	public MethodInvocation invocableClone() {
+		// 复制一份参数出来
 		Object[] cloneArguments = this.arguments;
 		if (this.arguments.length > 0) {
 			// Build an independent copy of the arguments array.
 			cloneArguments = this.arguments.clone();
 		}
+		// 调用 invocableClone 进行克隆
 		return invocableClone(cloneArguments);
 	}
 
@@ -235,8 +268,11 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 
 		// Create the MethodInvocation clone.
 		try {
+			// 克隆一个新的 mi 对象
 			ReflectiveMethodInvocation clone = (ReflectiveMethodInvocation) clone();
+			// 克隆的 mi 对象的参数，也设置为复制的参数
 			clone.arguments = arguments;
+			// 返回克隆对象
 			return clone;
 		}
 		catch (CloneNotSupportedException ex) {

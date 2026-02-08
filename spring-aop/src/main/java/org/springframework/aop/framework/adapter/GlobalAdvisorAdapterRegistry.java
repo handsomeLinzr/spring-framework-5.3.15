@@ -30,6 +30,8 @@ public final class GlobalAdvisorAdapterRegistry {
 	}
 
 
+	// 单例模式，默认的增强通知适配器注册期
+	// 构造方法会注册三种注册器：MethodBeforeAdviceAdapter、AfterReturningAdviceAdapter、ThrowsAdviceAdapter
 	/**
 	 * Keep track of a single instance so we can return it to classes that request it.
 	 */

@@ -113,6 +113,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	@Nullable
 	private BeanFactory beanFactory;
 
+	// 设置了当前 beanFactory 的类加载器
 	@Nullable
 	private transient ClassLoader pointcutClassLoader;
 
@@ -174,13 +175,16 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 
 	@Override
 	public ClassFilter getClassFilter() {
+		// 创建获取对应的 pointcutExpression
 		obtainPointcutExpression();
 		return this;
 	}
 
 	@Override
 	public MethodMatcher getMethodMatcher() {
+		// 构建切点表达式对象 PointcutExpression
 		obtainPointcutExpression();
+		// 返回当前这个 pointCut 对象
 		return this;
 	}
 
@@ -190,13 +194,19 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	 * lazily building the underlying AspectJ pointcut expression.
 	 */
 	private PointcutExpression obtainPointcutExpression() {
+		// 获取切点表达式，不能为空
 		if (getExpression() == null) {
 			throw new IllegalStateException("Must set property 'expression' before attempting to match");
 		}
+		// 如果当前的切点表达式对象是空的
+		// 则进行创建
 		if (this.pointcutExpression == null) {
+			// 获取当前 beanFactory 的类加载器
 			this.pointcutClassLoader = determinePointcutClassLoader();
+			// 进行切点表达式对象的创建
 			this.pointcutExpression = buildPointcutExpression(this.pointcutClassLoader);
 		}
+		// 返回对应的切点表达式对象
 		return this.pointcutExpression;
 	}
 
@@ -214,16 +224,21 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 		return ClassUtils.getDefaultClassLoader();
 	}
 
+	// 创建一个 AspectJ 的切点表达式对象
 	/**
 	 * Build the underlying AspectJ pointcut expression.
 	 */
 	private PointcutExpression buildPointcutExpression(@Nullable ClassLoader classLoader) {
+		// 初始化一个 PointcutParser
 		PointcutParser parser = initializePointcutParser(classLoader);
 		PointcutParameter[] pointcutParameters = new PointcutParameter[this.pointcutParameterNames.length];
 		for (int i = 0; i < pointcutParameters.length; i++) {
 			pointcutParameters[i] = parser.createPointcutParameter(
 					this.pointcutParameterNames[i], this.pointcutParameterTypes[i]);
 		}
+		// resolveExpression() 得到对应的切点表达式
+		// replaceBooleanOperators() 对切点表达式的 boolean 操作进行转换，把 and、or、not 改成 &&、||、!
+		// 解析得到对应的切点表达式对象
 		return parser.parsePointcutExpression(replaceBooleanOperators(resolveExpression()),
 				this.pointcutDeclarationScope, pointcutParameters);
 	}
@@ -269,9 +284,11 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 
 	@Override
 	public boolean matches(Class<?> targetClass) {
+		// 获取表达式对象
 		PointcutExpression pointcutExpression = obtainPointcutExpression();
 		try {
 			try {
+				// 进行表达式对象和这个 beanClass 进行匹配，返回匹配结果
 				return pointcutExpression.couldMatchJoinPointsInType(targetClass);
 			}
 			catch (ReflectionWorldException ex) {
@@ -291,6 +308,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 
 	@Override
 	public boolean matches(Method method, Class<?> targetClass, boolean hasIntroductions) {
+		// 得到切点匹配表达式对象
 		obtainPointcutExpression();
 		ShadowMatch shadowMatch = getTargetShadowMatch(method, targetClass);
 
@@ -426,6 +444,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 	}
 
 	private ShadowMatch getTargetShadowMatch(Method method, Class<?> targetClass) {
+		// 获取具体的方法
 		Method targetMethod = AopUtils.getMostSpecificMethod(method, targetClass);
 		if (targetMethod.getDeclaringClass().isInterface()) {
 			// Try to build the most specific interface possible for inherited methods to be
@@ -459,6 +478,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 					Method methodToMatch = targetMethod;
 					try {
 						try {
+							// 解析表达式，构建匹配树，很复杂先不看
 							shadowMatch = obtainPointcutExpression().matchesMethodExecution(methodToMatch);
 						}
 						catch (ReflectionWorldException ex) {
@@ -510,6 +530,7 @@ public class AspectJExpressionPointcut extends AbstractExpressionPointcut
 						shadowMatch = new DefensiveShadowMatch(shadowMatch,
 								fallbackExpression.matchesMethodExecution(methodToMatch));
 					}
+					// 缓存
 					this.shadowMatchCache.put(targetMethod, shadowMatch);
 				}
 			}

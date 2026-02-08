@@ -18,6 +18,7 @@ package org.springframework.aop;
 
 import java.lang.reflect.Method;
 
+// 一个特殊的 MethodMatcher，当在匹配方法的时候用到
 /**
  * A specialized type of {@link MethodMatcher} that takes into account introductions
  * when matching methods. If there are no introductions on the target class,

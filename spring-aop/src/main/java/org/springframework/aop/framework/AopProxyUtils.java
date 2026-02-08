@@ -149,9 +149,11 @@ public abstract class AopProxyUtils {
 			}
 		}
 		if (!advised.isInterfaceProxied(SpringProxy.class)) {
+			// 添加 SpringProxy 接口
 			proxiedInterfaces.add(SpringProxy.class);
 		}
 		if (!advised.isOpaque() && !advised.isInterfaceProxied(Advised.class)) {
+			// 添加 Advised 接口
 			proxiedInterfaces.add(Advised.class);
 		}
 		if (decoratingProxy && !advised.isInterfaceProxied(DecoratingProxy.class)) {

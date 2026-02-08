@@ -54,6 +54,10 @@ public class MethodBeforeAdviceInterceptor implements MethodInterceptor, BeforeA
 	@Override
 	@Nullable
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		// advice 就是适配的时候，实际要执行的那个增强通知对象
+		// 可以认为就是 AspectJMethodBeforeAdvice
+		// 参数：mi.getMethod()=>被代理的method；mi.getArguments()=>>method 的参数；mi.getThis()=>被代理的 target
+		// 所以 before 的逻辑是，先调用 before 的逻辑，然后再调用 mi.proceed() 继续走下个拦截器的逻辑
 		this.advice.before(mi.getMethod(), mi.getArguments(), mi.getThis());
 		return mi.proceed();
 	}

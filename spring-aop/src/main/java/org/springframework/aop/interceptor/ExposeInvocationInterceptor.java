@@ -88,15 +88,21 @@ public final class ExposeInvocationInterceptor implements MethodInterceptor, Pri
 	private ExposeInvocationInterceptor() {
 	}
 
+	// aop 动态代理，第一个拦截器就是这个 ExposeInvocationInterceptor，所以这是首先要执行的
 	@Override
 	@Nullable
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		// 先获取当前正在执行的 methodInterceptor 对象，从当前线程 threadLocal 获取
+		// 拿到的就是其他动态代理执行的 mi 对象
+		// 拿出来后先替换成自己，表示当前正在执行自己这个 aop，mi 是 CglibMethodInvocation
 		MethodInvocation oldInvocation = invocation.get();
 		invocation.set(mi);
 		try {
+			// 继续调用 mi.proceed，会走到 ReflectiveMethodInvocation.proceed 获取下一个链
 			return mi.proceed();
 		}
 		finally {
+			// 执行完，恢复线程，把其他的 aop 在执行的 mi 放回去
 			invocation.set(oldInvocation);
 		}
 	}

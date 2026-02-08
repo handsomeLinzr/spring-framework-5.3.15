@@ -34,21 +34,26 @@ import org.springframework.util.Assert;
  */
 public class AspectJPointcutAdvisor implements PointcutAdvisor, Ordered {
 
+	// 当前管理器对应的切面通知
 	private final AbstractAspectJAdvice advice;
 
+	// ComposablePointcut，通过调用 advice.buildSafePointcut() 获取
 	private final Pointcut pointcut;
 
 	@Nullable
 	private Integer order;
 
 
+	// 构造函数，实例化的时候会调用到这里
 	/**
 	 * Create a new AspectJPointcutAdvisor for the given advice.
 	 * @param advice the AbstractAspectJAdvice to wrap
 	 */
 	public AspectJPointcutAdvisor(AbstractAspectJAdvice advice) {
 		Assert.notNull(advice, "Advice must not be null");
+		// 设置 advice 属性，就是当前设置进来的具体切面通知 advice
 		this.advice = advice;
+		// 设置 pointcut 切点，调用切面的 buildSafePointcut 返回一个 ComposablePointcut
 		this.pointcut = advice.buildSafePointcut();
 	}
 

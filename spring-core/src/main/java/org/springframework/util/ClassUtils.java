@@ -568,7 +568,7 @@ public abstract class ClassUtils {
 	 */
 	public static boolean isAssignableValue(Class<?> type, @Nullable Object value) {
 		Assert.notNull(type, "Type must not be null");
-		return (value != null ? isAssignable(type, value.getClass()) : !type.isPrimitive());
+		return (value != null ? isAssignable(type, value.getClass()) : !type.isPrimitive());  // 判断 value 是否和类型 type 匹配上
 	}
 
 	/**

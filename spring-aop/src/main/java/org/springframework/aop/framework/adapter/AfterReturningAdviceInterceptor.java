@@ -50,12 +50,15 @@ public class AfterReturningAdviceInterceptor implements MethodInterceptor, After
 		this.advice = advice;
 	}
 
-
+	// 责任链 4
 	@Override
 	@Nullable
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		// 先调用下一个链
 		Object retVal = mi.proceed();
+		// 调用完执行 afterReturning 的增强方法逻辑
 		this.advice.afterReturning(retVal, mi.getMethod(), mi.getArguments(), mi.getThis());
+		// 返回结果给出去
 		return retVal;
 	}
 

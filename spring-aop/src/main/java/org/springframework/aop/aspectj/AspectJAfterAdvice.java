@@ -35,6 +35,7 @@ import org.springframework.lang.Nullable;
 public class AspectJAfterAdvice extends AbstractAspectJAdvice
 		implements MethodInterceptor, AfterAdvice, Serializable {
 
+	// 构造函数
 	public AspectJAfterAdvice(
 			Method aspectJBeforeAdviceMethod, AspectJExpressionPointcut pointcut, AspectInstanceFactory aif) {
 
@@ -42,13 +43,16 @@ public class AspectJAfterAdvice extends AbstractAspectJAdvice
 	}
 
 
+	// 责任链 2
 	@Override
 	@Nullable
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		try {
+			// 调用 after 增强，先执行 mi.proceed()，执行下一个拦截器
 			return mi.proceed();
 		}
 		finally {
+			// 执行完，再调用 after 的增强
 			invokeAdviceMethod(getJoinPointMatch(), null, null);
 		}
 	}

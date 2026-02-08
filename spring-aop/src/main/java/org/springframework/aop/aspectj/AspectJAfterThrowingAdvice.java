@@ -57,16 +57,22 @@ public class AspectJAfterThrowingAdvice extends AbstractAspectJAdvice
 		setThrowingNameNoCheck(name);
 	}
 
+	// 责任链 5
 	@Override
 	@Nullable
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		try {
+			// 调用下个责任链
 			return mi.proceed();
 		}
+		// 如果抛出异常
 		catch (Throwable ex) {
+			// 判断抛出的异常是否是和这个 afterThrowing 指定的异常类型匹配上
 			if (shouldInvokeOnThrowing(ex)) {
+				// 如果匹配上，调用增强逻辑
 				invokeAdviceMethod(getJoinPointMatch(), null, ex);
 			}
+			// 最后再把异常抛出去，也就是先执行增强逻辑，再抛出异常
 			throw ex;
 		}
 	}

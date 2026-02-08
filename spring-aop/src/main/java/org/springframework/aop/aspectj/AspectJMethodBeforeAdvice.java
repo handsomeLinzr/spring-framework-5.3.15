@@ -38,9 +38,11 @@ public class AspectJMethodBeforeAdvice extends AbstractAspectJAdvice implements 
 		super(aspectJBeforeAdviceMethod, pointcut, aif);
 	}
 
-
+	// 责任链 1
+    // 在执行调用链的时候，如果是 MethodBeforeAdviceInterceptor 的类型，则会调用 before 到这里
 	@Override
 	public void before(Method method, Object[] args, @Nullable Object target) throws Throwable {
+		// getJoinPointMatch()=>得到 null
 		invokeAdviceMethod(getJoinPointMatch(), null, null);
 	}
 

@@ -193,7 +193,9 @@ public abstract class AopUtils {
 	 * @see org.springframework.util.ClassUtils#getMostSpecificMethod
 	 */
 	public static Method getMostSpecificMethod(Method method, @Nullable Class<?> targetClass) {
+		// 获取目标类
 		Class<?> specificTargetClass = (targetClass != null ? ClassUtils.getUserClass(targetClass) : null);
+		// 获取这个方法
 		Method resolvedMethod = ClassUtils.getMostSpecificMethod(method, specificTargetClass);
 		// If we are dealing with method with generic parameters, find the original method.
 		return BridgeMethodResolver.findBridgedMethod(resolvedMethod);
@@ -223,11 +225,15 @@ public abstract class AopUtils {
 	 */
 	public static boolean canApply(Pointcut pc, Class<?> targetClass, boolean hasIntroductions) {
 		Assert.notNull(pc, "Pointcut must not be null");
+		// 调用 pc.getClassFilter() 进行类匹配
+		// 如果类都匹配不了，则直接返回 false
 		if (!pc.getClassFilter().matches(targetClass)) {
 			return false;
 		}
 
+		// 如果类能匹配上，再对方法进行匹配
 		MethodMatcher methodMatcher = pc.getMethodMatcher();
+		// ExposeInvocationInterceptor 的情况，就是设置了所有都匹配
 		if (methodMatcher == MethodMatcher.TRUE) {
 			// No need to iterate the methods if we're matching any method anyway...
 			return true;
@@ -235,19 +241,30 @@ public abstract class AopUtils {
 
 		IntroductionAwareMethodMatcher introductionAwareMethodMatcher = null;
 		if (methodMatcher instanceof IntroductionAwareMethodMatcher) {
+			// 先进行强转
 			introductionAwareMethodMatcher = (IntroductionAwareMethodMatcher) methodMatcher;
 		}
 
+		// 添加当前这个 class 和 这个 class 的接口（有的话）收集到 classes 中
+		// 为什么需要接口也添加进去扫描？因为 jdk 动态代理代理的就是接口
 		Set<Class<?>> classes = new LinkedHashSet<>();
+		// 如果 targetClass 是代理类，则添加原生的类到 classes 中
 		if (!Proxy.isProxyClass(targetClass)) {
 			classes.add(ClassUtils.getUserClass(targetClass));
 		}
+		// 添加该类的所有接口类
 		classes.addAll(ClassUtils.getAllInterfacesForClassAsSet(targetClass));
 
+		// 遍历所有收集到的class，这里只要有 1 个方法能匹配上，则返回 true
+		// 因为只要有任一匹配上，则对应的那个类都需要做代理，也就是当前这个类需要做代理
 		for (Class<?> clazz : classes) {
+			// 获取所有的方法
 			Method[] methods = ReflectionUtils.getAllDeclaredMethods(clazz);
+			// 遍历所有的方法
 			for (Method method : methods) {
 				if (introductionAwareMethodMatcher != null ?
+						// 方法匹配，如果匹配成功返回 true，否则返回 false
+						// 一般这里 introductionAwareMethodMatcher 就是 AspectJExpressionPointcut
 						introductionAwareMethodMatcher.matches(method, targetClass, hasIntroductions) :
 						methodMatcher.matches(method, targetClass)) {
 					return true;
@@ -281,19 +298,25 @@ public abstract class AopUtils {
 	 * @return whether the pointcut can apply on any method
 	 */
 	public static boolean canApply(Advisor advisor, Class<?> targetClass, boolean hasIntroductions) {
+		// 如果是 IntroductionAdvisor 类型，直接调用 getClassFilter 进行类的匹配
+		// 类级别的增强，不用关心方法
 		if (advisor instanceof IntroductionAdvisor) {
 			return ((IntroductionAdvisor) advisor).getClassFilter().matches(targetClass);
 		}
+
+		// 如果是 PointcutAdvisor，则调用 canApply 匹配判断
 		else if (advisor instanceof PointcutAdvisor) {
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
 			return canApply(pca.getPointcut(), targetClass, hasIntroductions);
 		}
 		else {
 			// It doesn't have a pointcut so we assume it applies.
+			// 没有 pointcut，默认能用
 			return true;
 		}
 	}
 
+	// 确定能应用上给定类的的 advisor 候选列表
 	/**
 	 * Determine the sublist of the {@code candidateAdvisors} list
 	 * that is applicable to the given class.
@@ -303,25 +326,35 @@ public abstract class AopUtils {
 	 * (may be the incoming List as-is)
 	 */
 	public static List<Advisor> findAdvisorsThatCanApply(List<Advisor> candidateAdvisors, Class<?> clazz) {
+		// 如果给的是空的，直接返回
 		if (candidateAdvisors.isEmpty()) {
 			return candidateAdvisors;
 		}
+
+		// 遍历所有的 advisor
 		List<Advisor> eligibleAdvisors = new ArrayList<>();
 		for (Advisor candidate : candidateAdvisors) {
+			// 判断如果是属于 IntroductionAdvisor 且能匹配上，则添加到 eligibleAdvisors
 			if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
 				eligibleAdvisors.add(candidate);
 			}
 		}
 		boolean hasIntroductions = !eligibleAdvisors.isEmpty();
+		// 继续遍历
 		for (Advisor candidate : candidateAdvisors) {
+			// 如果是 IntroductionAdvisor ，前边已经处理过了，则跳过
 			if (candidate instanceof IntroductionAdvisor) {
 				// already processed
 				continue;
 			}
+
+			// 进行匹配逻辑，查看当前 bean 是否能匹配上这个 advisor
+			// 如果能匹配，则添加到 eligibleAdvisors
 			if (canApply(candidate, clazz, hasIntroductions)) {
 				eligibleAdvisors.add(candidate);
 			}
 		}
+		// 返回能匹配上的候选 advisor
 		return eligibleAdvisors;
 	}
 

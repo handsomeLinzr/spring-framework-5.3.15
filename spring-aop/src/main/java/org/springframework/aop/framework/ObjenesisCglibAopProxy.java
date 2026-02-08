@@ -43,6 +43,7 @@ class ObjenesisCglibAopProxy extends CglibAopProxy {
 	private static final SpringObjenesis objenesis = new SpringObjenesis();
 
 
+	// 创建一个 ObjenesisCglibAopProxy 应用给定的配置
 	/**
 	 * Create a new ObjenesisCglibAopProxy for the given AOP configuration.
 	 * @param config the AOP configuration as AdvisedSupport object
@@ -54,11 +55,13 @@ class ObjenesisCglibAopProxy extends CglibAopProxy {
 
 	@Override
 	protected Object createProxyClassAndInstance(Enhancer enhancer, Callback[] callbacks) {
+		// 创建代理类
 		Class<?> proxyClass = enhancer.createClass();
 		Object proxyInstance = null;
 
 		if (objenesis.isWorthTrying()) {
 			try {
+				// 创建代理对象
 				proxyInstance = objenesis.newInstance(proxyClass, enhancer.getUseCache());
 			}
 			catch (Throwable ex) {
@@ -82,8 +85,9 @@ class ObjenesisCglibAopProxy extends CglibAopProxy {
 						"and regular proxy instantiation via default constructor fails as well", ex);
 			}
 		}
-
+		// 设置回调对象
 		((Factory) proxyInstance).setCallbacks(callbacks);
+		// 返回代理实例
 		return proxyInstance;
 	}
 

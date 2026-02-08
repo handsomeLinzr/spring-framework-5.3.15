@@ -263,11 +263,13 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			}
 		}
 
+		// 如果有自定义代理增强的逻辑，则这里进行处理
 		// Create proxy here if we have a custom TargetSource.
 		// Suppresses unnecessary default instantiation of the target bean:
 		// The TargetSource will handle target instances in a custom fashion.
 		TargetSource targetSource = getCustomTargetSource(beanClass, beanName);
 		if (targetSource != null) {
+			// 有自定义的原数据处理逻辑，则继续往下走代理对象
 			if (StringUtils.hasLength(beanName)) {
 				this.targetSourcedBeans.add(beanName);
 			}
@@ -277,6 +279,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			return proxy;
 		}
 
+		// 如果没有自定义增强代理，返回 null
 		return null;
 	}
 
@@ -336,6 +339,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * @return a proxy wrapping the bean, or the raw bean instance as-is
 	 */
 	protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+
 		// 如果 targetSourcedBeans 已经包含了这个 beanName，说明已经代理过了，直接返回即可
 		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
 			return bean;
@@ -410,6 +414,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		return AutoProxyUtils.isOriginalInstance(beanName, beanClass);
 	}
 
+	// 子类可以重写 customTargetSourceCreators 进行自定义逻辑
 	/**
 	 * Create a target source for bean instances. Uses any TargetSourceCreators if set.
 	 * Returns {@code null} if no custom TargetSource should be used.
@@ -423,6 +428,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	@Nullable
 	protected TargetSource getCustomTargetSource(Class<?> beanClass, String beanName) {
 		// We can't create fancy target sources for directly registered singletons.
+		// 如果有 customTargetSourceCreators 的情况，自定义原对象的处理
 		if (this.customTargetSourceCreators != null &&
 				this.beanFactory != null && this.beanFactory.containsBean(beanName)) {
 			for (TargetSourceCreator tsc : this.customTargetSourceCreators) {
@@ -456,47 +462,64 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	protected Object createProxy(Class<?> beanClass, @Nullable String beanName,
 			@Nullable Object[] specificInterceptors, TargetSource targetSource) {
 
+		// 给当前这个 bean 对应的 bd 设置属性 ORIGINAL_TARGET_CLASS_ATTRIBUTE = beanClass，即原本非代理的类型
 		if (this.beanFactory instanceof ConfigurableListableBeanFactory) {
 			AutoProxyUtils.exposeTargetClass((ConfigurableListableBeanFactory) this.beanFactory, beanName, beanClass);
 		}
 
+		// 创建一个空代理工厂
 		ProxyFactory proxyFactory = new ProxyFactory();
+		// 填充 this 的属性到代理工厂
 		proxyFactory.copyFrom(this);
 
+		// 判断如果有 proxyTargetClass 这个配置为 true
 		if (proxyFactory.isProxyTargetClass()) {
+			// 判断给定类是否本身就是个代理类
 			// Explicit handling of JDK proxy targets (for introduction advice scenarios)
 			if (Proxy.isProxyClass(beanClass)) {
 				// Must allow for introductions; can't just set interfaces to the proxy's interfaces only.
+				// 将类的接口都设置到代理工厂中
 				for (Class<?> ifc : beanClass.getInterfaces()) {
 					proxyFactory.addInterface(ifc);
 				}
 			}
 		}
 		else {
+			// 没有强制 proxyTargetClass 设置要求代理目标类而不是接口 判断是否应该作用在类上
 			// No proxyTargetClass flag enforced, let's apply our default checks...
 			if (shouldProxyTargetClass(beanClass, beanName)) {
+				// 如果需要，设置为 true
 				proxyFactory.setProxyTargetClass(true);
 			}
 			else {
+				// 走默认情况评估是否需要代理接口，默认走这里
 				evaluateProxyInterfaces(beanClass, proxyFactory);
 			}
 		}
 
+		// 所有的通知，进行一次转换，最后还是那几个
 		Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);
+		// 设置应用上的切面通知
 		proxyFactory.addAdvisors(advisors);
+		// 被代理对象包装
 		proxyFactory.setTargetSource(targetSource);
+		// 自定义设置，默认空实现
 		customizeProxyFactory(proxyFactory);
 
 		proxyFactory.setFrozen(this.freezeProxy);
+		// 默认 true
 		if (advisorsPreFiltered()) {
+			// 设置前置过滤的属性是 true，后边需要用到
 			proxyFactory.setPreFiltered(true);
 		}
 
+		// 获取类加载器
 		// Use original ClassLoader if bean class not locally loaded in overriding class loader
 		ClassLoader classLoader = getProxyClassLoader();
 		if (classLoader instanceof SmartClassLoader && classLoader != beanClass.getClassLoader()) {
 			classLoader = ((SmartClassLoader) classLoader).getOriginalClassLoader();
 		}
+		// 创建动态代理对象返回
 		return proxyFactory.getProxy(classLoader);
 	}
 

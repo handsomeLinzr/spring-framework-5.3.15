@@ -85,6 +85,7 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 		}
 	}
 
+	// 增加一个 ExposeInvocationInterceptor，让 advice 成为一个链
 	/**
 	 * Add an {@link ExposeInvocationInterceptor} to the beginning of the advice chain.
 	 * <p>This additional advice is needed when using AspectJ pointcut expressions
@@ -102,8 +103,8 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
 		// 遍历所有的 advisor
 		for (Advisor advisor : candidateAdvisors) {
-			// 如果当前正在判断是否需要跳过的 bean，就是 advisor 通知管理器的关联的通知，且 advisor 是 AspectJPointcutAdvisor 类型
-			// 则需要返回 true，跳过代理，因为这个本身就是增强类，不需要被代理了
+			// 判断当前这个 beanName 是否需要跳过，不用增强代理
+			// 如果当前 bean 是属于所有的 AspectJPointcutAdvisor 中的某个的 aspect bean，则可以跳过，因为 aspect 本身就是定义了增强的逻辑，不用代理了
 			if (advisor instanceof AspectJPointcutAdvisor &&
 					((AspectJPointcutAdvisor) advisor).getAspectName().equals(beanName)) {
 				return true;

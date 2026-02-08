@@ -92,6 +92,7 @@ public class ComposablePointcut implements Pointcut, Serializable {
 		this.methodMatcher = methodMatcher;
 	}
 
+	// 创建一个 ClassFilter 和 MethodMatcher 的组合
 	/**
 	 * Create a ComposablePointcut for the given ClassFilter and MethodMatcher.
 	 * @param classFilter the ClassFilter to use

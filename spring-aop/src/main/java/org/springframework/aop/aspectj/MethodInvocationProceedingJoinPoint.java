@@ -83,9 +83,14 @@ public class MethodInvocationProceedingJoinPoint implements ProceedingJoinPoint,
 		throw new UnsupportedOperationException();
 	}
 
+	// around 增强的情况下，调用这个方法才会往下继续走下一个拦截器链
 	@Override
 	@Nullable
 	public Object proceed() throws Throwable {
+		// methodInvocation 就是当前正在走拦截器链的过程中的这个 mi 对象，也就是 CglibMethodInvocation
+		// invocableClone() 克隆当前对象，包括 mi 和 mi 中的属性 arguments，也就是调用被代理对象方法的参数
+		// 调用 proceed 继续查询下个拦截器
+		// 所以后边执行的 afterReturning 和 afterThrowing 中的 mi 都是用的这个克隆的 mi 对象
 		return this.methodInvocation.invocableClone().proceed();
 	}
 

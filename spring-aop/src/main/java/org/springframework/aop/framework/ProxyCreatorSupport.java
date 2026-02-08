@@ -93,7 +93,8 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 		this.listeners.remove(listener);
 	}
 
-
+	// 创建一个 AopProxy
+	// 子类会调用这个方法去获取一个新的 AOP 代理
 	/**
 	 * Subclasses should call this to get a new AOP proxy. They should <b>not</b>
 	 * create an AOP proxy with {@code this} as an argument.
@@ -102,15 +103,20 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 		if (!this.active) {
 			activate();
 		}
+		// 1.获取 aop 代理工厂，默认是 DefaultAopProxyFactory 对象
+		// 2.createAopProxy(this) 创建一个 AOP 代理，最后得到 JdkDynamicAopProxy（jdk 动态代理）或者 ObjenesisCglibAopProxy（cglib）
 		return getAopProxyFactory().createAopProxy(this);
 	}
 
+	// 激活代理配置
 	/**
 	 * Activate this proxy configuration.
 	 * @see AdvisedSupportListener#activated
 	 */
 	private void activate() {
+		// 设置激活属性是 true
 		this.active = true;
+		// 默认不设置则是空的
 		for (AdvisedSupportListener listener : this.listeners) {
 			listener.activated(this);
 		}

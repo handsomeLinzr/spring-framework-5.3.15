@@ -75,10 +75,13 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	protected Object[] getAdvicesAndAdvisorsForBean(
 			Class<?> beanClass, String beanName, @Nullable TargetSource targetSource) {
 
+		// 获取匹配上的候选 advisor 对象，根据对应的 pointcut 匹配
 		List<Advisor> advisors = findEligibleAdvisors(beanClass, beanName);
+		// 如果得到的 advisors 是空的，说明匹配不上，返回 DO_NOT_PROXY，不需要代理
 		if (advisors.isEmpty()) {
 			return DO_NOT_PROXY;
 		}
+		// 返回符合匹配的 advisor
 		return advisors.toArray();
 	}
 
@@ -93,12 +96,21 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	 * @see #extendAdvisors
 	 */
 	protected List<Advisor> findEligibleAdvisors(Class<?> beanClass, String beanName) {
+		// 获取所有的 advisor 切面通知管理
 		List<Advisor> candidateAdvisors = findCandidateAdvisors();
+
+		// 找到能匹配上的 advisor
 		List<Advisor> eligibleAdvisors = findAdvisorsThatCanApply(candidateAdvisors, beanClass, beanName);
+
+		// 扩展，这里添加进去一个 DefaultPointcutAdvisor(ExposeInvocationInterceptor) 用于串联整个 advisor 链
 		extendAdvisors(eligibleAdvisors);
 		if (!eligibleAdvisors.isEmpty()) {
+			// 拓扑排序
+			// 最后的排序是：ExposeInvocationInterceptor->before->after->around->after-returning->after-throwing
 			eligibleAdvisors = sortAdvisors(eligibleAdvisors);
 		}
+		// 返回能匹配上的，拓扑排序后的 advisor 责任链
+		// aop 到时候就依据这个链执行
 		return eligibleAdvisors;
 	}
 
@@ -125,11 +137,16 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 	protected List<Advisor> findAdvisorsThatCanApply(
 			List<Advisor> candidateAdvisors, Class<?> beanClass, String beanName) {
 
+		// 设置当前正在进行 aop 代理匹配的 bean，设置到 threadLocal
 		ProxyCreationContext.setCurrentProxiedBeanName(beanName);
 		try {
+			// 匹配的重点，查找能匹配上的 advisor
+			// 逻辑上会通过拆分成先 class 后 method 进行匹配，具体逻辑太复杂暂时没理清
+			// 可先跳过
 			return AopUtils.findAdvisorsThatCanApply(candidateAdvisors, beanClass);
 		}
 		finally {
+			// 寻找结束，重置当前正在进行 aop 匹配查询的 threadLocal
 			ProxyCreationContext.setCurrentProxiedBeanName(null);
 		}
 	}

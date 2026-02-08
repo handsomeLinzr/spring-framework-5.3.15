@@ -605,8 +605,9 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 		// 创建对应的切点bd，类为 AspectJExpressionPointcut
 		RootBeanDefinition beanDefinition = new RootBeanDefinition(AspectJExpressionPointcut.class);
 		// 原型模式
+		// 为什么这里需要设置成原型模式？因为一个 pointCut 可以被多个通知引用作为切入点，而每个通知都又是各自独立的，所以设置成原型模式，每个通知都独立创建
 		beanDefinition.setScope(BeanDefinition.SCOPE_PROTOTYPE);
-		// 合成
+		// 设置这个 bd 的合成属性是 true
 		beanDefinition.setSynthetic(true);
 		// 设置属性 expression 为对应的切点表达式
 		beanDefinition.getPropertyValues().add(EXPRESSION, expression);
