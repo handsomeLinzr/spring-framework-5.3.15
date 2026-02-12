@@ -67,7 +67,9 @@ public abstract class AbstractSingleBeanDefinitionParser extends AbstractBeanDef
 		if (parentName != null) {
 			builder.getRawBeanDefinition().setParentName(parentName);
 		}
+		// 根据不同的解析器，返回不同的class
 		// 解析 context:property-placeholder 的情况，这里会返回 PropertySourcesPlaceholderConfigurer.class
+		// tx:advisor 会返回 TransactionInterceptor
 		Class<?> beanClass = getBeanClass(element);
 		if (beanClass != null) {
 			// 将对应子类实现得到的 beanClass 设置到 builder 中 bd 的 beanClass 中

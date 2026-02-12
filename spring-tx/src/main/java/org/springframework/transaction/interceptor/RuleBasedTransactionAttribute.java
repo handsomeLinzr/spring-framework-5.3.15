@@ -45,6 +45,8 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 	public static final String PREFIX_COMMIT_RULE = "+";
 
 
+	// 回滚规则
+	// 里边添加了 RollbackRuleAttribute 和 NoRollbackRuleAttribute，表示回滚和不回滚的异常类
 	@Nullable
 	private List<RollbackRuleAttribute> rollbackRules;
 

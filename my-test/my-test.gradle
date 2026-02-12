@@ -4,8 +4,11 @@ apply plugin: "java-library"
 
 dependencies {
 	api(project(":spring-context"))
+	api(project(":spring-jdbc"))
 	implementation "javax.annotation:javax.annotation-api"
 	implementation "org.aspectj:aspectjweaver"
+	implementation "com.alibaba:druid:1.2.20"
+	runtimeOnly "mysql:mysql-connector-java:8.0.33"
 	testImplementation(testFixtures(project(":spring-context")))
 	testFixturesImplementation(testFixtures(project(":spring-context")))
 }

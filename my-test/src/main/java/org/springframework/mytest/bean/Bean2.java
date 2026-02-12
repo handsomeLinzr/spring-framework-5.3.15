@@ -1,4 +1,4 @@
-package org.springframework.mytest.bean.components;
+package org.springframework.mytest.bean;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

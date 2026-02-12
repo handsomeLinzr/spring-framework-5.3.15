@@ -1,4 +1,4 @@
-package org.springframework.mytest.bean.components;
+package org.springframework.mytest.bean;
 
 /**
  * @author linzherong

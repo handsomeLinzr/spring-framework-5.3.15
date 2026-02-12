@@ -49,7 +49,7 @@ public class DefaultAopProxyFactory implements AopProxyFactory, Serializable {
 
 	private static final long serialVersionUID = 7930414337282325166L;
 
-
+	// 1.有接口，jdk动态代理   2.代理类是个接口，jdk动态代理   3.设置了 proxyTargetClass，且没接口，走 cglib
 	@Override
 	public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException {
 		// 判断非 nativeImage
@@ -70,7 +70,7 @@ public class DefaultAopProxyFactory implements AopProxyFactory, Serializable {
 			return new ObjenesisCglibAopProxy(config);
 		}
 		else {
-			// 如果有接口，且没有设置优化和增强目标类，走 jdk 动态代理
+			// 如果有正常可达的接口，且没有设置优化和增强目标类，走 jdk 动态代理
 			return new JdkDynamicAopProxy(config);
 		}
 	}

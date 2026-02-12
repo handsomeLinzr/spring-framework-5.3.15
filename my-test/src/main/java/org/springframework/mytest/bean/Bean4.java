@@ -1,4 +1,4 @@
-package org.springframework.mytest.bean.components;
+package org.springframework.mytest.bean;
 
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;

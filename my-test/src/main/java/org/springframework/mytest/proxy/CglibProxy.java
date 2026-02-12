@@ -3,7 +3,7 @@ package org.springframework.mytest.proxy;
 import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.cglib.proxy.MethodInterceptor;
 import org.springframework.cglib.proxy.MethodProxy;
-import org.springframework.mytest.bean.components.aop.MyCalculate;
+import org.springframework.mytest.bean.aop.MyCalculate;
 
 import java.lang.reflect.Method;
 

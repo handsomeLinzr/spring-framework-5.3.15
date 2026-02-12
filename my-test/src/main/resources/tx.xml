@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Spring Transaction Configuration -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:aop="http://www.springframework.org/schema/aop"
+	   xmlns:tx="http://www.springframework.org/schema/tx"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+	       http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+	<!-- Druid DataSource Configuration -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+		<property name="driverClassName" value="com.mysql.cj.jdbc.Driver"/>
+		<property name="url" value="jdbc:mysql://localhost:3306/my-test?useSSL=false&amp;serverTimezone=UTC&amp;characterEncoding=utf8"/>
+		<property name="username" value="root"/>
+		<property name="password" value="87734591Aa."/>
+		<!-- 连接池配置 -->
+		<property name="initialSize" value="5"/>
+		<property name="minIdle" value="5"/>
+		<property name="maxActive" value="20"/>
+		<property name="maxWait" value="60000"/>
+		<property name="timeBetweenEvictionRunsMillis" value="60000"/>
+		<property name="minEvictableIdleTimeMillis" value="300000"/>
+		<property name="validationQuery" value="SELECT 1"/>
+		<property name="testWhileIdle" value="true"/>
+		<property name="testOnBorrow" value="false"/>
+		<property name="testOnReturn" value="false"/>
+	</bean>
+
+	<!-- JdbcTemplate Configuration -->
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+
+	<!-- Transaction Manager Configuration -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+
+	<aop:config>
+		<aop:pointcut id="txPoint" expression="execution(* org.springframework.mytest.tx..*(..))"/>
+		<aop:advisor advice-ref="myAdvice" pointcut-ref="txPoint" />
+	</aop:config>
+
+	<tx:advice id="myAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="update" propagation="REQUIRED"/>
+			<tx:method name="getOrder" read-only="true" />
+		</tx:attributes>
+	</tx:advice>
+
+	<bean id="bookDao" class="org.springframework.mytest.tx.BookDao">
+		<property name="jdbcTemplate" ref="jdbcTemplate" />
+	</bean>
+
+	<bean id="bookService" class="org.springframework.mytest.tx.BookService">
+		<property name="bookDao" ref="bookDao" />
+	</bean>
+
+</beans>

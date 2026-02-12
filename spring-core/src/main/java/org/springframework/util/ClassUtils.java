@@ -1047,6 +1047,7 @@ public abstract class ClassUtils {
 		return getQualifiedMethodName(method, null);
 	}
 
+	// 生成一个方法标识，其实就是类的全名.方法名
 	/**
 	 * Return the qualified name of the given method, consisting of
 	 * fully qualified interface/class name + "." + method name.

@@ -49,15 +49,20 @@ public class DefaultTransactionDefinition implements TransactionDefinition, Seri
 	public static final String READ_ONLY_MARKER = "readOnly";
 
 
+	// 定义一系列的常量
 	/** Constants instance for TransactionDefinition. */
 	static final Constants constants = new Constants(TransactionDefinition.class);
 
+	// 传播属性，默认 required
 	private int propagationBehavior = PROPAGATION_REQUIRED;
 
+	// 隔离级别，默认 -1，表示用数据库的隔离级别
 	private int isolationLevel = ISOLATION_DEFAULT;
 
+	// 超时时间，默认 -1 表示没有超时
 	private int timeout = TIMEOUT_DEFAULT;
 
+	// 默认非只读
 	private boolean readOnly = false;
 
 	@Nullable

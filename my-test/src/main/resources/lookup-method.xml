@@ -10,22 +10,14 @@
            http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
 	       http://www.springframework.org/schema/my-user http://www.springframework.org/schema/expand/my-user.xsd">
 
-<!--	<import resource="application-a.xml" />-->
-<!--	<bean id="myBean1" class="org.springframework.mytest.bean.MyBean1" />-->
-
 <!--	Component Scan-->
-<!--	<context:component-scan base-package="org.springframework.mytest" />-->
+	<context:component-scan base-package="org.springframework.mytest" />
+
+<!--	<bean id="fruid" class="org.springframework.mytest.bean.MyBean1">-->
+<!--		<lookup-method></lookup-method>-->
+<!--	</bean>-->
 
 <!--	 Property Placeholder -->
 	<context:property-placeholder location="classpath:application.properties" />
-
-	<my-user:user>
-		<my-user:property key="username" value="${username}"/>
-		<my-user:property key="password" value="${password}"/>
-	</my-user:user>
-
-	<bean id="bean1" class="org.springframework.mytest.bean.Bean1" autowire="constructor"/>
-
-	<bean id="bean2" class="org.springframework.mytest.bean.Bean2" />
 
 </beans>

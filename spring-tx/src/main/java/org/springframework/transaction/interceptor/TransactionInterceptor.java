@@ -113,21 +113,27 @@ public class TransactionInterceptor extends TransactionAspectSupport implements 
 		// Work out the target class: may be {@code null}.
 		// The TransactionAttributeSource should be passed the target class
 		// as well as the method, which may be from an interface.
+		// 获取被代理类，如 dao、service 等
 		Class<?> targetClass = (invocation.getThis() != null ? AopUtils.getTargetClass(invocation.getThis()) : null);
 
+		// 进行事务调用处理
 		// Adapt to TransactionAspectSupport's invokeWithinTransaction...
+		// 传入参数                        代理的方法              代理类                 回调函数
 		return invokeWithinTransaction(invocation.getMethod(), targetClass, new CoroutinesInvocationCallback() {
 			@Override
 			@Nullable
 			public Object proceedWithInvocation() throws Throwable {
+				//     调用代理的 mi.proceed 继续往下执行
 				return invocation.proceed();
 			}
 			@Override
 			public Object getTarget() {
+				//      代理对象
 				return invocation.getThis();
 			}
 			@Override
 			public Object[] getArguments() {
+				//     获取调用 method 的参数
 				return invocation.getArguments();
 			}
 		});

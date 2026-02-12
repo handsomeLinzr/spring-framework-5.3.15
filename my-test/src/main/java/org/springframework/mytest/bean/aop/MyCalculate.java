@@ -1,6 +1,5 @@
-package org.springframework.mytest.bean.components.aop;
+package org.springframework.mytest.bean.aop;
 
-import org.springframework.mytest.proxy.Calculate;
 import org.springframework.stereotype.Component;
 
 /**

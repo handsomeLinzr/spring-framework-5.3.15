@@ -238,9 +238,12 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 		return obtainDataSource();
 	}
 
+	// 真正干活的地方，获取事务 txObj
 	@Override
 	protected Object doGetTransaction() {
+		// 创建一个新的事务 txObj 对象
 		DataSourceTransactionObject txObject = new DataSourceTransactionObject();
+		// 设置是否运行设置保存点，只有 NESTED 这种传播特性才允许
 		txObject.setSavepointAllowed(isNestedTransactionAllowed());
 		ConnectionHolder conHolder =
 				(ConnectionHolder) TransactionSynchronizationManager.getResource(obtainDataSource());

@@ -52,6 +52,7 @@ public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcu
 	@Nullable
 	private transient volatile Advice advice;
 
+	// 指向 beanFactory.singletonObjects 对象
 	private transient volatile Object adviceMonitor = new Object();
 
 
@@ -77,12 +78,16 @@ public abstract class AbstractBeanFactoryPointcutAdvisor extends AbstractPointcu
 
 	@Override
 	public void setBeanFactory(BeanFactory beanFactory) {
+		// 设置 beanFactory 对象
 		this.beanFactory = beanFactory;
+		// 重置 advice 监视器
 		resetAdviceMonitor();
 	}
 
 	private void resetAdviceMonitor() {
+		// 判断如果当前 beanFactory 是属于 ConfigurableBeanFactory
 		if (this.beanFactory instanceof ConfigurableBeanFactory) {
+			// 设置当前advice监视器，设置为 beanFactory.singletonObjects，当前bean工厂所有单例对象
 			this.adviceMonitor = ((ConfigurableBeanFactory) this.beanFactory).getSingletonMutex();
 		}
 		else {

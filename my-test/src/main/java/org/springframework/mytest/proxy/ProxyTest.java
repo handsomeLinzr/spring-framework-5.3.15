@@ -1,6 +1,6 @@
 package org.springframework.mytest.proxy;
 
-import org.springframework.mytest.bean.components.aop.MyCalculate;
+import org.springframework.mytest.bean.aop.MyCalculate;
 
 /**
  * @author linzherong

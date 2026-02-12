@@ -341,9 +341,12 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	public final TransactionStatus getTransaction(@Nullable TransactionDefinition definition)
 			throws TransactionException {
 
+		// 如果事务定义是空的，则直接用默认的
+		// 这里传进来的 definition 不为空，是一个 RuleBasedTransactionAttribute
 		// Use defaults if no transaction definition given.
 		TransactionDefinition def = (definition != null ? definition : TransactionDefinition.withDefaults());
 
+		// 获取事务
 		Object transaction = doGetTransaction();
 		boolean debugEnabled = logger.isDebugEnabled();
 
@@ -1005,6 +1008,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	// Template methods to be implemented in subclasses
 	//---------------------------------------------------------------------
 
+	// 返回一个 txObj对象给当前的事务状态
 	/**
 	 * Return a transaction object for the current transaction state.
 	 * <p>The returned object will usually be specific to the concrete transaction

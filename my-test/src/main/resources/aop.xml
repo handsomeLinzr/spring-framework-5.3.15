@@ -10,22 +10,20 @@
            http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
 	       http://www.springframework.org/schema/my-user http://www.springframework.org/schema/expand/my-user.xsd">
 
-<!--	<import resource="application-a.xml" />-->
-<!--	<bean id="myBean1" class="org.springframework.mytest.bean.MyBean1" />-->
+	<!--	Component Scan-->
+	<context:component-scan base-package="org.springframework.mytest" />
 
-<!--	Component Scan-->
-<!--	<context:component-scan base-package="org.springframework.mytest" />-->
+	<bean id="loggingAspect" class="org.springframework.mytest.expand.aspect.LoggingAspect"/>
 
-<!--	 Property Placeholder -->
-	<context:property-placeholder location="classpath:application.properties" />
-
-	<my-user:user>
-		<my-user:property key="username" value="${username}"/>
-		<my-user:property key="password" value="${password}"/>
-	</my-user:user>
-
-	<bean id="bean1" class="org.springframework.mytest.bean.Bean1" autowire="constructor"/>
-
-	<bean id="bean2" class="org.springframework.mytest.bean.Bean2" />
+	<aop:config>
+		<aop:aspect ref="loggingAspect">
+			<aop:pointcut id="myPoint" expression="execution(* org.springframework.mytest.bean.aop..*(..))"/>
+			<aop:before method="beforeMethod" pointcut-ref="myPoint" />
+			<aop:after method="afterMethod" pointcut-ref="myPoint" />
+			<aop:around method="aroundMethod" pointcut-ref="myPoint" />
+			<aop:after-returning method="afterReturningMethod" pointcut-ref="myPoint" />
+			<aop:after-throwing method="afterThrowingMethod" pointcut-ref="myPoint" />
+		</aop:aspect>
+	</aop:config>
 
 </beans>

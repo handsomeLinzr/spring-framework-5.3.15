@@ -53,6 +53,8 @@ public class NameMatchTransactionAttributeSource
 	 */
 	protected static final Log logger = LogFactory.getLog(NameMatchTransactionAttributeSource.class);
 
+	// 保存了对应 tx:advice 中 attributes 下的所有 method 和其对应的配置属性
+	// key 是对应的配置字符串，如方法名称，value 是对应的 RuleBasedTransactionAttribute，基于规则匹配的 txAttribute
 	/** Keys are method names; values are TransactionAttributes. */
 	private final Map<String, TransactionAttribute> nameMap = new HashMap<>();
 
@@ -129,10 +131,14 @@ public class NameMatchTransactionAttributeSource
 			return null;
 		}
 
+		// 获取方法名
 		// Look for direct name match.
 		String methodName = method.getName();
+		// nameMap 中已经保存着 attribute 标签的配置信息
+		// 获取前边已经设置进来的 attribute 标签的方法
 		TransactionAttribute attr = this.nameMap.get(methodName);
 
+		// 如果获取不到，则通过表达式的方式继续获取，按匹配到尽量长的方法作为最佳匹配
 		if (attr == null) {
 			// Look for most specific name match.
 			String bestNameMatch = null;
@@ -145,6 +151,7 @@ public class NameMatchTransactionAttributeSource
 			}
 		}
 
+		// 返回得到的事务属性
 		return attr;
 	}
 

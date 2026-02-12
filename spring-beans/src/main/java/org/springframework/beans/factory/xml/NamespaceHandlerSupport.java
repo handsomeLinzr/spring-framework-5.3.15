@@ -44,6 +44,7 @@ import org.springframework.lang.Nullable;
  */
 public abstract class NamespaceHandlerSupport implements NamespaceHandler {
 
+	// xml 通过 NamespaceHandlerSupport 调用 registerBeanDefinitionParser 方法注册进来的解析器
 	/**
 	 * Stores the {@link BeanDefinitionParser} implementations keyed by the
 	 * local name of the {@link Element Elements} they handle.

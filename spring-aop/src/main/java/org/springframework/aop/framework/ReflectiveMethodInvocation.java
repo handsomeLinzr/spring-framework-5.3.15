@@ -168,7 +168,7 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	 * 总结：
 	 * 1.切面通知的顺序：before->after->around->afterReturning->afterThrowing
 	 *
-	 * 2.执行顺序：
+	 * 2.执行顺序：其实就是一个栈的调用，只是有个在压栈的时候调用，有的在出栈的时候调用
 	 * 	before链——>before的方法 ——> after链 ——> around链——>around上半部分逻辑 ——> afterReturning链 ——>afterThrowing链
 	 * 	                                                                                              ｜
 	 * 	 返回结果结束 <—— before链 <—— after增强方法 <—— around下半部分逻辑 <—— afterReturning方法 <—— try{被代理method}

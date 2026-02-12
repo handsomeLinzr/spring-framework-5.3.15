@@ -1,7 +1,7 @@
 package org.springframework.mytest.factory;
 
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.mytest.bean.components.Bean4;
+import org.springframework.mytest.bean.Bean4;
 import org.springframework.stereotype.Component;
 
 /**

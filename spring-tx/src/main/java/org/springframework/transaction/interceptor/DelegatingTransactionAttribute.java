@@ -36,6 +36,8 @@ import org.springframework.transaction.support.DelegatingTransactionDefinition;
 public abstract class DelegatingTransactionAttribute extends DelegatingTransactionDefinition
 		implements TransactionAttribute, Serializable {
 
+	// 具体被委派的那个事务属性对象
+	// 包装器模式
 	private final TransactionAttribute targetAttribute;
 
 
