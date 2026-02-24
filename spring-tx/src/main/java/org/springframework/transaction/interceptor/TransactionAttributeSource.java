@@ -53,6 +53,7 @@ public interface TransactionAttributeSource {
 		return true;
 	}
 
+	// 根据方法，获取到这个方法对应对的事务属性信息
 	/**
 	 * Return the transaction attribute for the given method,
 	 * or {@code null} if the method is non-transactional.

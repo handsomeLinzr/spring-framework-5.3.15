@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.springframework.lang.Nullable;
 
+// 基于规则匹配的事务管属性
 /**
  * TransactionAttribute implementation that works out whether a given exception
  * should cause transaction rollback by applying a number of rollback rules,

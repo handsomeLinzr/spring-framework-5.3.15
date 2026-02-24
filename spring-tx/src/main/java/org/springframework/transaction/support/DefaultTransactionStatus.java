@@ -50,6 +50,8 @@ import org.springframework.util.Assert;
  */
 public class DefaultTransactionStatus extends AbstractTransactionStatus {
 
+	// 事务状态的属性，从构造函数设置进来
+	// txObject
 	@Nullable
 	private final Object transaction;
 
@@ -84,11 +86,17 @@ public class DefaultTransactionStatus extends AbstractTransactionStatus {
 			@Nullable Object transaction, boolean newTransaction, boolean newSynchronization,
 			boolean readOnly, boolean debug, @Nullable Object suspendedResources) {
 
+		// 事务持有器
 		this.transaction = transaction;
+		// 是否是新事务
 		this.newTransaction = newTransaction;
+		// 是否是新的事务同步器
 		this.newSynchronization = newSynchronization;
+		// 是否只读
 		this.readOnly = readOnly;
+		// 是否 debug 模式
 		this.debug = debug;
+		// 被挂起的事务
 		this.suspendedResources = suspendedResources;
 	}
 

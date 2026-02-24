@@ -352,6 +352,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		// 获取对应事务属性匹配的事务管理器 tm 对象
 		final TransactionManager tm = determineTransactionManager(txAttr);
 
+		// 没设置的情况下，一般不走这里if进去
 		if (this.reactiveAdapterRegistry != null && tm instanceof ReactiveTransactionManager) {
 			boolean isSuspendingFunction = KotlinDetector.isSuspendingFunction(method);
 			boolean hasSuspendingFlowReturnType = isSuspendingFunction &&
@@ -387,7 +388,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 
 		// 将事务管理器转为 PlatformTransactionManager，DataSourceTransactionManager 本身就是 PlatformTransactionManager
 		PlatformTransactionManager ptm = asPlatformTransactionManager(tm);
-		// 获取这个方法的标识，其实就是类名.方法名
+		// 获取这个方法的标识，其实就是类全名.方法名，如 org.springframework.mytest.tx.BookService.update
 		final String joinpointIdentification = methodIdentification(method, targetClass, txAttr);
 
 		// ptm instanceof CallbackPreferringPlatformTransactionManager == false，取反得到 true
@@ -518,6 +519,10 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			// 获取对应的事务管理器
 			TransactionManager defaultTransactionManager = getTransactionManager();
 			if (defaultTransactionManager == null) {
+				// 如果没有配置事务管理器，则用默认的事务管理器，默认一开始是空的
+				// 如果是空的，则默认通过 beanFactory 获取到 TransactionManager 这个bean对象
+				// 并设置为当前的事务管理器
+				// 但是一般定义这个 TransactionInterceptor 这个 advisor 的时候，都会设置上事务管理器，不需要走到这里的
 				defaultTransactionManager = this.transactionManagerCache.get(DEFAULT_TRANSACTION_MANAGER_KEY);
 				if (defaultTransactionManager == null) {
 					defaultTransactionManager = this.beanFactory.getBean(TransactionManager.class);
@@ -846,12 +851,16 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 	 */
 	protected interface CoroutinesInvocationCallback extends InvocationCallback {
 
+		// 返回被代理对象
 		Object getTarget();
 
+		// 代理方法参数
 		Object[] getArguments();
 
 		default Object getContinuation() {
+			// 获取方法参数
 			Object[] args = getArguments();
+			// 获取最后一个参数
 			return args[args.length - 1];
 		}
 	}

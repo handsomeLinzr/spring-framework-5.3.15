@@ -117,12 +117,13 @@ import org.springframework.util.Assert;
 public class DataSourceTransactionManager extends AbstractPlatformTransactionManager
 		implements ResourceTransactionManager, InitializingBean {
 
+	// 在 ioc 注入的时候已经将数据源注入进来，对应的数据源是配置的数据源，如 DruidDataSource
 	@Nullable
 	private DataSource dataSource;
 
 	private boolean enforceReadOnly = false;
 
-
+    // 默认都是允许嵌套事务
 	/**
 	 * Create a new DataSourceTransactionManager instance.
 	 * A DataSource has to be set to be able to use it.
@@ -188,8 +189,10 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	 * @since 5.0
 	 */
 	protected DataSource obtainDataSource() {
+		// 从事务管理器中获取数据源对象
 		DataSource dataSource = getDataSource();
 		Assert.state(dataSource != null, "No DataSource set");
+		// 返回
 		return dataSource;
 	}
 
@@ -243,53 +246,74 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	protected Object doGetTransaction() {
 		// 创建一个新的事务 txObj 对象
 		DataSourceTransactionObject txObject = new DataSourceTransactionObject();
-		// 设置是否运行设置保存点，只有 NESTED 这种传播特性才允许
+		// 设置是否运行设置保存点，允许嵌套事务的都允许设置保存点，默认都允许嵌套事务
 		txObject.setSavepointAllowed(isNestedTransactionAllowed());
+		// 获取连接信息，从 threadLocal 中获取，第一次获取的时候，由于还没设置到 threadLocal，所以会返回 null
 		ConnectionHolder conHolder =
 				(ConnectionHolder) TransactionSynchronizationManager.getResource(obtainDataSource());
+		// 设置当前的连接为拿到的这个连接对象，然后传 false 表示不是新连接
 		txObject.setConnectionHolder(conHolder, false);
+		// 返回这个 事务Obj
 		return txObject;
 	}
 
+	// 判断这个连接是否是真实存在有效的
 	@Override
 	protected boolean isExistingTransaction(Object transaction) {
+		// 强转 txObj 对象
 		DataSourceTransactionObject txObject = (DataSourceTransactionObject) transaction;
+		// 返回这个 txObject 是否有连接，且连接是否是激活的
+		// 第一次的时候，connectHolder 是空的
 		return (txObject.hasConnectionHolder() && txObject.getConnectionHolder().isTransactionActive());
 	}
 
 	@Override
 	protected void doBegin(Object transaction, TransactionDefinition definition) {
+		// 强转 transaction 为  txObj 对象
 		DataSourceTransactionObject txObject = (DataSourceTransactionObject) transaction;
 		Connection con = null;
 
 		try {
+			// 判断如果当前的 txObject 没有连接持有器，或者连接持有器不是激活状态
 			if (!txObject.hasConnectionHolder() ||
 					txObject.getConnectionHolder().isSynchronizedWithTransaction()) {
+				// 通过获取到数据源，从数据源中获取到一个新的连接
 				Connection newCon = obtainDataSource().getConnection();
 				if (logger.isDebugEnabled()) {
 					logger.debug("Acquired Connection [" + newCon + "] for JDBC transaction");
 				}
+				// 将连接封装成一个 ConnectionHolder，设置到 txObject 中
+				// 并且同时设置 txObject 的新连接标识是 true
 				txObject.setConnectionHolder(new ConnectionHolder(newCon), true);
 			}
 
+			// 设置连接持有器的同步标识是 true
 			txObject.getConnectionHolder().setSynchronizedWithTransaction(true);
+			// 赋值连接信息给 con
 			con = txObject.getConnectionHolder().getConnection();
-
+			// 设置 conn 的 readOnly 和 conn 的隔离级别，返回改之前的隔离级别
 			Integer previousIsolationLevel = DataSourceUtils.prepareConnectionForTransaction(con, definition);
+			// 将上一次的隔离级别进行缓存
 			txObject.setPreviousIsolationLevel(previousIsolationLevel);
+			// 设置 txObj 的只读属性
 			txObject.setReadOnly(definition.isReadOnly());
 
+			// 判断如果当前连接是自动提交的，则需要进行关闭，改成手动提交
 			// Switch to manual commit if necessary. This is very expensive in some JDBC drivers,
 			// so we don't want to do it unnecessarily (for example if we've explicitly
 			// configured the connection pool to set it already).
 			if (con.getAutoCommit()) {
+				// 如果连接 conn 是自动关闭的
+				// 则先设置重置自动提交标识为 true
 				txObject.setMustRestoreAutoCommit(true);
 				if (logger.isDebugEnabled()) {
 					logger.debug("Switching JDBC Connection [" + con + "] to manual commit");
 				}
+				// 设置自动提交标识是 false，这样提交和回滚才能交给自己管理
 				con.setAutoCommit(false);
 			}
 
+			// 准备
 			prepareTransactionalConnection(con, definition);
 			txObject.getConnectionHolder().setTransactionActive(true);
 
@@ -445,10 +469,15 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 	 */
 	private static class DataSourceTransactionObject extends JdbcTransactionObjectSupport {
 
+		// 标识当前的连接是否是一个新的连接
 		private boolean newConnectionHolder;
 
+		// 是否需要重置自动提交的标识
+		// 如果当前事务对应的连接，在之前是自动提交的，则将连接 conn 改成手动提交前，需要将这个属性改为 true，后续结束后才能重新为自动提交
 		private boolean mustRestoreAutoCommit;
 
+		// 设置当前事务管理的连接对象
+		// 设置是否是新连接的标识
 		public void setConnectionHolder(@Nullable ConnectionHolder connectionHolder, boolean newConnectionHolder) {
 			super.setConnectionHolder(connectionHolder);
 			this.newConnectionHolder = newConnectionHolder;

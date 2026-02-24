@@ -51,6 +51,7 @@ public abstract class JdbcTransactionObjectSupport implements SavepointManager, 
 	private static final Log logger = LogFactory.getLog(JdbcTransactionObjectSupport.class);
 
 
+	// 连接持有器，可能为空，当第一次从 threadLocal 中获取的时候，是空的
 	@Nullable
 	private ConnectionHolder connectionHolder;
 
@@ -59,6 +60,7 @@ public abstract class JdbcTransactionObjectSupport implements SavepointManager, 
 
 	private boolean readOnly = false;
 
+	// 设置是否允许嵌套事务，DataSourceTransaction 是允许嵌套事务的，所以这里或被默认设置为 true
 	private boolean savepointAllowed = false;
 
 

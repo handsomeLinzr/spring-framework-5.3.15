@@ -18,6 +18,9 @@ package org.springframework.transaction;
 
 import org.springframework.lang.Nullable;
 
+// 事务信息的默认配置
+// 定义了事务需要的各种属性设置，且已经设置成了默认值
+// 其他继承或实现的类，可以进行更新修改
 /**
  * Interface that defines Spring-compliant transaction properties.
  * Based on the propagation behavior definitions analogous to EJB CMT attributes.

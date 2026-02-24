@@ -64,13 +64,18 @@ public abstract class TransactionSynchronizationUtils {
 		Assert.notNull(resource, "Resource must not be null");
 		Object resourceRef = resource;
 		// unwrap infrastructure proxy
+		// 如果是代理对象，则获取代理的目标对象
 		if (resourceRef instanceof InfrastructureProxy) {
 			resourceRef = ((InfrastructureProxy) resourceRef).getWrappedObject();
 		}
+		// 判断是否允许aop代理，默认是可以
 		if (aopAvailable) {
 			// now unwrap scoped proxy
+			// 进行代理的目标对象的获取
+			// 默认不做任务设置的情况下，直接返回自身这个数据源
 			resourceRef = ScopedProxyUnwrapper.unwrapIfNecessary(resourceRef);
 		}
+		// 返回对应的资源
 		return resourceRef;
 	}
 
@@ -184,11 +189,14 @@ public abstract class TransactionSynchronizationUtils {
 	 */
 	private static class ScopedProxyUnwrapper {
 
+		// 解包装，获取源对象
 		public static Object unwrapIfNecessary(Object resource) {
+			// 如果当前这个类属于 ScopedObject，则获取对应的 target 对象
 			if (resource instanceof ScopedObject) {
 				return ((ScopedObject) resource).getTargetObject();
 			}
 			else {
+				// 否则直接返回
 				return resource;
 			}
 		}

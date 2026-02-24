@@ -45,6 +45,9 @@ import org.springframework.lang.Nullable;
  */
 public interface PlatformTransactionManager extends TransactionManager {
 
+	// 根据当前事务的传播行为，返回或创建一个新的活跃事务
+	// 隔离级别或超时时间只用于新事务上，所以在用于旧的活跃事务的情况下只需要忽略
+	// 此外，不是所有传播行为都支持事务，当遇到不支持的设置的时候，需要抛出异常
 	/**
 	 * Return a currently active transaction or create a new one, according to
 	 * the specified propagation behavior.

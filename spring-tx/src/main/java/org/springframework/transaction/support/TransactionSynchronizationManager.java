@@ -76,6 +76,7 @@ public abstract class TransactionSynchronizationManager {
 	private static final ThreadLocal<Map<Object, Object>> resources =
 			new NamedThreadLocal<>("Transactional resources");
 
+	// 线程事务同步器
 	private static final ThreadLocal<Set<TransactionSynchronization>> synchronizations =
 			new NamedThreadLocal<>("Transaction synchronizations");
 
@@ -131,7 +132,9 @@ public abstract class TransactionSynchronizationManager {
 	 */
 	@Nullable
 	public static Object getResource(Object key) {
+		// 获取key，如果是代理的，则解开代理获取真正对象
 		Object actualKey = TransactionSynchronizationUtils.unwrapResourceIfNecessary(key);
+		// 获取对应的 resource
 		return doGetResource(actualKey);
 	}
 
@@ -140,20 +143,29 @@ public abstract class TransactionSynchronizationManager {
 	 */
 	@Nullable
 	private static Object doGetResource(Object actualKey) {
+		// 从 resources 这个 threadLocal 中获取值
 		Map<Object, Object> map = resources.get();
+		// 如果还没设置，直接返回 null
+		// 第一次进来的时候，是会返回 null 的，这时候什么都还没设置进来 threadLocal 中
 		if (map == null) {
 			return null;
 		}
+		// 如果不为空，则从map中获取这个缓存对象
+		// 传进来的是一个 dataSource 对象
 		Object value = map.get(actualKey);
 		// Transparently remove ResourceHolder that was marked as void...
+		// 如果这个缓存对象是 ResourceHolder 类型且是 void 标识
+		// 则需要进行移除
 		if (value instanceof ResourceHolder && ((ResourceHolder) value).isVoid()) {
 			map.remove(actualKey);
 			// Remove entire ThreadLocal if empty...
+			// 如果此时这个 map 空了，则直接移除这个 map
 			if (map.isEmpty()) {
 				resources.remove();
 			}
 			value = null;
 		}
+		// 返回得到的 resource 缓存对象，可能是 null
 		return value;
 	}
 

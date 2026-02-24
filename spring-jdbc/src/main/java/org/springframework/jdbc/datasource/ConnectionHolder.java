@@ -47,6 +47,7 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	public static final String SAVEPOINT_NAME_PREFIX = "SAVEPOINT_";
 
 
+	// 包装成一个 SimpleConnectionHandle
 	@Nullable
 	private ConnectionHandle connectionHandle;
 
@@ -70,6 +71,8 @@ public class ConnectionHolder extends ResourceHolderSupport {
 		this.connectionHandle = connectionHandle;
 	}
 
+	// 通过给定的 jdbc连接，创建一个新的连接持有器
+	// 包装成一个 SimpleConnectionHandle
 	/**
 	 * Create a new ConnectionHolder for the given JDBC Connection,
 	 * wrapping it with a {@link SimpleConnectionHandle},
