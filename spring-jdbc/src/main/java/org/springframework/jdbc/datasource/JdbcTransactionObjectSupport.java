@@ -55,6 +55,7 @@ public abstract class JdbcTransactionObjectSupport implements SavepointManager, 
 	@Nullable
 	private ConnectionHolder connectionHolder;
 
+	// 上一次事务的隔离级别，如果当前不需要更改隔离级别，则这个属性是null
 	@Nullable
 	private Integer previousIsolationLevel;
 
@@ -143,22 +144,27 @@ public abstract class JdbcTransactionObjectSupport implements SavepointManager, 
 	// Implementation of SavepointManager
 	//---------------------------------------------------------------------
 
+	// 这个实现创建了一个 JDBC 3.0 的保存点并返回它
 	/**
 	 * This implementation creates a JDBC 3.0 Savepoint and returns it.
 	 * @see java.sql.Connection#setSavepoint
 	 */
 	@Override
 	public Object createSavepoint() throws TransactionException {
+		// 获取连接
 		ConnectionHolder conHolder = getConnectionHolderForSavepoint();
 		try {
+			// 判断连接是否支持设置保存点
 			if (!conHolder.supportsSavepoints()) {
 				throw new NestedTransactionNotSupportedException(
 						"Cannot create a nested transaction because savepoints are not supported by your JDBC driver");
 			}
+			// 判断当前连接是否被设置了回滚标识，如果设置了，则说明此时需要被回滚了，则不能设置保存点
 			if (conHolder.isRollbackOnly()) {
 				throw new CannotCreateTransactionException(
 						"Cannot create savepoint for transaction which is already marked as rollback-only");
 			}
+			// 调用连接 api 设置保存点，返回保存点信息 Savepoint
 			return conHolder.createSavepoint();
 		}
 		catch (SQLException ex) {
@@ -172,9 +178,12 @@ public abstract class JdbcTransactionObjectSupport implements SavepointManager, 
 	 */
 	@Override
 	public void rollbackToSavepoint(Object savepoint) throws TransactionException {
+		// 获取连接器
 		ConnectionHolder conHolder = getConnectionHolderForSavepoint();
 		try {
+			// 根据保存点回滚
 			conHolder.getConnection().rollback((Savepoint) savepoint);
+			// 重置回滚标识，前边已经回滚得到到保存点了，所以这里恢复回滚标识
 			conHolder.resetRollbackOnly();
 		}
 		catch (Throwable ex) {
@@ -188,8 +197,10 @@ public abstract class JdbcTransactionObjectSupport implements SavepointManager, 
 	 */
 	@Override
 	public void releaseSavepoint(Object savepoint) throws TransactionException {
+		// 获取连接器
 		ConnectionHolder conHolder = getConnectionHolderForSavepoint();
 		try {
+			// 释放保存点
 			conHolder.getConnection().releaseSavepoint((Savepoint) savepoint);
 		}
 		catch (Throwable ex) {

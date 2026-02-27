@@ -77,6 +77,7 @@ public abstract class DataSourceUtils {
 	 */
 	public static Connection getConnection(DataSource dataSource) throws CannotGetJdbcConnectionException {
 		try {
+			// 从数据源中获取连接
 			return doGetConnection(dataSource);
 		}
 		catch (SQLException ex) {
@@ -102,24 +103,33 @@ public abstract class DataSourceUtils {
 	public static Connection doGetConnection(DataSource dataSource) throws SQLException {
 		Assert.notNull(dataSource, "No DataSource specified");
 
+		// 先根据数据源，从当前事务线程中获取到连接器
 		ConnectionHolder conHolder = (ConnectionHolder) TransactionSynchronizationManager.getResource(dataSource);
+		// 判断如果当前事务得到的连接器不为空，且是激活的
 		if (conHolder != null && (conHolder.hasConnection() || conHolder.isSynchronizedWithTransaction())) {
+			// 连接器引用数量+1
 			conHolder.requested();
+			// 判断如果这个连接器没有连接
 			if (!conHolder.hasConnection()) {
 				logger.debug("Fetching resumed JDBC Connection from DataSource");
+				// 则从数据源中获取到连接，并设置到连接器中
 				conHolder.setConnection(fetchConnection(dataSource));
 			}
+			// 返回这个连接器对应的连接
 			return conHolder.getConnection();
 		}
 		// Else we either got no holder or an empty thread-bound holder here.
 
 		logger.debug("Fetching JDBC Connection from DataSource");
+		// 如果当前事务线程中没有得到连接器，则直接从数据源中获取连接
 		Connection con = fetchConnection(dataSource);
 
+		// 判断当前事务是否是激活的
 		if (TransactionSynchronizationManager.isSynchronizationActive()) {
 			try {
 				// Use same Connection for further JDBC actions within the transaction.
 				// Thread-bound object will get removed by synchronization at transaction completion.
+				// 如果是，则创建连接器，封装这个连接对象
 				ConnectionHolder holderToUse = conHolder;
 				if (holderToUse == null) {
 					holderToUse = new ConnectionHolder(con);
@@ -127,7 +137,9 @@ public abstract class DataSourceUtils {
 				else {
 					holderToUse.setConnection(con);
 				}
+				// 连接器引用+1
 				holderToUse.requested();
+				// 将连接绑定到当前线程
 				TransactionSynchronizationManager.registerSynchronization(
 						new ConnectionSynchronization(holderToUse, dataSource));
 				holderToUse.setSynchronizedWithTransaction(true);
@@ -142,6 +154,7 @@ public abstract class DataSourceUtils {
 			}
 		}
 
+		// 返回连接
 		return con;
 	}
 
@@ -189,7 +202,7 @@ public abstract class DataSourceUtils {
 				if (debugEnabled) {
 					logger.debug("Setting JDBC Connection [" + con + "] read-only");
 				}
-				// 如果设置了事务是只读书屋，则设置连接的 readOnly 属性为 true
+				// 如果设置了事务是只读事务，则设置连接的 readOnly 属性为 true
 				con.setReadOnly(true);
 			}
 			catch (SQLException | RuntimeException ex) {
@@ -208,14 +221,14 @@ public abstract class DataSourceUtils {
 
 		// Apply specific isolation level, if any.
 		Integer previousIsolationLevel = null;
-		// 判断事务的隔离级别，默认是不改是 ISOLATION_DEFAULT，用数据库默认的隔离级别
+		// 判断事务的隔离级别，默认不改是 ISOLATION_DEFAULT，用数据库默认的隔离级别
 		if (definition != null && definition.getIsolationLevel() != TransactionDefinition.ISOLATION_DEFAULT) {
 			if (debugEnabled) {
 				logger.debug("Changing isolation level of JDBC Connection [" + con + "] to " +
 						definition.getIsolationLevel());
 			}
 			// 如果不是默认的
-			// 先获取连接的隔离级别
+			// 先获取当前连接的隔离级别
 			int currentIsolation = con.getTransactionIsolation();
 			// 判断如果当前的事务的隔离级别和数据源的隔离级别不一样
 			if (currentIsolation != definition.getIsolationLevel()) {
@@ -228,7 +241,7 @@ public abstract class DataSourceUtils {
 			}
 		}
 
-		// 返回上一个隔离级别，返回 null 表示隔离级别没改
+		// 返回上一个隔离级别，返回 null 表示隔离级别没改或者不需要改（ISOLATION_DEFAULT 默认）
 		return previousIsolationLevel;
 	}
 
@@ -370,6 +383,7 @@ public abstract class DataSourceUtils {
 	 */
 	public static void releaseConnection(@Nullable Connection con, @Nullable DataSource dataSource) {
 		try {
+			// 执行完毕后，连接释放
 			doReleaseConnection(con, dataSource);
 		}
 		catch (SQLException ex) {
@@ -392,17 +406,22 @@ public abstract class DataSourceUtils {
 	 * @see #doGetConnection
 	 */
 	public static void doReleaseConnection(@Nullable Connection con, @Nullable DataSource dataSource) throws SQLException {
+		// 如果连接是空的，直接返回
 		if (con == null) {
 			return;
 		}
 		if (dataSource != null) {
+			// 如果有数据源
+			// 先从当前线程的事务中获取连接器
 			ConnectionHolder conHolder = (ConnectionHolder) TransactionSynchronizationManager.getResource(dataSource);
+			// 判断如果当前线程的连接器中的连接，就是当前这个连接，则进行释放
 			if (conHolder != null && connectionEquals(conHolder, con)) {
 				// It's the transactional Connection: Don't close it.
 				conHolder.released();
 				return;
 			}
 		}
+		// 如果没有数据源，则进行关闭连接
 		doCloseConnection(con, dataSource);
 	}
 
@@ -416,6 +435,7 @@ public abstract class DataSourceUtils {
 	 */
 	public static void doCloseConnection(Connection con, @Nullable DataSource dataSource) throws SQLException {
 		if (!(dataSource instanceof SmartDataSource) || ((SmartDataSource) dataSource).shouldClose(con)) {
+			// 连接关闭
 			con.close();
 		}
 	}
@@ -502,9 +522,11 @@ public abstract class DataSourceUtils {
 			return this.order;
 		}
 
+		// 挂起
 		@Override
 		public void suspend() {
 			if (this.holderActive) {
+				// 解绑 resources
 				TransactionSynchronizationManager.unbindResource(this.dataSource);
 				if (this.connectionHolder.hasConnection() && !this.connectionHolder.isOpen()) {
 					// Release Connection on suspend if the application doesn't keep

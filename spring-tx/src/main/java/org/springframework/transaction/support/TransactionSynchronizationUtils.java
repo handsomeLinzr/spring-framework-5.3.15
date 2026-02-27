@@ -108,6 +108,7 @@ public abstract class TransactionSynchronizationUtils {
 	 * @see TransactionSynchronization#beforeCompletion()
 	 */
 	public static void triggerBeforeCompletion() {
+		// 遍历当前线程的所有事务同步器，都进行 beforeCompletion 操作
 		for (TransactionSynchronization synchronization : TransactionSynchronizationManager.getSynchronizations()) {
 			try {
 				synchronization.beforeCompletion();

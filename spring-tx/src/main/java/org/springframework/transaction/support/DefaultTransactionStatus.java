@@ -55,14 +55,19 @@ public class DefaultTransactionStatus extends AbstractTransactionStatus {
 	@Nullable
 	private final Object transaction;
 
+	// 是否是新的事务
 	private final boolean newTransaction;
 
+	// 是否是新的事务同步器
 	private final boolean newSynchronization;
 
+	// 是否只读
 	private final boolean readOnly;
 
+	// 是否 debug 模式
 	private final boolean debug;
 
+	// 上一次被挂起的事务
 	@Nullable
 	private final Object suspendedResources;
 
@@ -86,7 +91,7 @@ public class DefaultTransactionStatus extends AbstractTransactionStatus {
 			@Nullable Object transaction, boolean newTransaction, boolean newSynchronization,
 			boolean readOnly, boolean debug, @Nullable Object suspendedResources) {
 
-		// 事务持有器
+		// 事务持有器，txObj
 		this.transaction = transaction;
 		// 是否是新事务
 		this.newTransaction = newTransaction;
@@ -181,11 +186,14 @@ public class DefaultTransactionStatus extends AbstractTransactionStatus {
 	 */
 	@Override
 	protected SavepointManager getSavepointManager() {
+		// 获取当前的 txObject 对象
 		Object transaction = this.transaction;
+		// DataSourceTransactionObject 也是实现了 SavepointManager，所以这里是不用进去的
 		if (!(transaction instanceof SavepointManager)) {
 			throw new NestedTransactionNotSupportedException(
 					"Transaction object [" + this.transaction + "] does not support savepoints");
 		}
+		// 强转成 SavepointManager 返回
 		return (SavepointManager) transaction;
 	}
 

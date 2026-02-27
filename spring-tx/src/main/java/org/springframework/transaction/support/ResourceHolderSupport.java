@@ -38,11 +38,14 @@ public abstract class ResourceHolderSupport implements ResourceHolder {
 	// 开启事务后，会设置成 true
 	private boolean synchronizedWithTransaction = false;
 
+	// 回滚标识，如果触发了回滚，则会被设置为 true
 	private boolean rollbackOnly = false;
 
+	// 事务的超时的时间，通过当前时间+超时时间推算而来
 	@Nullable
 	private Date deadline;
 
+	// 正在被引用的数量
 	private int referenceCount = 0;
 
 	private boolean isVoid = false;
@@ -162,6 +165,7 @@ public abstract class ResourceHolderSupport implements ResourceHolder {
 	 * (i.e. someone requested the resource held by it).
 	 */
 	public void requested() {
+		// 连接引用 +1
 		this.referenceCount++;
 	}
 
@@ -170,6 +174,7 @@ public abstract class ResourceHolderSupport implements ResourceHolder {
 	 * (i.e. someone released the resource held by it).
 	 */
 	public void released() {
+		// 连接引用 -1
 		this.referenceCount--;
 	}
 

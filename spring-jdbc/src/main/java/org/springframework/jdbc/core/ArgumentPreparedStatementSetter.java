@@ -29,6 +29,7 @@ import org.springframework.lang.Nullable;
  */
 public class ArgumentPreparedStatementSetter implements PreparedStatementSetter, ParameterDisposer {
 
+	// 具体参数
 	@Nullable
 	private final Object[] args;
 
@@ -45,8 +46,10 @@ public class ArgumentPreparedStatementSetter implements PreparedStatementSetter,
 	@Override
 	public void setValues(PreparedStatement ps) throws SQLException {
 		if (this.args != null) {
+			// 遍历所有的参数
 			for (int i = 0; i < this.args.length; i++) {
 				Object arg = this.args[i];
+				// 将参数都设置到 ps 中
 				doSetValue(ps, i + 1, arg);
 			}
 		}
@@ -70,6 +73,7 @@ public class ArgumentPreparedStatementSetter implements PreparedStatementSetter,
 		}
 	}
 
+	// 清理参数
 	@Override
 	public void cleanupParameters() {
 		StatementCreatorUtils.cleanupParameters(this.args);

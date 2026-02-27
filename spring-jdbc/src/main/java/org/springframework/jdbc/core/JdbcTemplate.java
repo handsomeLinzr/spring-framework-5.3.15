@@ -632,6 +632,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	// Methods dealing with prepared statements
 	//-------------------------------------------------------------------------
 
+	// 执行 sql
 	@Nullable
 	private <T> T execute(PreparedStatementCreator psc, PreparedStatementCallback<T> action, boolean closeResources)
 			throws DataAccessException {
@@ -643,13 +644,18 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 			logger.debug("Executing prepared SQL statement" + (sql != null ? " [" + sql + "]" : ""));
 		}
 
+		// 获取到当前注入的数据源，并从数据源中获取到连接
 		Connection con = DataSourceUtils.getConnection(obtainDataSource());
 		PreparedStatement ps = null;
 		try {
+			// 创建预处理，其实就是调用 con 这个连接，预处理 sql
 			ps = psc.createPreparedStatement(con);
+			// 设置
 			applyStatementSettings(ps);
+			// 回调，执行 action 方法，返回结果
 			T result = action.doInPreparedStatement(ps);
 			handleWarnings(ps);
+			// 返回
 			return result;
 		}
 		catch (SQLException ex) {
@@ -669,9 +675,11 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 		finally {
 			if (closeResources) {
 				if (psc instanceof ParameterDisposer) {
+					// 清理参数
 					((ParameterDisposer) psc).cleanupParameters();
 				}
 				JdbcUtils.closeStatement(ps);
+				// 连接释放
 				DataSourceUtils.releaseConnection(con, getDataSource());
 			}
 		}
@@ -957,19 +965,26 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 
 		logger.debug("Executing prepared SQL update");
 
+		// updateCount 返回更新的数量
+		// execute 执行 sql
 		return updateCount(execute(psc, ps -> {
 			try {
+				// 具体的执行，这是一个回调
 				if (pss != null) {
+					// pss 不为空，则进行参数设置，设置到 ps
 					pss.setValues(ps);
 				}
+				// 执行 update，返回影响的行数
 				int rows = ps.executeUpdate();
 				if (logger.isTraceEnabled()) {
 					logger.trace("SQL update affected " + rows + " rows");
 				}
+				// 返回
 				return rows;
 			}
 			finally {
 				if (pss instanceof ParameterDisposer) {
+					// 清除
 					((ParameterDisposer) pss).cleanupParameters();
 				}
 			}
@@ -1012,6 +1027,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 
 	@Override
 	public int update(String sql, @Nullable PreparedStatementSetter pss) throws DataAccessException {
+		// 更新
 		return update(new SimplePreparedStatementCreator(sql), pss);
 	}
 
@@ -1020,8 +1036,11 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 		return update(sql, newArgTypePreparedStatementSetter(args, argTypes));
 	}
 
+	// jdbc 数据库连接的更新操作
 	@Override
 	public int update(String sql, @Nullable Object... args) throws DataAccessException {
+		// 更新处理
+		// newArgPreparedStatementSetter 返回了 ArgumentPreparedStatementSetter
 		return update(sql, newArgPreparedStatementSetter(args));
 	}
 
@@ -1470,6 +1489,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 		DataSourceUtils.applyTimeout(stmt, getDataSource(), getQueryTimeout());
 	}
 
+	// 创建一个新的参数绑定的 PreparedStatementSetter
 	/**
 	 * Create a new arg-based PreparedStatementSetter using the args passed in.
 	 * <p>By default, we'll create an {@link ArgumentPreparedStatementSetter}.
@@ -1628,13 +1648,16 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	}
 
 
+	// PreparedStatementCreator 的简单适配器，支持简单的 sql
 	/**
 	 * Simple adapter for PreparedStatementCreator, allowing to use a plain SQL statement.
 	 */
 	private static class SimplePreparedStatementCreator implements PreparedStatementCreator, SqlProvider {
 
+		// 执行的 sql
 		private final String sql;
 
+		// 创建一个简单 sql 执行适配器
 		public SimplePreparedStatementCreator(String sql) {
 			Assert.notNull(sql, "SQL must not be null");
 			this.sql = sql;
@@ -1642,6 +1665,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 
 		@Override
 		public PreparedStatement createPreparedStatement(Connection con) throws SQLException {
+			// 调用数据库连接，预处理 sql
 			return con.prepareStatement(this.sql);
 		}
 

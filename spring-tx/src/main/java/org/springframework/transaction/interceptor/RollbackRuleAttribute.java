@@ -100,6 +100,7 @@ public class RollbackRuleAttribute implements Serializable{
 		return this.exceptionName;
 	}
 
+	// 返回 exceptionClass 能匹配上 exceptionName 的深度
 	/**
 	 * Return the depth of the superclass matching.
 	 * <p>{@code 0} means {@code ex} matches exactly. Returns
@@ -110,16 +111,19 @@ public class RollbackRuleAttribute implements Serializable{
 		return getDepth(ex.getClass(), 0);
 	}
 
-
+	// 查看 exceptionClass 或者 exceptionClass 的父类中是否有 exceptionName 这个异常
 	private int getDepth(Class<?> exceptionClass, int depth) {
 		if (exceptionClass.getName().contains(this.exceptionName)) {
+			// 匹配到这个异常了，返回层级
 			// Found it!
 			return depth;
 		}
 		// If we've gone as far as we can go and haven't found it...
 		if (exceptionClass == Throwable.class) {
+			// 如果到了 Throwable.class 这个顶层异常，则返回 -1，表示没有找到
 			return -1;
 		}
+		// 递归，继续查看这个异常的父类是否能匹配上
 		return getDepth(exceptionClass.getSuperclass(), depth + 1);
 	}
 

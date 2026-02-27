@@ -22,6 +22,7 @@ import java.util.Collection;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.support.DelegatingTransactionDefinition;
 
+// DelegatingTransactionAttribute
 /**
  * {@link TransactionAttribute} implementation that delegates all calls to a given target
  * {@link TransactionAttribute} instance. Abstract because it is meant to be subclassed,
@@ -62,6 +63,7 @@ public abstract class DelegatingTransactionAttribute extends DelegatingTransacti
 		return this.targetAttribute.getLabels();
 	}
 
+	// 判断对应的这个异常，是否可以触发回滚
 	@Override
 	public boolean rollbackOn(Throwable ex) {
 		return this.targetAttribute.rollbackOn(ex);

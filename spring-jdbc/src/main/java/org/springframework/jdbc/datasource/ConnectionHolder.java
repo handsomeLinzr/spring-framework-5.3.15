@@ -41,24 +41,28 @@ import org.springframework.util.Assert;
  */
 public class ConnectionHolder extends ResourceHolderSupport {
 
+	// 保存点设置的名称前缀
 	/**
 	 * Prefix for savepoint names.
 	 */
 	public static final String SAVEPOINT_NAME_PREFIX = "SAVEPOINT_";
 
 
-	// 包装成一个 SimpleConnectionHandle
+	// 包装成一个 SimpleConnectionHandle，内部包装了具体的数据连接 connection
 	@Nullable
 	private ConnectionHandle connectionHandle;
 
+	// 存放的是对应持有的 connection，也就是上边 connectionHandle 中包装的 connection
 	@Nullable
 	private Connection currentConnection;
 
+	// 连接的事务激活状态，开始后会激活
 	private boolean transactionActive = false;
 
 	@Nullable
 	private Boolean savepointsSupported;
 
+	// 当前连接被设置的保存点的数量
 	private int savepointCounter = 0;
 
 
@@ -162,8 +166,10 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	public Connection getConnection() {
 		Assert.notNull(this.connectionHandle, "Active Connection is required");
 		if (this.currentConnection == null) {
+			// 设置为当前持有的连接器
 			this.currentConnection = this.connectionHandle.getConnection();
 		}
+		// 返回这个连接器
 		return this.currentConnection;
 	}
 
@@ -186,7 +192,10 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	 * @throws SQLException if thrown by the JDBC driver
 	 */
 	public Savepoint createSavepoint() throws SQLException {
+		// 保存点设置数量 +1
 		this.savepointCounter++;
+		// 调用 API，设置保存点，名称是 SAVEPOINT_ + 数量
+		// 返回对应的保存点信息
 		return getConnection().setSavepoint(SAVEPOINT_NAME_PREFIX + this.savepointCounter);
 	}
 
@@ -200,10 +209,14 @@ public class ConnectionHolder extends ResourceHolderSupport {
 	@Override
 	public void released() {
 		super.released();
+		// isOpen() 判断当前这个连接被引用的数量是不是 >0，如果是，则说明还有其他对象在引用这个连接
+		// 这里判断如果当前这个连接没有被其他对象引用了，且 currentConnection 不为空
 		if (!isOpen() && this.currentConnection != null) {
 			if (this.connectionHandle != null) {
+				// 调用 SimpleConnectionHandle 进行释放，默认什么都不做
 				this.connectionHandle.releaseConnection(this.currentConnection);
 			}
+			// 清空这个 currentConnection
 			this.currentConnection = null;
 		}
 	}

@@ -63,6 +63,7 @@ public interface TransactionSynchronization extends Ordered, Flushable {
 		return Ordered.LOWEST_PRECEDENCE;
 	}
 
+	// 挂起事务同步器
 	/**
 	 * Suspend this synchronization.
 	 * Supposed to unbind resources from TransactionSynchronizationManager if managing any.

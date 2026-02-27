@@ -129,21 +129,35 @@ public class RuleBasedTransactionAttribute extends DefaultTransactionAttribute i
 		RollbackRuleAttribute winner = null;
 		int deepest = Integer.MAX_VALUE;
 
+		// 判断 rollbackRules 是否不为空
+		// 如果事务有设置了 rollback-for 或者 not-rollback-for，则会添加到这里
 		if (this.rollbackRules != null) {
+			// 遍历所有的回滚异常设置
 			for (RollbackRuleAttribute rule : this.rollbackRules) {
+				// 查找 rule，尝试获取到 ex 这个异常能匹配上 rule 这个异常类的深度，
+				// 即 ex 这个异常类是否有父类能匹配上 rule
 				int depth = rule.getDepth(ex);
+				// 如果深度 >= 0，且对应的深度比当前已有的最浅深度浅，则表示找到了，需要设置 winner 和 deepest
 				if (depth >= 0 && depth < deepest) {
+					// 设置最浅的深度为当前这个深度
 					deepest = depth;
+					// 设置 winner 为当前这个规则
 					winner = rule;
 				}
 			}
 		}
 
+		// 如果最后得到的 winner 为空，则当前的异常没有在规则中
 		// User superclass behavior (rollback on unchecked) if no rule matches.
 		if (winner == null) {
+			// 调用父类 DefaultTransactionAttribute 去进行判断处理
+			// 这里父类的判断是，只要异常是 RuntimeException 或者 Error，都返回 true，需要回滚
 			return super.rollbackOn(ex);
 		}
 
+		// 返回是否 winner 不为 NoRollbackRuleAttribute 类
+		// 如果 winner 属于 NoRollbackRuleAttribute，则不回滚，返回 false
+		// 如果 winner 不属于 NoRollbackRuleAttribute，则回滚，返回 true
 		return !(winner instanceof NoRollbackRuleAttribute);
 	}
 

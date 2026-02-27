@@ -40,7 +40,8 @@ public class MyTest {
 	public static void tx() {
 		ClassPathXmlApplicationContext ac = new ClassPathXmlApplicationContext("classpath:tx.xml");
 		BookService bookService = ac.getBean(BookService.class);
-		bookService.update(1, "20260210001", "故事书籍2");
+		String order = bookService.getOrder(1);
+//		bookService.update(1, "20260210001", "故事书籍2");
 	}
 
 

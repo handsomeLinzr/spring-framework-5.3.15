@@ -50,6 +50,8 @@ public abstract class AbstractTransactionStatus implements TransactionStatus {
 
 	private boolean completed = false;
 
+	// 保存点信息
+	// 如果传播行为是 PROPAGATION_NESTED，则会设置保存点，将并设置后返回的 Savepoint 缓存到这里
 	@Nullable
 	private Object savepoint;
 
@@ -131,12 +133,16 @@ public abstract class AbstractTransactionStatus implements TransactionStatus {
 		return this.savepoint;
 	}
 
+	// 创建一个保存点，并为事务保存它
 	/**
 	 * Create a savepoint and hold it for the transaction.
 	 * @throws org.springframework.transaction.NestedTransactionNotSupportedException
 	 * if the underlying transaction does not support savepoints
 	 */
 	public void createAndHoldSavepoint() throws TransactionException {
+		// getSavepointManager() 得到当前的 txObj 对象
+		// createSavepoint() 最终调用了 connection 的创建保存点的 api
+		// 返回保存点信息 Savepoint
 		setSavepoint(getSavepointManager().createSavepoint());
 	}
 
@@ -145,13 +151,18 @@ public abstract class AbstractTransactionStatus implements TransactionStatus {
 	 * and release the savepoint right afterwards.
 	 */
 	public void rollbackToHeldSavepoint() throws TransactionException {
+		// 获取当前连接的保存点
 		Object savepoint = getSavepoint();
 		if (savepoint == null) {
 			throw new TransactionUsageException(
 					"Cannot roll back to savepoint - no savepoint associated with current transaction");
 		}
+
+		// 回滚到保存点，恢复连接器的回滚标识
 		getSavepointManager().rollbackToSavepoint(savepoint);
+		// 释放保存点
 		getSavepointManager().releaseSavepoint(savepoint);
+		// 设置保存点为 null，清空保存点
 		setSavepoint(null);
 	}
 
@@ -192,6 +203,7 @@ public abstract class AbstractTransactionStatus implements TransactionStatus {
 	 */
 	@Override
 	public void rollbackToSavepoint(Object savepoint) throws TransactionException {
+		// 回滚到保存点，恢复连接器的回滚标识为 false
 		getSavepointManager().rollbackToSavepoint(savepoint);
 	}
 

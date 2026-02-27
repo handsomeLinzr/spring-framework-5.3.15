@@ -82,6 +82,7 @@ public abstract class JdbcAccessor implements InitializingBean {
 	 * @since 5.0
 	 */
 	protected DataSource obtainDataSource() {
+		// 获取到当前的数据源
 		DataSource dataSource = getDataSource();
 		Assert.state(dataSource != null, "No DataSource set");
 		return dataSource;

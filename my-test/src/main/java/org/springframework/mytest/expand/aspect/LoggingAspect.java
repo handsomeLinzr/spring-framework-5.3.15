@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
  * @author linzherong
  * @date 2026/2/1
  */
-@Aspect
-@Component
+//@Aspect
+//@Component
 public class LoggingAspect {
 
 //	@Pointcut("execution(* org.springframework.mytest.bean.components.aop..*(..))")
