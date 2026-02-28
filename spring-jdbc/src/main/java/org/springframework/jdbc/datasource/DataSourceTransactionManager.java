@@ -365,17 +365,22 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 
 	@Override
 	protected void doResume(@Nullable Object transaction, Object suspendedResources) {
+		// 绑定到当前线程，到 resources 中
 		TransactionSynchronizationManager.bindResource(obtainDataSource(), suspendedResources);
 	}
 
+	// 事务提交
 	@Override
 	protected void doCommit(DefaultTransactionStatus status) {
+		// 从 status 中获取到当前事务的 txObj
 		DataSourceTransactionObject txObject = (DataSourceTransactionObject) status.getTransaction();
+		// 获取对应的连接
 		Connection con = txObject.getConnectionHolder().getConnection();
 		if (status.isDebug()) {
 			logger.debug("Committing JDBC transaction on Connection [" + con + "]");
 		}
 		try {
+			// 调用连接的 api，提交事务
 			con.commit();
 		}
 		catch (SQLException ex) {
@@ -383,14 +388,18 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 		}
 	}
 
+	// 事务回滚
 	@Override
 	protected void doRollback(DefaultTransactionStatus status) {
+		// 获取 txObj 对象
 		DataSourceTransactionObject txObject = (DataSourceTransactionObject) status.getTransaction();
+		// 从 txObj 中获取连接
 		Connection con = txObject.getConnectionHolder().getConnection();
 		if (status.isDebug()) {
 			logger.debug("Rolling back JDBC transaction on Connection [" + con + "]");
 		}
 		try {
+			// 调用连接的 rollback，进行回滚
 			con.rollback();
 		}
 		catch (SQLException ex) {
@@ -400,11 +409,13 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 
 	@Override
 	protected void doSetRollbackOnly(DefaultTransactionStatus status) {
+		// 获取 txObj 对象
 		DataSourceTransactionObject txObject = (DataSourceTransactionObject) status.getTransaction();
 		if (status.isDebug()) {
 			logger.debug("Setting JDBC transaction [" + txObject.getConnectionHolder().getConnection() +
 					"] rollback-only");
 		}
+		// 设置回滚标识
 		txObject.setRollbackOnly();
 	}
 
@@ -518,6 +529,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 		}
 
 		public void setRollbackOnly() {
+			// 获取当前事务管理器的连接器，设置回滚标识
 			getConnectionHolder().setRollbackOnly();
 		}
 

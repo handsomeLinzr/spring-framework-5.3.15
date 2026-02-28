@@ -46,6 +46,7 @@ import org.springframework.transaction.TransactionUsageException;
  */
 public abstract class AbstractTransactionStatus implements TransactionStatus {
 
+	// 回滚标识，是否需要回滚
 	private boolean rollbackOnly = false;
 
 	private boolean completed = false;

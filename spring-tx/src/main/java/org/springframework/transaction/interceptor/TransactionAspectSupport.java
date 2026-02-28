@@ -738,10 +738,11 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				}
 			}
 			else {
-				// 当前这个异常不需要回滚
+				// 当前这个异常不需要回滚，则直接提交
 				// We don't roll back on this exception.
 				// Will still roll back if TransactionStatus.isRollbackOnly() is true.
 				try {
+					// 调用 tm 事务管理器，进行事务提交，提交当前这个事务状态
 					txInfo.getTransactionManager().commit(txInfo.getTransactionStatus());
 				}
 				catch (TransactionSystemException ex2) {

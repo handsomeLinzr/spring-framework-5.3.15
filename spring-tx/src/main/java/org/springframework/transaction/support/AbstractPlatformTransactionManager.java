@@ -270,6 +270,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		this.globalRollbackOnParticipationFailure = globalRollbackOnParticipationFailure;
 	}
 
+	// 是否事务失败后需要将事务全局标识设置为回滚状态，默认 true
 	/**
 	 * Return whether to globally mark an existing transaction as rollback-only
 	 * after a participating transaction failed.
@@ -702,9 +703,12 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	protected final void resume(@Nullable Object transaction, @Nullable SuspendedResourcesHolder resourcesHolder)
 			throws TransactionException {
 
+		// 判断如果给定的挂起事务资源不为空
 		if (resourcesHolder != null) {
+			// 获取被挂起的事务
 			Object suspendedResources = resourcesHolder.suspendedResources;
 			if (suspendedResources != null) {
+				// 恢复
 				doResume(transaction, suspendedResources);
 			}
 			List<TransactionSynchronization> suspendedSynchronizations = resourcesHolder.suspendedSynchronizations;
@@ -769,6 +773,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	}
 
 
+	// 事务提交的实现逻辑
 	/**
 	 * This implementation of commit handles participating in existing
 	 * transactions and programmatic rollback requests.
@@ -780,31 +785,41 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 */
 	@Override
 	public final void commit(TransactionStatus status) throws TransactionException {
+		// 判断当前事务状态
+		// 如果当前事务是已完成，则抛出异常，因为已完成状态的事务，是无法提交的
 		if (status.isCompleted()) {
 			throw new IllegalTransactionStateException(
 					"Transaction is already completed - do not call commit or rollback more than once per transaction");
 		}
 
+		// 强转当前事务状态
 		DefaultTransactionStatus defStatus = (DefaultTransactionStatus) status;
+		// 判断是否有回滚标识
 		if (defStatus.isLocalRollbackOnly()) {
 			if (defStatus.isDebug()) {
 				logger.debug("Transactional code has requested rollback");
 			}
+			// 如果有回滚标识，则进行事务的回滚
 			processRollback(defStatus, false);
 			return;
 		}
 
+		// shouldCommitOnGlobalRollbackOnly 默认是 false
+		// defStatus.isGlobalRollbackOnly() 连接是否设置了回滚标识
 		if (!shouldCommitOnGlobalRollbackOnly() && defStatus.isGlobalRollbackOnly()) {
 			if (defStatus.isDebug()) {
 				logger.debug("Global transaction is marked as rollback-only but transactional code requested commit");
 			}
+			// 回滚
 			processRollback(defStatus, true);
 			return;
 		}
 
+		// 没有回滚标识，提交事务状态
 		processCommit(defStatus);
 	}
 
+	// 实际的提交过程，前边已经应用了回滚标识
 	/**
 	 * Process an actual commit.
 	 * Rollback-only flags have already been checked and applied.
@@ -817,23 +832,30 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 
 			try {
 				boolean unexpectedRollback = false;
+				// 准备提交
 				prepareForCommit(status);
+				// 事务提交前处理
 				triggerBeforeCommit(status);
+				// 事务完成前处理
 				triggerBeforeCompletion(status);
 				beforeCompletionInvoked = true;
 
+				// 判断是否有保存点
 				if (status.hasSavepoint()) {
 					if (status.isDebug()) {
 						logger.debug("Releasing transaction savepoint");
 					}
 					unexpectedRollback = status.isGlobalRollbackOnly();
+					// 释放保存点，因为反正要提交，全都都进行提交了，保存点则可以先释放掉
 					status.releaseHeldSavepoint();
 				}
+				// 判断当前事务状态是一个新事务
 				else if (status.isNewTransaction()) {
 					if (status.isDebug()) {
 						logger.debug("Initiating transaction commit");
 					}
 					unexpectedRollback = status.isGlobalRollbackOnly();
+					// 提交事务，具体就是调用 connection 连接的 commit 方法，提交事务
 					doCommit(status);
 				}
 				else if (isFailEarlyOnGlobalRollbackOnly()) {
@@ -855,6 +877,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			catch (TransactionException ex) {
 				// can only be caused by doCommit
 				if (isRollbackOnCommitFailure()) {
+					// 异常回滚
 					doRollbackOnCommitException(status, ex);
 				}
 				else {
@@ -873,14 +896,17 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			// Trigger afterCommit callbacks, with an exception thrown there
 			// propagated to callers but the transaction still considered as committed.
 			try {
+				// 提交后处理
 				triggerAfterCommit(status);
 			}
 			finally {
+				// 完成后处理
 				triggerAfterCompletion(status, TransactionSynchronization.STATUS_COMMITTED);
 			}
 
 		}
 		finally {
+			// 完成后清理数据
 			cleanupAfterCompletion(status);
 		}
 	}
@@ -931,7 +957,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 					// 回滚保存点，重置连接器的回滚标识，释放保存点，清空当前连接的保存点信息
 					status.rollbackToHeldSavepoint();
 				}
-				// 判断如果没有保存点，但是当前事务是一个新事务
+				// 判断如果没有保存点，而且当前事务是一个新事务，并不是被嵌套进来的事务，自己可以管理
 				else if (status.isNewTransaction()) {
 					if (status.isDebug()) {
 						logger.debug("Initiating transaction rollback");
@@ -940,13 +966,16 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 					doRollback(status);
 				}
 				else {
-					// 如果当前不是一个新事务，表示是共用外层事务
+					// 如果当前不是一个新事务，表示是共用外层事务，所以不能在这里回滚，只能打上回滚标识，然后待外层事务去执行回滚
 					// Participating in larger transaction
 					if (status.hasTransaction()) {
+						// 判断如果当前这个事务已经有回滚标识
+						// 判断 isGlobalRollbackOnParticipationFailure 默认 true
 						if (status.isLocalRollbackOnly() || isGlobalRollbackOnParticipationFailure()) {
 							if (status.isDebug()) {
 								logger.debug("Participating transaction failed - marking existing transaction as rollback-only");
 							}
+							// 设置回滚标识
 							doSetRollbackOnly(status);
 						}
 						else {
@@ -969,6 +998,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 				throw ex;
 			}
 
+			// 后置处理
 			triggerAfterCompletion(status, TransactionSynchronization.STATUS_ROLLED_BACK);
 
 			// Raise UnexpectedRollbackException if we had a global rollback-only marker
@@ -978,6 +1008,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			}
 		}
 		finally {
+			// 清理
 			cleanupAfterCompletion(status);
 		}
 	}
@@ -1050,8 +1081,11 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 * @param completionStatus completion status according to TransactionSynchronization constants
 	 */
 	private void triggerAfterCompletion(DefaultTransactionStatus status, int completionStatus) {
+		// 判断如果当前事务同步器是一个新的同步器
 		if (status.isNewSynchronization()) {
+			// 获取当前线程中的所有的同步器快照
 			List<TransactionSynchronization> synchronizations = TransactionSynchronizationManager.getSynchronizations();
+			// 清理
 			TransactionSynchronizationManager.clearSynchronization();
 			if (!status.hasTransaction() || status.isNewTransaction()) {
 				// No transaction or new transaction for the current scope ->
@@ -1091,18 +1125,26 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 * @see #doCleanupAfterCompletion
 	 */
 	private void cleanupAfterCompletion(DefaultTransactionStatus status) {
+		// 设置事务状态为 已完成
 		status.setCompleted();
+		// 如果当前事务状态是属于新的同步
 		if (status.isNewSynchronization()) {
+			// 清理
 			TransactionSynchronizationManager.clear();
 		}
+		// 判断如果是一个新事务
 		if (status.isNewTransaction()) {
+			// 清理
 			doCleanupAfterCompletion(status.getTransaction());
 		}
+		// 如果当前事务状态中，有之前被挂起的事务
 		if (status.getSuspendedResources() != null) {
 			if (status.isDebug()) {
 				logger.debug("Resuming suspended transaction after completion of inner transaction");
 			}
+			// 获取事务
 			Object transaction = (status.hasTransaction() ? status.getTransaction() : null);
+			// 恢复被挂起的事务
 			resume(transaction, (SuspendedResourcesHolder) status.getSuspendedResources());
 		}
 	}

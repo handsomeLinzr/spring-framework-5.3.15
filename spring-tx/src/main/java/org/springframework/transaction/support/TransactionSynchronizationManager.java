@@ -477,6 +477,7 @@ public abstract class TransactionSynchronizationManager {
 	}
 
 
+	// 清理当前线程绑定的状态
 	/**
 	 * Clear the entire transaction synchronization state for the current thread:
 	 * registered synchronizations as well as the various transaction characteristics.

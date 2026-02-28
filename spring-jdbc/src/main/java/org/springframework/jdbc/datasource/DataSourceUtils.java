@@ -546,6 +546,7 @@ public abstract class DataSourceUtils {
 			}
 		}
 
+		// 结束前处理
 		@Override
 		public void beforeCompletion() {
 			// Release Connection early if the holder is not open anymore
@@ -554,9 +555,11 @@ public abstract class DataSourceUtils {
 			// to avoid issues with strict JTA implementations that expect
 			// the close call before transaction completion.
 			if (!this.connectionHolder.isOpen()) {
+				// 如果连接已经没有其他地方在引用，则进行解绑
 				TransactionSynchronizationManager.unbindResource(this.dataSource);
 				this.holderActive = false;
 				if (this.connectionHolder.hasConnection()) {
+					// 如果挡墙连接器没有连接了，进行释放
 					releaseConnection(this.connectionHolder.getConnection(), this.dataSource);
 				}
 			}
