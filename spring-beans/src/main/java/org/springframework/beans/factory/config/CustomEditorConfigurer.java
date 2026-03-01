@@ -99,9 +99,12 @@ public class CustomEditorConfigurer implements BeanFactoryPostProcessor, Ordered
 
 	private int order = Ordered.LOWEST_PRECEDENCE;  // default: same as non-Ordered
 
+	// 自定义属性编辑注册器，可以通过自定义 bfpp，设置属性传进来
+	// 扫描到当前这个bfpp，则会将这个自定义属性编辑注册器
 	@Nullable
 	private PropertyEditorRegistrar[] propertyEditorRegistrars;
 
+	// 自定义属性编辑器
 	@Nullable
 	private Map<Class<?>, Class<? extends PropertyEditor>> customEditors;
 
@@ -140,6 +143,7 @@ public class CustomEditorConfigurer implements BeanFactoryPostProcessor, Ordered
 	}
 
 
+	// 具体的 ppbf 方法，其实就是将自定义属性编辑器添加到 beanFactory 中
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
 		if (this.propertyEditorRegistrars != null) {

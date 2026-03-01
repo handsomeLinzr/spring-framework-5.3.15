@@ -95,11 +95,13 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 		super(registerDefaultEditors);
 	}
 
+	// 根据传进来的包装对象，创建一个 BeanWrapperImpl 包装对象
 	/**
 	 * Create a new BeanWrapperImpl for the given object.
 	 * @param object the object wrapped by this BeanWrapper
 	 */
 	public BeanWrapperImpl(Object object) {
+		// 调用父类初始化
 		super(object);
 	}
 
@@ -206,16 +208,20 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	 */
 	@Nullable
 	public Object convertForProperty(@Nullable Object value, String propertyName) throws TypeMismatchException {
-		CachedIntrospectionResults cachedIntrospectionResults = getCachedIntrospectionResults();  // 获取这个包装类对应目标类的类信息
-		PropertyDescriptor pd = cachedIntrospectionResults.getPropertyDescriptor(propertyName);  // 获取这个属性的属性描述器
+		// 获取这个包装类对应目标类的类信息
+		CachedIntrospectionResults cachedIntrospectionResults = getCachedIntrospectionResults();
+		// 获取这个属性的属性描述器
+		PropertyDescriptor pd = cachedIntrospectionResults.getPropertyDescriptor(propertyName);
 		if (pd == null) {
 			throw new InvalidPropertyException(getRootClass(), getNestedPath() + propertyName,
 					"No property '" + propertyName + "' found");
 		}
-		TypeDescriptor td = cachedIntrospectionResults.getTypeDescriptor(pd);  // 或者这个属性的类型描述器
-		if (td == null) {   // 第一次获取是空的，则进行新增，对应 new TypeDescriptor(property(pd))
+		// 或者这个属性的类型描述器
+		TypeDescriptor td = cachedIntrospectionResults.getTypeDescriptor(pd);
+		// 第一次获取是空的，则进行新增，对应 new TypeDescriptor(property(pd))
+		if (td == null) {
 			td = cachedIntrospectionResults.addTypeDescriptor(pd, new TypeDescriptor(property(pd)));
-		}   // 覆盖
+		}   // 覆盖，核心逻辑
 		return convertForProperty(propertyName, null, value, td);
 	}
 

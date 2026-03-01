@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Spring Application Context Template -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:my-user="http://www.springframework.org/schema/my-user"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+	       http://www.springframework.org/schema/my-user http://www.springframework.org/schema/expand/my-user.xsd">
+
+	<bean id="bean5" class="org.springframework.mytest.bean.Bean5" >
+		<property name="address" value="广东_汕头_潮南" />
+	</bean>
+
+	<bean id="myCustomEditorConfigurer" class="org.springframework.mytest.expand.editor.MyCustomEditorConfigurer">
+<!--		<property name="propertyEditorRegistrars">-->
+<!--			<bean class="org.springframework.mytest.expand.editor.AddressPropertyEditorRegistrar" />-->
+<!--		</property>-->
+		<property name="customEditors">
+			<map>
+				<entry key="org.springframework.mytest.bean.Address" value="org.springframework.mytest.expand.editor.AddressPropertyEditor"/>
+			</map>
+		</property>
+	</bean>
+
+</beans>

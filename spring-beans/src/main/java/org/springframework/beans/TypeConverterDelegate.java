@@ -115,6 +115,7 @@ class TypeConverterDelegate {
 	public <T> T convertIfNecessary(@Nullable String propertyName, @Nullable Object oldValue, @Nullable Object newValue,
 			@Nullable Class<T> requiredType, @Nullable TypeDescriptor typeDescriptor) throws IllegalArgumentException {
 
+		// 根据属性类型，尝试获取对应的自定义编辑器
 		// Custom editor for this type?
 		PropertyEditor editor = this.propertyEditorRegistry.findCustomEditor(requiredType, propertyName);
 
@@ -152,6 +153,7 @@ class TypeConverterDelegate {
 			if (editor == null) {
 				editor = findDefaultEditor(requiredType);
 			}
+			// 能正常拿到对应的自定义属性编辑器的话，尝试解析得到结果
 			convertedValue = doConvertValue(oldValue, convertedValue, requiredType, editor);
 		}
 
@@ -319,6 +321,7 @@ class TypeConverterDelegate {
 			}
 		}
 
+		// 返回解析得到的属性结果
 		return convertedValue;
 	}
 	/**
@@ -363,6 +366,7 @@ class TypeConverterDelegate {
 			// we just want to allow special PropertyEditors to override setValue
 			// for type conversion from non-String values to the required type.
 			try {
+				// 先设置旧值
 				editor.setValue(convertedValue);
 				Object newConvertedValue = editor.getValue();
 				if (newConvertedValue != convertedValue) {
@@ -393,12 +397,14 @@ class TypeConverterDelegate {
 		}
 
 		if (convertedValue instanceof String) {
+			// 判断如果属性编辑器不为空，调用处理
 			if (editor != null) {
 				// Use PropertyEditor's setAsText in case of a String value.
 				if (logger.isTraceEnabled()) {
 					logger.trace("Converting String to [" + requiredType + "] using property editor [" + editor + "]");
 				}
 				String newTextValue = (String) convertedValue;
+				// 返回属性编辑器处理后的结果
 				return doConvertTextValue(oldValue, newTextValue, editor);
 			}
 			else if (String.class == requiredType) {
@@ -418,6 +424,7 @@ class TypeConverterDelegate {
 	 */
 	private Object doConvertTextValue(@Nullable Object oldValue, String newTextValue, PropertyEditor editor) {
 		try {
+			// 编辑器设置旧值
 			editor.setValue(oldValue);
 		}
 		catch (Exception ex) {
@@ -426,7 +433,9 @@ class TypeConverterDelegate {
 			}
 			// Swallow and proceed.
 		}
+		// 调用 setAsText，调用到属性编辑器的自定义处理逻辑
 		editor.setAsText(newTextValue);
+		// 返回从属性编辑器获取的值
 		return editor.getValue();
 	}
 

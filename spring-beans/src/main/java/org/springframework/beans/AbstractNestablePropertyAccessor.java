@@ -118,6 +118,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	 * @param object the object wrapped by this accessor
 	 */
 	protected AbstractNestablePropertyAccessor(Object object) {
+		// 设置 defaultEditorsActive = true
 		registerDefaultEditors();
 		setWrappedInstance(object);
 	}
@@ -604,7 +605,8 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			throws TypeMismatchException {
 
 		Assert.state(this.typeConverterDelegate != null, "No TypeConverterDelegate");
-		try {  // 转换
+		try {
+			// 进行属性的转换覆盖
 			return this.typeConverterDelegate.convertIfNecessary(propertyName, oldValue, newValue, requiredType, td);
 		}
 		catch (ConverterNotFoundException | IllegalStateException ex) {
@@ -624,6 +626,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 			String propertyName, @Nullable Object oldValue, @Nullable Object newValue, TypeDescriptor td)
 			throws TypeMismatchException {
 
+		// 进行尝试解析覆盖
 		return convertIfNecessary(propertyName, oldValue, newValue, td.getType(), td);
 	}
 

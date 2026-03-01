@@ -150,10 +150,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 	// 自定义属性编辑注册器
 	// 在refresh的prepareBeanFactory的时候，添加进来一个 ResourceEditorRegistrar
-	// todo 后边创建bw的时候应该是需要用到的
+	// 扫描到 CustomEditorConfigurer 这种 bfpp 的时候，会将属性 propertyEditorRegistrars 中的所有自定义属性编辑注册器
+	// 添加到这里进来，后边 bw 在创建的时候，会拿到这里所有的自定义注册器，进行处理添加到自己中
 	/** Custom PropertyEditorRegistrars to apply to the beans of this factory. */
 	private final Set<PropertyEditorRegistrar> propertyEditorRegistrars = new LinkedHashSet<>(4);
 
+	// 也是从 CustomEditorConfigurer 这个 bfpp 来
 	/** Custom PropertyEditors to apply to the beans of this factory. */
 	private final Map<Class<?>, Class<? extends PropertyEditor>> customEditors = new HashMap<>(4);
 
@@ -1403,6 +1405,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		return beanName;
 	}
 
+	// 初始化 bw 对象的属性编辑器，包括自定义的编辑器
 	/**
 	 * Initialize the given BeanWrapper with the custom editors registered
 	 * with this factory. To be called for BeanWrappers that will create
@@ -1412,10 +1415,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @param bw the BeanWrapper to initialize
 	 */
 	protected void initBeanWrapper(BeanWrapper bw) {
+		// 设置 conversionService 对象
 		bw.setConversionService(getConversionService());
+		// 注册属性编辑器
 		registerCustomEditors(bw);
 	}
 
+	// 给 属性编辑器对象（一般是 bw）设置上默认和自定义的属性编辑器
 	/**
 	 * Initialize the given PropertyEditorRegistry with the custom editors
 	 * that have been registered with this BeanFactory.
@@ -1428,11 +1434,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		if (registry instanceof PropertyEditorRegistrySupport) {
 			((PropertyEditorRegistrySupport) registry).useConfigValueEditors();
 		}
+		// 判断如果 propertyEditorRegistrars 属性编辑注册器不为空，则添加
 		if (!this.propertyEditorRegistrars.isEmpty()) {
 			// 默认这个 propertyEditorRegistrars 中会有 ResourceEditorRegistrar
 			for (PropertyEditorRegistrar registrar : this.propertyEditorRegistrars) {
 				try {
-					// 进行注册
+					// 则依次遍历调用注册器的 registerCustomEditors 方法，进行注册自定义的编辑器
+					// 即添加自定义编辑器到 registry 中
+					// 这里有一个好处，就是一个 registrar 中可以注册多对属性编辑器，只需要在 registrar 这个注册器中注册多对即可
 					registrar.registerCustomEditors(registry);
 				}
 				catch (BeanCreationException ex) {
@@ -1454,6 +1463,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 			}
 		}
+		// 如果有自定义的属性编辑器，也同样进行注册
 		if (!this.customEditors.isEmpty()) {
 			this.customEditors.forEach((requiredType, editorClass) ->
 					registry.registerCustomEditor(requiredType, BeanUtils.instantiateClass(editorClass)));

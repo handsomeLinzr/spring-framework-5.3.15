@@ -114,6 +114,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	@Nullable
 	private Map<Class<?>, PropertyEditor> overriddenDefaultEditors;
 
+	// 自定义的属性类型和对应的属性编辑器对象
 	@Nullable
 	private Map<Class<?>, PropertyEditor> customEditors;
 
@@ -297,8 +298,10 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	// Management of custom editors
 	//---------------------------------------------------------------------
 
+	// 注册自定义属性编辑器
 	@Override
 	public void registerCustomEditor(Class<?> requiredType, PropertyEditor propertyEditor) {
+		// 注册自定义属性编辑器，记录编辑的属性类型和对应的属性编辑器对象
 		registerCustomEditor(requiredType, null, propertyEditor);
 	}
 
@@ -314,9 +317,11 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 			this.customEditorsForPath.put(propertyPath, new CustomEditorHolder(propertyEditor, requiredType));
 		}
 		else {
+			// 初始化 customEditors 成一个 LinkedHashMap
 			if (this.customEditors == null) {
 				this.customEditors = new LinkedHashMap<>(16);
 			}
+			// 往 customEditors 中添加类型和编辑器对象
 			this.customEditors.put(requiredType, propertyEditor);
 			this.customEditorCache = null;
 		}
@@ -327,6 +332,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	public PropertyEditor findCustomEditor(@Nullable Class<?> requiredType, @Nullable String propertyPath) {
 		Class<?> requiredTypeToUse = requiredType;
 		if (propertyPath != null) {
+			// 一般 customEditorsForPath 不配置，是空的，不走这里
 			if (this.customEditorsForPath != null) {
 				// Check property-specific editor first.
 				PropertyEditor editor = getCustomEditor(propertyPath, requiredType);
@@ -346,6 +352,7 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 				requiredTypeToUse = getPropertyType(propertyPath);
 			}
 		}
+		// 正常情况都走这里，根据给定类型获取对应的自定义编辑器
 		// No property-specific editor -> check type-specific editor.
 		return getCustomEditor(requiredTypeToUse);
 	}
@@ -411,9 +418,11 @@ public class PropertyEditorRegistrySupport implements PropertyEditorRegistry {
 	 */
 	@Nullable
 	private PropertyEditor getCustomEditor(@Nullable Class<?> requiredType) {
+		// 如果没有配置 customEditors，则直接返回空
 		if (requiredType == null || this.customEditors == null) {
 			return null;
 		}
+		// 根据类型，获取对应的属性编辑器，并返回
 		// Check directly registered editor for type.
 		PropertyEditor editor = this.customEditors.get(requiredType);
 		if (editor == null) {

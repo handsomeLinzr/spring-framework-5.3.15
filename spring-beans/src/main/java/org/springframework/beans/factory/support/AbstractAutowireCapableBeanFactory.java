@@ -1529,6 +1529,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}
 			// 构建BW对象
 			BeanWrapper bw = new BeanWrapperImpl(beanInstance);
+			// 初始化 bw 对象，初始化属性编辑器
 			initBeanWrapper(bw);
 			return bw;
 		}
@@ -2038,7 +2039,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	private Object convertForProperty(
 			@Nullable Object value, String propertyName, BeanWrapper bw, TypeConverter converter) {
 
+		// 一般走这里，一般对应的 converter 就是 bean 的包装对象 bw
 		if (converter instanceof BeanWrapperImpl) {
+			// 进行属性的解析覆盖
 			return ((BeanWrapperImpl) converter).convertForProperty(value, propertyName);
 		}
 		else {
