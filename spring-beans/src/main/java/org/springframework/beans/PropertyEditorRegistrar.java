@@ -16,6 +16,7 @@
 
 package org.springframework.beans;
 
+// 用来注册属性编辑器的注册器接口
 /**
  * Interface for strategies that register custom
  * {@link java.beans.PropertyEditor property editors} with a

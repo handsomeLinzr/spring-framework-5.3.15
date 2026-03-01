@@ -2,11 +2,7 @@ package org.springframework.mytest.expand.editor;
 
 import org.springframework.beans.PropertyEditorRegistrar;
 import org.springframework.beans.PropertyEditorRegistry;
-import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.mytest.bean.Address;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 /**
  *

@@ -25,6 +25,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.ConverterRegistry;
 import org.springframework.lang.Nullable;
 
+// 默认的转换服务
 /**
  * A specialization of {@link GenericConversionService} configured by default
  * with converters appropriate for most environments.

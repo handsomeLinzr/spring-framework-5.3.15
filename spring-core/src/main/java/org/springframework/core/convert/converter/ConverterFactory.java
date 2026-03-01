@@ -16,6 +16,9 @@
 
 package org.springframework.core.convert.converter;
 
+// 范围装换器工厂
+// 可将 S 转为 R 的子类
+// 实现类可以额外实现接口 ConditionalConverter
 /**
  * A factory for "ranged" converters that can convert objects from S to subtypes of R.
  *
