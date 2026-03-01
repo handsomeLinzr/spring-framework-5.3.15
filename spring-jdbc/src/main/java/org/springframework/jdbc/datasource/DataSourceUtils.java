@@ -77,7 +77,7 @@ public abstract class DataSourceUtils {
 	 */
 	public static Connection getConnection(DataSource dataSource) throws CannotGetJdbcConnectionException {
 		try {
-			// 从数据源中获取连接
+			// 从数据源中获取连接，最后会调用到 TransactionSynchronizationManager.resources 这个 threadLocal 中获取
 			return doGetConnection(dataSource);
 		}
 		catch (SQLException ex) {
@@ -262,6 +262,7 @@ public abstract class DataSourceUtils {
 		Assert.notNull(con, "No Connection specified");
 		boolean debugEnabled = logger.isDebugEnabled();
 		try {
+			// 重置隔离级别设置
 			// Reset transaction isolation to previous value, if changed for the transaction.
 			if (previousIsolationLevel != null) {
 				if (debugEnabled) {
@@ -271,6 +272,7 @@ public abstract class DataSourceUtils {
 				con.setTransactionIsolation(previousIsolationLevel);
 			}
 
+			// 重置只读设置
 			// Reset read-only flag if we originally switched it to true on transaction begin.
 			if (resetReadOnly) {
 				if (debugEnabled) {
@@ -383,7 +385,7 @@ public abstract class DataSourceUtils {
 	 */
 	public static void releaseConnection(@Nullable Connection con, @Nullable DataSource dataSource) {
 		try {
-			// 执行完毕后，连接释放
+			// 执行完毕后，连接释放，回收
 			doReleaseConnection(con, dataSource);
 		}
 		catch (SQLException ex) {
@@ -414,14 +416,15 @@ public abstract class DataSourceUtils {
 			// 如果有数据源
 			// 先从当前线程的事务中获取连接器
 			ConnectionHolder conHolder = (ConnectionHolder) TransactionSynchronizationManager.getResource(dataSource);
-			// 判断如果当前线程的连接器中的连接，就是当前这个连接，则进行释放
+			// 判断如果当前线程中还能拿到这个 conHolder，则说明还有线程的其他地方用到这个连接，还不能直接释放
 			if (conHolder != null && connectionEquals(conHolder, con)) {
+				// 调用 holder 的 released 方法自定自定义处理，但是不要关闭和释放
 				// It's the transactional Connection: Don't close it.
 				conHolder.released();
 				return;
 			}
 		}
-		// 如果没有数据源，则进行关闭连接
+		// conHolder 为null，表示在当前线程，dataSource 没有绑定连接了，所以可以释放这个连接回到 dataSource 了
 		doCloseConnection(con, dataSource);
 	}
 
@@ -435,7 +438,7 @@ public abstract class DataSourceUtils {
 	 */
 	public static void doCloseConnection(Connection con, @Nullable DataSource dataSource) throws SQLException {
 		if (!(dataSource instanceof SmartDataSource) || ((SmartDataSource) dataSource).shouldClose(con)) {
-			// 连接关闭
+			// 调用 con 连接的具体关闭方法，可能是直接方法，也可能是放回连接池
 			con.close();
 		}
 	}

@@ -47,6 +47,7 @@
 	<tx:advice id="myAdvice" transaction-manager="transactionManager">
 		<tx:attributes>
 			<tx:method name="update" propagation="REQUIRED" />
+			<tx:method name="updateOrderNoById" propagation="REQUIRED" />
 			<tx:method name="getOrder" read-only="true" />
 		</tx:attributes>
 	</tx:advice>

@@ -421,19 +421,25 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 
 	@Override
 	protected void doCleanupAfterCompletion(Object transaction) {
+		// 强转
 		DataSourceTransactionObject txObject = (DataSourceTransactionObject) transaction;
 
+		// 判断如果是一个新连接
 		// Remove the connection holder from the thread, if exposed.
 		if (txObject.isNewConnectionHolder()) {
+			// 解绑 resources，即解绑对应的数据源和连接
 			TransactionSynchronizationManager.unbindResource(obtainDataSource());
 		}
 
+		// 获取对应的连接
 		// Reset connection.
 		Connection con = txObject.getConnectionHolder().getConnection();
 		try {
+			// 重置自动提交状态设置
 			if (txObject.isMustRestoreAutoCommit()) {
 				con.setAutoCommit(true);
 			}
+			// 重置隔离级别和只读设置
 			DataSourceUtils.resetConnectionAfterTransaction(
 					con, txObject.getPreviousIsolationLevel(), txObject.isReadOnly());
 		}
@@ -441,13 +447,16 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 			logger.debug("Could not reset JDBC Connection after transaction", ex);
 		}
 
+		// 判断如果是一个新连接，回收连接
 		if (txObject.isNewConnectionHolder()) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Releasing JDBC Connection [" + con + "] after transaction");
 			}
+			// 回收连接
 			DataSourceUtils.releaseConnection(con, this.dataSource);
 		}
 
+		// 连接 holder 的状态清理和重置
 		txObject.getConnectionHolder().clear();
 	}
 

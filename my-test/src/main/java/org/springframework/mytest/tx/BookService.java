@@ -15,6 +15,7 @@ public class BookService {
 	public void update(int id, String orderNo, String name) {
 		bookDao.updateNameById(id, name);
 		bookDao.updateOrderNoById(id, orderNo);
+//		int i = 1 / 0;
 	}
 
 	public int insert(String orderNo, String name) {

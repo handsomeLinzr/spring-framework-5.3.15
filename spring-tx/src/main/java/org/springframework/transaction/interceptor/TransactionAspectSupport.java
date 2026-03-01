@@ -415,7 +415,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				throw ex;
 			}
 			finally {
-				// 清除事务信息
+				// 清除事务信，其实就是设置 TransactionInteger.transactionInfoHolder 还原为 oldTransactionInfo
 				cleanupTransactionInfo(txInfo);
 			}
 
@@ -427,7 +427,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 				}
 			}
 
-			// 提交事务
+			// 提交事务，回收连接
 			commitTransactionAfterReturning(txInfo);
 			return retVal;
 		}

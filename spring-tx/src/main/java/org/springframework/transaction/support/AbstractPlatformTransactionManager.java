@@ -435,7 +435,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		// 开启事务，这里只做了校验 txObj 是否有连接器，已经设置激活状态等
 		// 设置取消自动提交，设置提交恢复标识
 		doBegin(transaction, definition);
-		// 准备同步器
+		// 准备同步器，设置 TransactionSynchronizationManager 中的那几个线程绑定的变量
 		prepareSynchronization(status, definition);
 		// 返回 DefaultTransactionStatus
 		return status;
@@ -609,7 +609,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			TransactionSynchronizationManager.setCurrentTransactionReadOnly(definition.isReadOnly());
 			// 设置当前事务处理的名称，definition.getName() 调用到了 DelegatingTransactionAttribute.getName，返回的是方法标识
 			TransactionSynchronizationManager.setCurrentTransactionName(definition.getName());
-			// 激活事务同步器，其实就是给线程本地的事务同步器设置进一个 LinkHashSet 对象
+			// 激活事务同步器，其实就是给线程本地的事务同步器设置进一个空的 LinkHashSet 对象
 			TransactionSynchronizationManager.initSynchronization();
 		}
 	}
@@ -906,7 +906,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 
 		}
 		finally {
-			// 完成后清理数据
+			// 完成后清理数据，设置完成状态，清空 threadLocal，回收连接，恢复挂起事务
 			cleanupAfterCompletion(status);
 		}
 	}
@@ -1129,12 +1129,12 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		status.setCompleted();
 		// 如果当前事务状态是属于新的同步
 		if (status.isNewSynchronization()) {
-			// 清理
+			// 清理，清空那几个 threadLocal
 			TransactionSynchronizationManager.clear();
 		}
 		// 判断如果是一个新事务
 		if (status.isNewTransaction()) {
-			// 清理
+			// 清理所有所有的标记和重置状态，回收连接
 			doCleanupAfterCompletion(status.getTransaction());
 		}
 		// 如果当前事务状态中，有之前被挂起的事务
