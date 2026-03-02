@@ -189,8 +189,10 @@ public class GenericWebApplicationContext extends GenericApplicationContext
 	 */
 	@Override
 	protected void initPropertySources() {
-		ConfigurableEnvironment env = getEnvironment();   // 获取环境 StandardEnvironment
+		// 获取环境 StandardEnvironment
+		ConfigurableEnvironment env = getEnvironment();
 		if (env instanceof ConfigurableWebEnvironment) {
+			// 如果对应的环境对象属于 ConfigurableWebEnvironment 也就是 web 类型，调用 initPropertySources 进行初始化
 			((ConfigurableWebEnvironment) env).initPropertySources(this.servletContext, null);
 		}
 	}

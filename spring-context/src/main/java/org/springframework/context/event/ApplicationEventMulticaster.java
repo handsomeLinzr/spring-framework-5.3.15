@@ -106,6 +106,7 @@ public interface ApplicationEventMulticaster {
 	 */
 	void removeAllListeners();
 
+	// 将给定事件传播给合适的监听器
 	/**
 	 * Multicast the given application event to appropriate listeners.
 	 * <p>Consider using {@link #multicastEvent(ApplicationEvent, ResolvableType)}

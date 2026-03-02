@@ -30,6 +30,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 import org.springframework.web.context.ConfigurableWebEnvironment;
 
+// servlet-web 环境下默认生成的环境对象
 /**
  * {@link Environment} implementation to be used by {@code Servlet}-based web
  * applications. All web-related (servlet-based) {@code ApplicationContext} classes
@@ -46,6 +47,7 @@ import org.springframework.web.context.ConfigurableWebEnvironment;
  */
 public class StandardServletEnvironment extends StandardEnvironment implements ConfigurableWebEnvironment {
 
+	// 变量参数
 	/** Servlet context init parameters property source name: {@value}. */
 	public static final String SERVLET_CONTEXT_PROPERTY_SOURCE_NAME = "servletContextInitParams";
 
@@ -105,16 +107,26 @@ public class StandardServletEnvironment extends StandardEnvironment implements C
 	 */
 	@Override
 	protected void customizePropertySources(MutablePropertySources propertySources) {
+		// SERVLET_CONFIG_PROPERTY_SOURCE_NAME = servletConfigInitParams
+		// servlet 配置的初始化参数
+		// 创建对应的 StubPropertySource 添加到 propertySources 中
 		propertySources.addLast(new StubPropertySource(SERVLET_CONFIG_PROPERTY_SOURCE_NAME));
+
+		// SERVLET_CONTEXT_PROPERTY_SOURCE_NAME = servletContextInitParams
+		// servletContext 初始化参数
+		// 创建对应的 StubPropertySource 添加到 propertySources 中
 		propertySources.addLast(new StubPropertySource(SERVLET_CONTEXT_PROPERTY_SOURCE_NAME));
+		// jndi的情况，一般没有
 		if (jndiPresent && JndiLocatorDelegate.isDefaultJndiEnvironmentAvailable()) {
 			propertySources.addLast(new JndiPropertySource(JNDI_PROPERTY_SOURCE_NAME));
 		}
+		// 调用 customizePropertySources 继续处理系统变量
 		super.customizePropertySources(propertySources);
 	}
 
 	@Override
 	public void initPropertySources(@Nullable ServletContext servletContext, @Nullable ServletConfig servletConfig) {
+		// getPropertySources() 系统和环境变量的属性配置
 		WebApplicationContextUtils.initServletPropertySources(getPropertySources(), servletContext, servletConfig);
 	}
 

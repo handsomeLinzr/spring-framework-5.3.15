@@ -47,6 +47,7 @@ public interface GenericApplicationListener extends SmartApplicationListener {
 		return supportsEventType(ResolvableType.forClass(eventType));
 	}
 
+	// 判断监听器是否支持匹配对应的事件类型
 	/**
 	 * Determine whether this listener actually supports the given event type.
 	 * @param eventType the event type (never {@code null})

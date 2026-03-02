@@ -67,20 +67,28 @@ public class GenericApplicationListenerAdapter implements GenericApplicationList
 	@Override
 	@SuppressWarnings("unchecked")
 	public boolean supportsEventType(ResolvableType eventType) {
+		// 判断如果包装的目标监听器属于 GenericApplicationListener 类型，直接调用 supportsEventType
 		if (this.delegate instanceof GenericApplicationListener) {
 			return ((GenericApplicationListener) this.delegate).supportsEventType(eventType);
 		}
+		// 如果是属于 SmartApplicationListener 类型
 		else if (this.delegate instanceof SmartApplicationListener) {
+			// 获取事件类型
 			Class<? extends ApplicationEvent> eventClass = (Class<? extends ApplicationEvent>) eventType.resolve();
+			// 调用 supportsEventType
 			return (eventClass != null && ((SmartApplicationListener) this.delegate).supportsEventType(eventClass));
 		}
 		else {
+			// 如果没有特殊情况，普通的 ApplicationListener，走的这里，declaredEventType 默认都是空的，返回 true
 			return (this.declaredEventType == null || this.declaredEventType.isAssignableFrom(eventType));
 		}
 	}
 
+	// 判断是否支持事件源类型
 	@Override
 	public boolean supportsSourceType(@Nullable Class<?> sourceType) {
+		// 如果属于 SmartApplicationListener 类型，调用 supportsSourceType 方法
+		// 如果没有特殊情况，ApplicationListener 不属于 SmartApplicationListener，则返回 true
 		return !(this.delegate instanceof SmartApplicationListener) ||
 				((SmartApplicationListener) this.delegate).supportsSourceType(sourceType);
 	}

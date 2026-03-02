@@ -41,6 +41,7 @@ import org.springframework.lang.Nullable;
  */
 public class MutablePropertySources implements PropertySources {
 
+	// 当前环境对象中，所有的配置信息都记录在这里
 	private final List<PropertySource<?>> propertySourceList = new CopyOnWriteArrayList<>();
 
 

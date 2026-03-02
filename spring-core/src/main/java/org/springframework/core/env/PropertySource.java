@@ -61,6 +61,7 @@ public abstract class PropertySource<T> {
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	// 配置的名称
 	protected final String name;
 
 	protected final T source;

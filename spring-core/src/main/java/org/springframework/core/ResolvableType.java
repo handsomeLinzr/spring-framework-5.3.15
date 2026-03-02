@@ -1098,6 +1098,8 @@ public class ResolvableType implements Serializable {
 		return forType(syntheticType, new TypeVariablesVariableResolver(variables, generics));
 	}
 
+	// 返回给定实例的 ResolvableType
+	// 该方法不传递泛型信息
 	/**
 	 * Return a {@link ResolvableType} for the specified instance. The instance does not
 	 * convey generic information but if it implements {@link ResolvableTypeProvider} a
@@ -1111,11 +1113,15 @@ public class ResolvableType implements Serializable {
 	public static ResolvableType forInstance(Object instance) {
 		Assert.notNull(instance, "Instance must not be null");
 		if (instance instanceof ResolvableTypeProvider) {
+			// 如果该实例属于 ResolvableTypeProvider 类型，则直接强转并调用方法 getResolvableType
+			// 得到对应的 ResolvableType 对象
 			ResolvableType type = ((ResolvableTypeProvider) instance).getResolvableType();
 			if (type != null) {
 				return type;
 			}
 		}
+		// 否则调用 ResolvableType.forClass 方法
+		// 返回 ResolvableType 对象，封装了实例对应的 Class 类型
 		return ResolvableType.forClass(instance.getClass());
 	}
 
