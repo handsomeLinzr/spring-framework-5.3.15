@@ -177,6 +177,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 	private TransactionManager transactionManager;
 
 	// 默认是  NameMatchTransactionAttributeSource
+	// 注解的情况是 BeanFactoryTransactionAttributeSourceAdvisor
 	@Nullable
 	private TransactionAttributeSource transactionAttributeSource;
 

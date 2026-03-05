@@ -65,10 +65,14 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * through {@link #register} calls and then manually {@linkplain #refresh refreshed}.
 	 */
 	public AnnotationConfigApplicationContext() {
-		StartupStep createAnnotatedBeanDefReader = this.getApplicationStartup().start("spring.context.annotated-bean-reader.create"); // DefaultStartupStep
-		this.reader = new AnnotatedBeanDefinitionReader(this);  // 注册一系列的默认 BFPP，注册到容器 beanDefinitionMap中
-		createAnnotatedBeanDefReader.end();  // 空实现
-		this.scanner = new ClassPathBeanDefinitionScanner(this);  // 设置classPath路径扫描器
+		// DefaultStartupStep
+		StartupStep createAnnotatedBeanDefReader = this.getApplicationStartup().start("spring.context.annotated-bean-reader.create");
+		// 注册一系列的默认 BFPP，注册到容器 beanDefinitionMap中
+		this.reader = new AnnotatedBeanDefinitionReader(this);
+		// 空实现
+		createAnnotatedBeanDefReader.end();
+		// 设置classPath路径扫描器
+		this.scanner = new ClassPathBeanDefinitionScanner(this);
 	}
 
 	/**
@@ -167,8 +171,10 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	public void register(Class<?>... componentClasses) {
 		Assert.notEmpty(componentClasses, "At least one component class must be specified");
 		StartupStep registerComponentClass = this.getApplicationStartup().start("spring.context.component-classes.register")
-				.tag("classes", () -> Arrays.toString(componentClasses));   // 返回 DefaultStartupStep
-		this.reader.register(componentClasses);   // 在无参构造函数中已经初始化了，reader = AnnotatedBeanDefinitionReader
+				// 返回 DefaultStartupStep
+				.tag("classes", () -> Arrays.toString(componentClasses));
+		// 在无参构造函数中已经初始化了，reader = AnnotatedBeanDefinitionReader
+		this.reader.register(componentClasses);
 		registerComponentClass.end();
 	}
 

@@ -83,9 +83,12 @@ public class AnnotatedBeanDefinitionReader {
 	public AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry, Environment environment) {
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 		Assert.notNull(environment, "Environment must not be null");
-		this.registry = registry; // AnnotatilConfigApplicationContext
+		// AnnotatilConfigApplicationContext
+		this.registry = registry;
+		// condition 条件解析器
 		this.conditionEvaluator = new ConditionEvaluator(registry, environment, null);
-		AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);  // 注册注册器，注册默认那些 BFPP
+		// 注册注册器，注册默认那些 BFPP
+		AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);
 	}
 
 

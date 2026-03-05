@@ -6,6 +6,7 @@ import org.springframework.mytest.bean.Bean1;
 import org.springframework.mytest.bean.Bean5;
 import org.springframework.mytest.bean.aop.MyCalculate;
 import org.springframework.mytest.tx.BookService;
+import org.springframework.mytest.tx.TxConfig;
 
 /**
  * @author linzherong
@@ -14,7 +15,7 @@ import org.springframework.mytest.tx.BookService;
 public class MyTest {
 
 	public static void main(String[] args) {
-		customPropertyEdit();
+		txAnno();
 	}
 
 
@@ -51,6 +52,13 @@ public class MyTest {
 		Bean5 bean5 = ac.getBean(Bean5.class);
 		System.out.println(bean5.getAddress());
 //		bookService.update(1, "20260210001", "故事书籍2");
+	}
+
+	public static void txAnno() {
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(TxConfig.class);
+		BookService bean = context.getBean(BookService.class);
+		bean.update(1,"100000000 ", "一个亿");
+
 	}
 
 

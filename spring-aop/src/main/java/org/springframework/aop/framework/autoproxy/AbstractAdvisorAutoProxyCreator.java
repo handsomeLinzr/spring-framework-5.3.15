@@ -143,6 +143,7 @@ public abstract class AbstractAdvisorAutoProxyCreator extends AbstractAutoProxyC
 			// 匹配的重点，查找能匹配上的 advisor
 			// 逻辑上会通过拆分成先 class 后 method 进行匹配，具体逻辑太复杂暂时没理清
 			// 可先跳过
+			// 注解的情况，这里可以会拿到所有方法，获取到方法上的 Transaction 注解，并进行缓存到 BeanFactoryTransactionAttributeSourceAdvisor
 			return AopUtils.findAdvisorsThatCanApply(candidateAdvisors, beanClass);
 		}
 		finally {

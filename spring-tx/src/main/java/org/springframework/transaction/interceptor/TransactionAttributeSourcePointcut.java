@@ -41,9 +41,12 @@ abstract class TransactionAttributeSourcePointcut extends StaticMethodMatcherPoi
 	}
 
 
+	// 进行方法上事务注解的处理
 	@Override
 	public boolean matches(Method method, Class<?> targetClass) {
+		// 事务的情况，得到的是 BeanFactoryTransactionAttributeSourceAdvisor
 		TransactionAttributeSource tas = getTransactionAttributeSource();
+		// 对方法上事务注解进行处理
 		return (tas == null || tas.getTransactionAttribute(method, targetClass) != null);
 	}
 

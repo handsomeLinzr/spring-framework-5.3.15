@@ -266,6 +266,7 @@ public abstract class AopUtils {
 						// 方法匹配，如果匹配成功返回 true，否则返回 false
 						// 一般这里 introductionAwareMethodMatcher 就是 AspectJExpressionPointcut
 						introductionAwareMethodMatcher.matches(method, targetClass, hasIntroductions) :
+						// 对方法上的事务注解进行扫描 TransactionAttributeSourcePointcut
 						methodMatcher.matches(method, targetClass)) {
 					return true;
 				}
@@ -307,6 +308,7 @@ public abstract class AopUtils {
 		// 如果是 PointcutAdvisor，则调用 canApply 匹配判断
 		else if (advisor instanceof PointcutAdvisor) {
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
+			// 注解的情况，进行方法扫描事务注解
 			return canApply(pca.getPointcut(), targetClass, hasIntroductions);
 		}
 		else {

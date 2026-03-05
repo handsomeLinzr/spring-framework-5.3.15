@@ -54,6 +54,7 @@ import org.springframework.util.StringValueResolver;
 public abstract class AbstractFallbackTransactionAttributeSource
 		implements TransactionAttributeSource, EmbeddedValueResolverAware {
 
+	// 表示没有事务注解
 	/**
 	 * Canonical value held in cache to indicate no transaction attribute was
 	 * found for this method, and we don't need to look again.
@@ -106,29 +107,41 @@ public abstract class AbstractFallbackTransactionAttributeSource
 			return null;
 		}
 
+		// 通过方法和类，封装缓存 key
 		// First, see if we have a cached value.
 		Object cacheKey = getCacheKey(method, targetClass);
+		// 先从 attributeCache 中获取缓存
 		TransactionAttribute cached = this.attributeCache.get(cacheKey);
+		// 如果已经有缓存了
 		if (cached != null) {
 			// Value will either be canonical value indicating there is no transaction attribute,
 			// or an actual transaction attribute.
 			if (cached == NULL_TRANSACTION_ATTRIBUTE) {
+				// 如果得到的缓存是 没有事务注解，返回 null
 				return null;
 			}
 			else {
+				// 否则返回对应的缓存对象
 				return cached;
 			}
 		}
 		else {
+			// 如果拿不到缓存，默认第一次都是没有的
 			// We need to work it out.
+			// 尝试获取方法上的事务注解
 			TransactionAttribute txAttr = computeTransactionAttribute(method, targetClass);
 			// Put it in the cache.
 			if (txAttr == null) {
+				// 如果方法上没有事务注解，则缓存对应的 NULL_TRANSACTION_ATTRIBUTE，表示方法上没有事务
 				this.attributeCache.put(cacheKey, NULL_TRANSACTION_ATTRIBUTE);
 			}
 			else {
+				// 否则，有事务的情况
+				// 获取方法的签名标识
 				String methodIdentification = ClassUtils.getQualifiedMethodName(method, targetClass);
+				// 如果 txAttr 属于 DefaultTransactionAttribute 类型
 				if (txAttr instanceof DefaultTransactionAttribute) {
+					// 设置，默认没有
 					DefaultTransactionAttribute dta = (DefaultTransactionAttribute) txAttr;
 					dta.setDescriptor(methodIdentification);
 					dta.resolveAttributeStrings(this.embeddedValueResolver);
@@ -136,8 +149,10 @@ public abstract class AbstractFallbackTransactionAttributeSource
 				if (logger.isTraceEnabled()) {
 					logger.trace("Adding transactional method '" + methodIdentification + "' with attribute: " + txAttr);
 				}
+				// 添加到缓存中
 				this.attributeCache.put(cacheKey, txAttr);
 			}
+			// 返回对应的事务属性
 			return txAttr;
 		}
 	}
@@ -163,40 +178,54 @@ public abstract class AbstractFallbackTransactionAttributeSource
 	 */
 	@Nullable
 	protected TransactionAttribute computeTransactionAttribute(Method method, @Nullable Class<?> targetClass) {
+		// 默认 allowPublicMethodsOnly = true
 		// Don't allow non-public methods, as configured.
 		if (allowPublicMethodsOnly() && !Modifier.isPublic(method.getModifiers())) {
+			// Modifier.isPublic(method.getModifiers()) 返回 method 的修饰符是否是 public
+			// 如果不是，则返回 null，事务对于非 public 方法无效
 			return null;
 		}
 
 		// The method may be on an interface, but we need attributes from the target class.
 		// If the target class is null, the method will be unchanged.
+		// 获取方法
 		Method specificMethod = AopUtils.getMostSpecificMethod(method, targetClass);
 
+		// 从方法上尝试获取 Transaction 注解
 		// First try is the method in the target class.
 		TransactionAttribute txAttr = findTransactionAttribute(specificMethod);
+		// 如果能获取，得到注解属性，直接返回
 		if (txAttr != null) {
 			return txAttr;
 		}
 
 		// Second try is the transaction attribute on the target class.
+		// 从方法对应的类上尝试获取 Transaction 注解
 		txAttr = findTransactionAttribute(specificMethod.getDeclaringClass());
 		if (txAttr != null && ClassUtils.isUserLevelMethod(method)) {
+			// 如果能获取到注解属性，且方法属于用户级别，即方法不是合成的方法，返回对应的事务属性
 			return txAttr;
 		}
 
+		// 判断如果得到的方法，和原先传入的方法不一样
 		if (specificMethod != method) {
+			// 最后再兜底去查找原方法，获取事务注解属性
 			// Fallback is to look at the original method.
 			txAttr = findTransactionAttribute(method);
 			if (txAttr != null) {
+				// 如果能得到，返回事务属性
 				return txAttr;
 			}
+			// 最后再获取原方法的类，获取事务属性
 			// Last fallback is the class of the original method.
 			txAttr = findTransactionAttribute(method.getDeclaringClass());
 			if (txAttr != null && ClassUtils.isUserLevelMethod(method)) {
+				// 同样的，如果事务属性不为空，且方法不是合成是，是普通方法，返回事务属性
 				return txAttr;
 			}
 		}
 
+		// 否则，说明没有事务属性，也就是没有 Transaction 注解，返回 null
 		return null;
 	}
 

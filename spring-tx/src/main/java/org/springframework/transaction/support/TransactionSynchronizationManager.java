@@ -79,7 +79,8 @@ public abstract class TransactionSynchronizationManager {
 	private static final ThreadLocal<Map<Object, Object>> resources =
 			new NamedThreadLocal<>("Transactional resources");
 
-	// 线程事务同步器
+	// 线程事务同步器，事务的扩展点，可以通过注册到 synchronizations 中的事件，在特定时期做
+	// 回调方法
 	private static final ThreadLocal<Set<TransactionSynchronization>> synchronizations =
 			new NamedThreadLocal<>("Transaction synchronizations");
 

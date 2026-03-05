@@ -382,7 +382,8 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 					"No existing transaction found for transaction marked with propagation 'mandatory'");
 		}
 		// 判断是否是 REQUIRED、REQUIRES_NEW、NESTED
-		// 这三种都是支持事务，没有事务则新增事务
+		// 这三种都是支持事务
+		// 走到这里逻辑，说明当前还没有事务，所以需要挂起空事务，新建新事务
 		else if (def.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRED ||
 				def.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW ||
 				def.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) {

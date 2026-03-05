@@ -2,6 +2,11 @@ description = "My Test"
 
 apply plugin: "java-library"
 
+task run(type: JavaExec, dependsOn: classes) {
+	mainClass = "org.springframework.mytest.MyTest"
+	classpath = sourceSets.main.runtimeClasspath
+}
+
 dependencies {
 	api(project(":spring-context"))
 	api(project(":spring-jdbc"))

@@ -20,6 +20,7 @@ import java.io.Flushable;
 
 import org.springframework.core.Ordered;
 
+// 事务同步回调接口
 /**
  * Interface for transaction synchronization callbacks.
  * Supported by AbstractPlatformTransactionManager.
@@ -63,7 +64,7 @@ public interface TransactionSynchronization extends Ordered, Flushable {
 		return Ordered.LOWEST_PRECEDENCE;
 	}
 
-	// 挂起事务同步器
+	// 挂起
 	/**
 	 * Suspend this synchronization.
 	 * Supposed to unbind resources from TransactionSynchronizationManager if managing any.
