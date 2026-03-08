@@ -232,7 +232,7 @@ public abstract class AbstractApplicationEventMulticaster
 			// Proceed like caching wasn't possible for this current local attempt.
 		}
 
-		// 返回，默认先走到这类
+		// 返回，默认先走到这里
 		return retrieveApplicationListeners(eventType, sourceType, newRetriever);
 	}
 
@@ -266,6 +266,7 @@ public abstract class AbstractApplicationEventMulticaster
 		// from ApplicationListenerDetector (singleton beans and inner beans).
 		for (ApplicationListener<?> listener : listeners) {
 			// 判断是否匹配上 eventType 事件类型和 sourceType 事件源类型
+			// 其实就是检查 listener 对应定义时的泛型，能否和 eventType 匹配上，并且源能否匹配上
 			if (supportsEvent(listener, eventType, sourceType)) {
 				if (retriever != null) {
 					filteredListeners.add(listener);

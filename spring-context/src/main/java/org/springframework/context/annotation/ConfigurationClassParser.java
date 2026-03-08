@@ -139,7 +139,7 @@ class ConfigurationClassParser {
 
 	private final ConditionEvaluator conditionEvaluator;
 
-	// 存放解析出来的自己类信息
+	// 存放从配置文件解析出来的 bd 信息
 	private final Map<ConfigurationClass, ConfigurationClass> configurationClasses = new LinkedHashMap<>();
     // 父类指向子类的bd
 	private final Map<String, ConfigurationClass> knownSuperclasses = new HashMap<>();

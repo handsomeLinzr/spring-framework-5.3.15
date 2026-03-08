@@ -307,6 +307,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	 */
 	public void setAutowireCandidateResolver(AutowireCandidateResolver autowireCandidateResolver) {
 		Assert.notNull(autowireCandidateResolver, "AutowireCandidateResolver must not be null");
+		// ContextAnnotationAutowireCandidateResolver 属于 BeanFactoryAware，这里是 true
 		if (autowireCandidateResolver instanceof BeanFactoryAware) {
 			if (System.getSecurityManager() != null) {
 				AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
@@ -315,6 +316,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				}, getAccessControlContext());
 			}
 			else {
+				// 设置 beanFactory，设置为 this，也就是自己
 				((BeanFactoryAware) autowireCandidateResolver).setBeanFactory(this);
 			}
 		}
@@ -1037,6 +1039,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	// Implementation of BeanDefinitionRegistry interface
 	//---------------------------------------------------------------------
 
+	// 注册 bd，会有一个优先级覆盖的逻辑
 	@Override
 	public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
 			throws BeanDefinitionStoreException {
@@ -1055,12 +1058,16 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 		}
 
-		// 从 bdm中拿，第一次是空的
+		// 从 bdm中拿，第一次是空的，正常走这里 existingDefinition = null
 		BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
 		if (existingDefinition != null) {
+			// 如果 existingDefinition 不为空，则说明已经有了这个 bd，在其他地方定义的
 			if (!isAllowBeanDefinitionOverriding()) {
+				// 判断是否允许 bd 的重载，如果不允许，则抛出异常，默认是 true
 				throw new BeanDefinitionOverrideException(beanName, beanDefinition, existingDefinition);
 			}
+			// 将已经存在的 bd 的角色值，和当前要进行注册的 bd 的角色值进行比较
+			// 进行日志打印
 			else if (existingDefinition.getRole() < beanDefinition.getRole()) {
 				// e.g. was ROLE_APPLICATION, now overriding with ROLE_SUPPORT or ROLE_INFRASTRUCTURE
 				if (logger.isInfoEnabled()) {
@@ -1083,6 +1090,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							"] with [" + beanDefinition + "]");
 				}
 			}
+			// 进行替换，后注册的覆盖前边的
 			this.beanDefinitionMap.put(beanName, beanDefinition);
 		}
 		else {

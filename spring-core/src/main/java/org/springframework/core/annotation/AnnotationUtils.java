@@ -165,7 +165,7 @@ public abstract class AnnotationUtils {
 	 * @see #isCandidateClass(Class, Class)
 	 */
 	public static boolean isCandidateClass(Class<?> clazz, String annotationName) {
-		// jdk 自带的注解，返回 true
+		// java 包下个注解，返回 true
 		if (annotationName.startsWith("java.")) {
 			return true;
 		}

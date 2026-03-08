@@ -48,13 +48,15 @@ import org.springframework.util.Assert;
  */
 public class AnnotatedBeanDefinitionReader {
 
-	private final BeanDefinitionRegistry registry; // AnnotationConfigApplicationContext
+	// AnnotationConfigApplicationContext
+	private final BeanDefinitionRegistry registry;
 
 	private BeanNameGenerator beanNameGenerator = AnnotationBeanNameGenerator.INSTANCE;
 
 	private ScopeMetadataResolver scopeMetadataResolver = new AnnotationScopeMetadataResolver();
 
-	private ConditionEvaluator conditionEvaluator;  // ConditionEvaluator
+	// ConditionEvaluator
+	private ConditionEvaluator conditionEvaluator;
 
 
 	/**
@@ -68,6 +70,8 @@ public class AnnotatedBeanDefinitionReader {
 	 * @see #setEnvironment(Environment)
 	 */
 	public AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry) {
+		// register = AnnotationConfigApplicationContext 也就是 application 对象
+		// getOrCreateEnvironment(registry) 获取当前的环境
 		this(registry, getOrCreateEnvironment(registry));
 	}
 
@@ -83,11 +87,11 @@ public class AnnotatedBeanDefinitionReader {
 	public AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry, Environment environment) {
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 		Assert.notNull(environment, "Environment must not be null");
-		// AnnotatilConfigApplicationContext
+		// AnnotationConfigApplicationContext
 		this.registry = registry;
 		// condition 条件解析器
 		this.conditionEvaluator = new ConditionEvaluator(registry, environment, null);
-		// 注册注册器，注册默认那些 BFPP
+		// 注册注册器，注册注解类 app 需要的那些 bfpp 和 bpp
 		AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);
 	}
 
@@ -295,7 +299,9 @@ public class AnnotatedBeanDefinitionReader {
 	 */
 	private static Environment getOrCreateEnvironment(BeanDefinitionRegistry registry) {
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
-		if (registry instanceof EnvironmentCapable) {  // true
+		// AnnotationConfigApplicationContext 属于 EnvironmentCapable，返回 true
+		if (registry instanceof EnvironmentCapable) {
+			// 强转后获取环境，如果没有会自动创建
 			return ((EnvironmentCapable) registry).getEnvironment();
 		}
 		return new StandardEnvironment();

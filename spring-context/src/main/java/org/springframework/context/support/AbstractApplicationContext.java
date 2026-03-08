@@ -343,7 +343,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	public ConfigurableEnvironment getEnvironment() {
 		if (this.environment == null) {
 			// 创建StandardEnvironment
-			this.environment = createEnvironment();  // StandardEnvironment
+			this.environment = createEnvironment();
 		}
 		return this.environment;
 	}
@@ -386,6 +386,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	@Override
 	public void publishEvent(ApplicationEvent event) {
+		// 发布事件
 		publishEvent(event, null);
 	}
 
@@ -415,20 +416,28 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// Decorate event as an ApplicationEvent if necessary
 		ApplicationEvent applicationEvent;
 		if (event instanceof ApplicationEvent) {
+			// 如果事件属于 ApplicationEvent，则直接强装
 			applicationEvent = (ApplicationEvent) event;
 		}
 		else {
+			// 如果事件不属于 ApplicationEvent 类型，属于普通的对象，则封装成 PayloadApplicationEvent 对象
 			applicationEvent = new PayloadApplicationEvent<>(this, event);
 			if (eventType == null) {
+				// 获取对应的事件类型，封装成 ResolvableType
 				eventType = ((PayloadApplicationEvent<?>) applicationEvent).getResolvableType();
 			}
 		}
 
 		// Multicast right now if possible - or lazily once the multicaster is initialized
 		if (this.earlyApplicationEvents != null) {
+			// 如果 earlyApplicationEvents 不为空，说明还没有调用 registerListeners 方法，注册监听器
+			// 所以此时先将发布的事件添加到 earlyApplicationEvents 中，后续等 registerListeners 注册监听器后再传播事件
 			this.earlyApplicationEvents.add(applicationEvent);
 		}
 		else {
+			// earlyApplicationEvents 未 null，说明已经调用了 registerListeners 注册了监听器
+			// 此时就可以调用多播器进行事件的传播发布
+			// 默认走这里
 			getApplicationEventMulticaster().multicastEvent(applicationEvent, eventType);
 		}
 
@@ -1004,11 +1013,15 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Publish early application events now that we finally have a multicaster...
-		// 最后
+		// 最后，获取 earlyApplicationEvents，这里存放的是早期，在多播器还未实例化的时候，如果发布了 event 事件，
+		// 由于此时还没有多播器对象可以进行事件的传播处理，所以都添加到了 earlyApplicationEvents 中。
+		// 这时候当注册了监听器后，可以对早期发布的事件进行处理了
 		Set<ApplicationEvent> earlyEventsToProcess = this.earlyApplicationEvents;
+		// 设置 earlyApplicationEvents = null，表示已经注册了监听器了，后边再有事件发布，可以进行多播器传播
 		this.earlyApplicationEvents = null;
 		if (!CollectionUtils.isEmpty(earlyEventsToProcess)) {
 			for (ApplicationEvent earlyEvent : earlyEventsToProcess) {
+				// 多播器传播事件
 				getApplicationEventMulticaster().multicastEvent(earlyEvent);
 			}
 		}

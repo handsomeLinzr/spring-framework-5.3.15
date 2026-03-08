@@ -1257,6 +1257,7 @@ public class ResolvableType implements Serializable {
 		return forMethodParameter(methodParameter);
 	}
 
+	// 返回给定方法的对应位置的参数
 	/**
 	 * Return a {@link ResolvableType} for the specified {@link Method} parameter.
 	 * @param method the source method (must not be {@code null})

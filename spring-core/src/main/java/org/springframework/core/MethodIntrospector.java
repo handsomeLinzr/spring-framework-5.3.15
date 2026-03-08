@@ -44,6 +44,7 @@ public final class MethodIntrospector {
 	}
 
 
+	// 根据相关目标类元数据的的查找，选择给定目标类型上的方法
 	/**
 	 * Select methods on the given target type based on the lookup of associated metadata.
 	 * <p>Callers define methods of interest through the {@link MetadataLookup} parameter,
@@ -56,31 +57,51 @@ public final class MethodIntrospector {
 	 * or an empty map in case of no match
 	 */
 	public static <T> Map<Method, T> selectMethods(Class<?> targetType, final MetadataLookup<T> metadataLookup) {
+		// 创建集合对象
 		final Map<Method, T> methodMap = new LinkedHashMap<>();
 		Set<Class<?>> handlerTypes = new LinkedHashSet<>();
 		Class<?> specificHandlerType = null;
 
+		// 判断是否 targetType 不是 Proxy 类
 		if (!Proxy.isProxyClass(targetType)) {
+			// 获取对应的原始类
 			specificHandlerType = ClassUtils.getUserClass(targetType);
+			// 添加到 handlerTypes 中
 			handlerTypes.add(specificHandlerType);
 		}
+		// 添加 targetType 的所有接口到 handlerTypes
 		handlerTypes.addAll(ClassUtils.getAllInterfacesForClassAsSet(targetType));
 
+		// 遍历 handlerTypes 里的所有类进行处理
 		for (Class<?> currentHandlerType : handlerTypes) {
+			// 当前处理的类型，specificHandlerType 不为空则是这个，否则就是当前遍历到的类型
 			final Class<?> targetClass = (specificHandlerType != null ? specificHandlerType : currentHandlerType);
 
+			// 通过类型 currentHandlerType 获取所有的方法
+			// 对所有方法进行匹配，匹配上的方法调用回调方法
+			// 参数 1 对应类，参数 2 回调方法，参数 3 进行方法匹配
 			ReflectionUtils.doWithMethods(currentHandlerType, method -> {
+				// 方法回调的逻辑
+				// 先获取 targetClass 中对应的 method 方法
+				// 这里不直接通过 method，而是需要再处理一层，是因为有可能当前的 method 是来自接口的方法，并没有真正的实现
+				// 通过 ClassUtils.getMostSpecificMethod，能拿到对应的 targetClass 这个类中的对应 method
 				Method specificMethod = ClassUtils.getMostSpecificMethod(method, targetClass);
+				// 调用 metadataLookup 的	逻辑，返回 result
 				T result = metadataLookup.inspect(specificMethod);
+				// 判断如果 result 不为空
 				if (result != null) {
+					// 获取原始方法
 					Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(specificMethod);
+					// 判断如果原始方法就是自己这个方法，或者 metadataLookup 调用对应的原始方法返回 nul
 					if (bridgedMethod == specificMethod || metadataLookup.inspect(bridgedMethod) == null) {
+						// 添加对应的方法和 result 到methodMap 中
 						methodMap.put(specificMethod, result);
 					}
 				}
 			}, ReflectionUtils.USER_DECLARED_METHODS);
 		}
 
+		// 最后放回这个收集到结果的 map
 		return methodMap;
 	}
 
@@ -97,6 +118,7 @@ public final class MethodIntrospector {
 				(MetadataLookup<Boolean>) method -> (methodFilter.matches(method) ? Boolean.TRUE : null)).keySet();
 	}
 
+	// 在目标类上选择一个可调用的方法
 	/**
 	 * Select an invocable method on the target type: either the given method itself
 	 * if actually exposed on the target type, or otherwise a corresponding method
@@ -111,20 +133,28 @@ public final class MethodIntrospector {
 	 * target type (typically due to a proxy mismatch)
 	 */
 	public static Method selectInvocableMethod(Method method, Class<?> targetType) {
+		// 判断如果声明该方法所属的类，就是 targetType
 		if (method.getDeclaringClass().isAssignableFrom(targetType)) {
+			// 一般都走这里，因为一般这个方法都是声明在 targetType 这个累上，所以返回这个方法
 			return method;
 		}
 		try {
+			// 获取方法名
 			String methodName = method.getName();
+			// 获取参数类型
 			Class<?>[] parameterTypes = method.getParameterTypes();
+			// 获取类的接口
 			for (Class<?> ifc : targetType.getInterfaces()) {
 				try {
+					// 尝试获取该方法
+					// 如果获取不到，则继续下一个接口
 					return ifc.getMethod(methodName, parameterTypes);
 				}
 				catch (NoSuchMethodException ex) {
 					// Alright, not on this interface then...
 				}
 			}
+			// 最后进行自身类进行尝试获取
 			// A final desperate attempt on the proxy class itself...
 			return targetType.getMethod(methodName, parameterTypes);
 		}

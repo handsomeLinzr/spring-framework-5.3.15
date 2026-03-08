@@ -3,6 +3,7 @@ package org.springframework.mytest.expand.anno.condition;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
+import org.springframework.transaction.config.TransactionManagementConfigUtils;
 
 /**
  * @author linzherong

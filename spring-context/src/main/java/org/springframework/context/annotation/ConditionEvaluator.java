@@ -57,6 +57,9 @@ class ConditionEvaluator {
 	public ConditionEvaluator(@Nullable BeanDefinitionRegistry registry,
 			@Nullable Environment environment, @Nullable ResourceLoader resourceLoader) {
 
+		// registry = applicationContext
+		// environment = env 对象
+		// resourceLoader = null
 		this.context = new ConditionContextImpl(registry, environment, resourceLoader);
 	}
 
@@ -175,12 +178,16 @@ class ConditionEvaluator {
 				@Nullable Environment environment, @Nullable ResourceLoader resourceLoader) {
 
 			// bean工厂
-			this.registry = registry;  // AnnotationConfigApplicationContext
-			this.beanFactory = deduceBeanFactory(registry); // defaultListableBeanFactory
-			this.environment = (environment != null ? environment : deduceEnvironment(registry));   // StandardEnvironment
+			// AnnotationConfigApplicationContext
+			this.registry = registry;
+			// DefaultListableBeanFactory
+			this.beanFactory = deduceBeanFactory(registry);
+			// StandardEnvironment
+			this.environment = (environment != null ? environment : deduceEnvironment(registry));
 			// DefaultResourceLoader
-			this.resourceLoader = (resourceLoader != null ? resourceLoader : deduceResourceLoader(registry));  // AnnotationConfigApplicatinContext
-			// AppClassLocader，获取到当前线程的类加载器
+			// AnnotationConfigApplicationContext
+			this.resourceLoader = (resourceLoader != null ? resourceLoader : deduceResourceLoader(registry));
+			// AppClassLoader，获取到当前线程的类加载器
 			this.classLoader = deduceClassLoader(resourceLoader, this.beanFactory);
 		}
 
@@ -189,7 +196,9 @@ class ConditionEvaluator {
 			if (source instanceof ConfigurableListableBeanFactory) {
 				return (ConfigurableListableBeanFactory) source;
 			}
+			// AnnotationConfigApplicationContext 属于 ConfigurableApplicationContext
 			if (source instanceof ConfigurableApplicationContext) {
+				// 获取对应的 beanFactory
 				return (((ConfigurableApplicationContext) source).getBeanFactory());
 			}
 			return null;

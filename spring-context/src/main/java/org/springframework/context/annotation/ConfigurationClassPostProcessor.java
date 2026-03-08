@@ -400,7 +400,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
 
-			// 加载解析出来的所有配置类
+			// 从所有的配置文件中解析出来的 bd 信息中，调用 reader 进行加载注册
 			this.reader.loadBeanDefinitions(configClasses);
 			// 到这里，将 configClasses 全部加到 alreadyParsed，表示已经解析过了
 			alreadyParsed.addAll(configClasses);

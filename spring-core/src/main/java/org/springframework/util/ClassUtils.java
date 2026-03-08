@@ -892,6 +892,7 @@ public abstract class ClassUtils {
 		return getUserClass(instance.getClass());
 	}
 
+	// 返回给定类的用户定义类，即如果是代理类，则返回对应的原始类
 	/**
 	 * Return the user-defined class for the given class: usually simply the given
 	 * class, but the original class in case of a CGLIB-generated subclass.
@@ -1246,6 +1247,7 @@ public abstract class ClassUtils {
 		return (clazz.getSuperclass() != null && hasAtLeastOneMethodWithName(clazz.getSuperclass(), methodName));
 	}
 
+	// 给一个方法，可能来自接口或者一个目标类，给到对应的目标方法
 	/**
 	 * Given a method, which may come from an interface, and a target class used
 	 * in the current reflective invocation, find the corresponding target method
@@ -1268,17 +1270,22 @@ public abstract class ClassUtils {
 	 * @see #getInterfaceMethodIfPossible
 	 */
 	public static Method getMostSpecificMethod(Method method, @Nullable Class<?> targetClass) {
+		// 判断如果当前类不为空，且类不是方法所声明的类，且该方法允许重写
 		if (targetClass != null && targetClass != method.getDeclaringClass() && isOverridable(method, targetClass)) {
 			try {
+				// 判断如果方法是 public 修饰
 				if (Modifier.isPublic(method.getModifiers())) {
 					try {
+						// 返回从 targetClass 目标类中获取该方法
 						return targetClass.getMethod(method.getName(), method.getParameterTypes());
 					}
 					catch (NoSuchMethodException ex) {
+						// 如果目标类中没有该方法，则返回原方法
 						return method;
 					}
 				}
 				else {
+					// 否则反射获取 targetClass 中对应的这个方法，通过方法名和方法参数
 					Method specificMethod =
 							ReflectionUtils.findMethod(targetClass, method.getName(), method.getParameterTypes());
 					return (specificMethod != null ? specificMethod : method);

@@ -142,6 +142,7 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 		// 获取事件的处理引擎，默认空
 		Executor executor = getTaskExecutor();
 		// getApplicationListeners 根据事件和事件类型，获取匹配上 type 类型的所有监听器
+		// 这里其实就是通过拿到监听器的对应的监听类型，也就是那个泛型，然后和事件类型做比较，一样则匹配，不一样则不匹配
 		for (ApplicationListener<?> listener : getApplicationListeners(event, type)) {
 			if (executor != null) {
 				// 判断如果 executor 不为空，用 executor 执行

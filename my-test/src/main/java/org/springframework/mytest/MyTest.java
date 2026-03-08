@@ -5,6 +5,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.mytest.bean.Bean1;
 import org.springframework.mytest.bean.Bean5;
 import org.springframework.mytest.bean.aop.MyCalculate;
+import org.springframework.mytest.event.*;
 import org.springframework.mytest.tx.BookService;
 import org.springframework.mytest.tx.TxConfig;
 
@@ -58,7 +59,18 @@ public class MyTest {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(TxConfig.class);
 		BookService bean = context.getBean(BookService.class);
 		bean.update(1,"100000000 ", "一个亿");
+	}
 
+	public static void event() {
+		ClassPathXmlApplicationContext ac = new ClassPathXmlApplicationContext("classpath:application.xml");
+		ac.addApplicationListener(new MyApplicationListener());
+		ac.publishEvent(new MyApplicationEvent("这是一个新事件"));
+	}
+
+
+	public static void eventAnno() {
+		AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(EventConfiguration.class);
+		ac.publishEvent(new MyApplicationEvent("发布事件"));
 	}
 
 

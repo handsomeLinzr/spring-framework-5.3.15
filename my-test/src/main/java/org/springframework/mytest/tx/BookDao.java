@@ -1,9 +1,11 @@
 package org.springframework.mytest.tx;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.mytest.event.MyApplicationEvent;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,9 @@ import java.sql.PreparedStatement;
 public class BookDao {
 
 	@Autowired
+	private ApplicationEventPublisher publisher;
+
+	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
 	public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
@@ -30,20 +35,16 @@ public class BookDao {
 	public void updateNameById(int id, String name) {
 		String sql = "UPDATE book SET book_name = ? WHERE id = ?";
 		jdbcTemplate.update(sql, name, id);
+
+		publisher.publishEvent(new MyApplicationEvent("updateNameById处理"));
+
 	}
 
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	@Transactional(propagation = Propagation.REQUIRED)
 	public void updateOrderNoById(int id, String orderNo) {
 		String sql = "UPDATE book SET order_no = ? WHERE id = ?";
 //		int i = 1/0;
 		jdbcTemplate.update(sql, orderNo, id);
-
-		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-			@Override
-			public void afterCommit() {
-				System.out.println("new 事务提交");
-			}
-		});
 
 	}
 

@@ -77,6 +77,7 @@ public abstract class AbstractTransactionManagementConfiguration implements Impo
 	}
 
 
+	// 事务的监听器创建工厂
 	@Bean(name = TransactionManagementConfigUtils.TRANSACTIONAL_EVENT_LISTENER_FACTORY_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public static TransactionalEventListenerFactory transactionalEventListenerFactory() {

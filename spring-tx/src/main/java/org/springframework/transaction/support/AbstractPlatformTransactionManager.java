@@ -835,9 +835,9 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 				boolean unexpectedRollback = false;
 				// 准备提交
 				prepareForCommit(status);
-				// 事务提交前处理
+				// 事务提交前处理，调用同步器处理注册的回调
 				triggerBeforeCommit(status);
-				// 事务完成前处理
+				// 事务完成前处理，调用同步器处理注册的回调
 				triggerBeforeCompletion(status);
 				beforeCompletionInvoked = true;
 
@@ -872,6 +872,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			}
 			catch (UnexpectedRollbackException ex) {
 				// can only be caused by doCommit
+				// 处理回调
 				triggerAfterCompletion(status, TransactionSynchronization.STATUS_ROLLED_BACK);
 				throw ex;
 			}
@@ -1076,6 +1077,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		}
 	}
 
+	// 触发完成后的回调方法处理
 	/**
 	 * Trigger {@code afterCompletion} callbacks.
 	 * @param status object representing the transaction
@@ -1091,12 +1093,14 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			if (!status.hasTransaction() || status.isNewTransaction()) {
 				// No transaction or new transaction for the current scope ->
 				// invoke the afterCompletion callbacks immediately
+				// 事务结束，处理回调
 				invokeAfterCompletion(synchronizations, completionStatus);
 			}
 			else if (!synchronizations.isEmpty()) {
 				// Existing transaction that we participate in, controlled outside
 				// of the scope of this Spring transaction manager -> try to register
 				// an afterCompletion callback with the existing (JTA) transaction.
+				// 还是有事务，执行回调，状态是 UN_KNOW
 				registerAfterCompletionWithExistingTransaction(status.getTransaction(), synchronizations);
 			}
 		}

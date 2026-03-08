@@ -609,6 +609,8 @@ public abstract class AnnotatedElementUtils {
 		return getAnnotationAttributes(mergedAnnotation, classValuesAsString, nestedAnnotationsAsMap);
 	}
 
+	// 再给定的方法上，获取对应第一层指定的注解。获取到该注解属性，并进行属性合并
+	// 返回对应的注解属性设置
 	/**
 	 * Find the first annotation of the specified {@code annotationType} within
 	 * the annotation hierarchy <em>above</em> the supplied {@code element},
@@ -630,14 +632,18 @@ public abstract class AnnotatedElementUtils {
 	@Nullable
 	public static <A extends Annotation> A findMergedAnnotation(AnnotatedElement element, Class<A> annotationType) {
 		// Shortcut: directly present on the element, with no merging needed?
+		// 判断如果给的注解是属于 "java.lang", "org.springframework.lang" 包下的
+		// 或者
 		if (AnnotationFilter.PLAIN.matches(annotationType) ||
 				AnnotationsScanner.hasPlainJavaAnnotationsOnly(element)) {
+			// 直接调用 getDeclaredAnnotation 方法获取注解，一般自定义的类，不会走这里，跳过
 			return element.getDeclaredAnnotation(annotationType);
 		}
+		// 合并注解并进行检索
 		// Exhaustive retrieval of merged annotations...
-		return findAnnotations(element)
-				.get(annotationType, null, MergedAnnotationSelectors.firstDirectlyDeclared())
-				.synthesize(MergedAnnotation::isPresent).orElse(null);
+		return findAnnotations(element)  // 获取 element 的所有注解
+				.get(annotationType, null, MergedAnnotationSelectors.firstDirectlyDeclared())   // 获取第一次拿到的 annotationType 注解
+				.synthesize(MergedAnnotation::isPresent).orElse(null);  // 合并，如果拿不到则返回 null
 	}
 
 	/**

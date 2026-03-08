@@ -156,7 +156,7 @@ public abstract class AnnotationConfigUtils {
 	public static Set<BeanDefinitionHolder> registerAnnotationConfigProcessors(
 			BeanDefinitionRegistry registry, @Nullable Object source) {
 
-		// defaultListableBeanFactory
+		// DefaultListableBeanFactory
 		DefaultListableBeanFactory beanFactory = unwrapDefaultListableBeanFactory(registry);
 		if (beanFactory != null) {
 			// beanFactory.getDependencyComparator() == null，会走进去这个分支
@@ -171,16 +171,18 @@ public abstract class AnnotationConfigUtils {
 			}
 		}
 
+		// 需要被注册的 bd
 		Set<BeanDefinitionHolder> beanDefs = new LinkedHashSet<>(8);
 
 		// 如果没有 internalConfigurationAnnotationProcessor 这个 bd
 		if (!registry.containsBeanDefinition(CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME)) {
 			// 进行注册，对应的 class 为 ConfigurationClassPostProcessor
 			// 这个 ConfigurationClassPostProcessor 是一个 BDRPP + BFPP, 是重点
-			// 在后边处理 BDRPP + BFPP 的时候发挥大作用
+			// 在后边处理 BDRPP + BFPP 的时候发挥大作用，核心注解
 			RootBeanDefinition def = new RootBeanDefinition(ConfigurationClassPostProcessor.class);
 			def.setSource(source);
-			beanDefs.add(registerPostProcessor(registry, def, CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME)); // 注册 internalConfigurationAnnotationProcessor
+			// 注册 internalConfigurationAnnotationProcessor = ConfigurationClassPostProcessor
+			beanDefs.add(registerPostProcessor(registry, def, CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME));
 		}
 
 		if (!registry.containsBeanDefinition(AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME)) {
@@ -215,7 +217,7 @@ public abstract class AnnotationConfigUtils {
 		}
 
 		if (!registry.containsBeanDefinition(EVENT_LISTENER_PROCESSOR_BEAN_NAME)) {
-			// 注册bd：internalEventListenerProcessor = EventListenerMethodProcessor
+			// 注册bd：internalEventListenerProcessor = EventListenerMethodProcessor，事件发布
 			RootBeanDefinition def = new RootBeanDefinition(EventListenerMethodProcessor.class);
 			def.setSource(source);
 			beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_PROCESSOR_BEAN_NAME));

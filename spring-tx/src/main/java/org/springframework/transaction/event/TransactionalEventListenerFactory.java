@@ -23,6 +23,7 @@ import org.springframework.context.event.EventListenerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 
+// 事务的监听器创建工厂
 /**
  * {@link EventListenerFactory} implementation that handles {@link TransactionalEventListener}
  * annotated methods.
@@ -48,11 +49,13 @@ public class TransactionalEventListenerFactory implements EventListenerFactory, 
 
 	@Override
 	public boolean supportsMethod(Method method) {
+		// 支持的方法逻辑，如果方法上有注解 TransactionalEventListener，则支持
 		return AnnotatedElementUtils.hasAnnotation(method, TransactionalEventListener.class);
 	}
 
 	@Override
 	public ApplicationListener<?> createApplicationListener(String beanName, Class<?> type, Method method) {
+		// 创建监听器的逻辑，创建一个 TransactionalApplicationListenerMethodAdapter
 		return new TransactionalApplicationListenerMethodAdapter(beanName, type, method);
 	}
 

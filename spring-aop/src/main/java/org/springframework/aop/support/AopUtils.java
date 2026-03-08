@@ -116,6 +116,7 @@ public abstract class AopUtils {
 		return result;
 	}
 
+	// 从类上选择一个可执行的方法
 	/**
 	 * Select an invocable method on the target type: either the given method itself
 	 * if actually exposed on the target type, or otherwise a corresponding method
@@ -129,6 +130,7 @@ public abstract class AopUtils {
 	 * @see MethodIntrospector#selectInvocableMethod(Method, Class)
 	 */
 	public static Method selectInvocableMethod(Method method, @Nullable Class<?> targetType) {
+		// 如果对应的类是空，则放回这个方法
 		if (targetType == null) {
 			return method;
 		}

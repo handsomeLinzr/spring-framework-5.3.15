@@ -45,6 +45,8 @@ import org.springframework.lang.Nullable;
  */
 public abstract class ReflectionUtils {
 
+	// 方法匹配的逻辑
+	// 方法非桥接，且非合成的，也就是可以理解为方法是普通的正常方法
 	/**
 	 * Pre-built MethodFilter that matches all non-bridge non-synthetic methods
 	 * which are not declared on {@code java.lang.Object}.
@@ -345,6 +347,10 @@ public abstract class ReflectionUtils {
 		doWithMethods(clazz, mc, null);
 	}
 
+	// 对类的所有匹配上的方法执行回调方法
+	// clazz 类型
+	// mc 回调函数
+	// mf 匹配的方法
 	/**
 	 * Perform the given callback operation on all matching methods of the given
 	 * class and superclasses (or given interface and super-interfaces).
@@ -357,22 +363,30 @@ public abstract class ReflectionUtils {
 	 */
 	public static void doWithMethods(Class<?> clazz, MethodCallback mc, @Nullable MethodFilter mf) {
 		// Keep backing up the inheritance hierarchy.
+		// 获取这个类的所有方法
 		Method[] methods = getDeclaredMethods(clazz, false);
+		// 遍历所有的方法
 		for (Method method : methods) {
+			// 如果不匹配上，跳过
 			if (mf != null && !mf.matches(method)) {
 				continue;
 			}
 			try {
+				// 如果匹配上，调用回调方法
 				mc.doWith(method);
 			}
 			catch (IllegalAccessException ex) {
 				throw new IllegalStateException("Not allowed to access method '" + method.getName() + "': " + ex);
 			}
 		}
+		// 判断如果这个类有父类，且不是 Object 对象
 		if (clazz.getSuperclass() != null && (mf != USER_DECLARED_METHODS || clazz.getSuperclass() != Object.class)) {
+			// 递归调用父类，继续处理
 			doWithMethods(clazz.getSuperclass(), mc, mf);
 		}
+		// 如果类是一个接口
 		else if (clazz.isInterface()) {
+			// 遍历接口，继续递归调用
 			for (Class<?> superIfc : clazz.getInterfaces()) {
 				doWithMethods(superIfc, mc, mf);
 			}

@@ -73,6 +73,7 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 		return "";
 	}
 
+	// 事务监听器的监听阶段，默认是 AFTER_COMMIT
 	/**
 	 * Return the {@link TransactionPhase} in which the listener will be invoked.
 	 * <p>The default phase is {@link TransactionPhase#AFTER_COMMIT}.
@@ -81,6 +82,7 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 		return TransactionPhase.AFTER_COMMIT;
 	}
 
+	// 添加回调函数
 	/**
 	 * Add a callback to be invoked on processing within transaction synchronization,
 	 * i.e. when {@link #processEvent} is being triggered during actual transactions.
@@ -88,6 +90,7 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 	 */
 	void addCallback(SynchronizationCallback callback);
 
+	// 监听器的 processEvent 处理
 	/**
 	 * Immediately process the given {@link ApplicationEvent}. In contrast to
 	 * {@link #onApplicationEvent(ApplicationEvent)}, a call to this method will
@@ -130,6 +133,7 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 	}
 
 
+	// 事务回调的结果
 	/**
 	 * Callback to be invoked on synchronization-driven event processing,
 	 * wrapping the target listener invocation ({@link #processEvent}).
@@ -139,6 +143,7 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 	 */
 	interface SynchronizationCallback {
 
+		// 调用 ProcessEvent 方法前处理
 		/**
 		 * Called before transactional event listener invocation.
 		 * @param event the event that transaction synchronization is about to process
@@ -146,6 +151,7 @@ public interface TransactionalApplicationListener<E extends ApplicationEvent>
 		default void preProcessEvent(ApplicationEvent event) {
 		}
 
+		// 调用 ProcessEvent 方法后处理
 		/**
 		 * Called after a transactional event listener invocation.
 		 * @param event the event that transaction synchronization finished processing

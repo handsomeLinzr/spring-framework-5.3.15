@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 import org.springframework.transaction.support.TransactionSynchronization;
 
+// 事务阶段
 /**
  * The phase in which a transactional event listener applies.
  *

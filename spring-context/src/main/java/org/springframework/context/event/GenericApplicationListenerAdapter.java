@@ -41,6 +41,7 @@ public class GenericApplicationListenerAdapter implements GenericApplicationList
 	private static final Map<Class<?>, ResolvableType> eventTypeCache = new ConcurrentReferenceHashMap<>();
 
 
+	// 具体的监听器对象
 	private final ApplicationListener<ApplicationEvent> delegate;
 
 	@Nullable
@@ -54,7 +55,9 @@ public class GenericApplicationListenerAdapter implements GenericApplicationList
 	@SuppressWarnings("unchecked")
 	public GenericApplicationListenerAdapter(ApplicationListener<?> delegate) {
 		Assert.notNull(delegate, "Delegate listener must not be null");
+		// 监听器对象
 		this.delegate = (ApplicationListener<ApplicationEvent>) delegate;
+		// 监听器对应监听的事件类型，就是那个泛型
 		this.declaredEventType = resolveDeclaredEventType(this.delegate);
 	}
 
@@ -107,6 +110,7 @@ public class GenericApplicationListenerAdapter implements GenericApplicationList
 
 	@Nullable
 	private static ResolvableType resolveDeclaredEventType(ApplicationListener<ApplicationEvent> listener) {
+		// 处理类，得到对应的泛型类型，也就是监听的事件类型
 		ResolvableType declaredEventType = resolveDeclaredEventType(listener.getClass());
 		if (declaredEventType == null || declaredEventType.isAssignableFrom(ApplicationEvent.class)) {
 			Class<?> targetClass = AopUtils.getTargetClass(listener);
@@ -114,6 +118,7 @@ public class GenericApplicationListenerAdapter implements GenericApplicationList
 				declaredEventType = resolveDeclaredEventType(targetClass);
 			}
 		}
+		// 返回事件类型
 		return declaredEventType;
 	}
 
@@ -121,6 +126,7 @@ public class GenericApplicationListenerAdapter implements GenericApplicationList
 	static ResolvableType resolveDeclaredEventType(Class<?> listenerType) {
 		ResolvableType eventType = eventTypeCache.get(listenerType);
 		if (eventType == null) {
+			// 通过监听器类型，解析得到对应监听的事件类型
 			eventType = ResolvableType.forClass(listenerType).as(ApplicationListener.class).getGeneric();
 			eventTypeCache.put(listenerType, eventType);
 		}

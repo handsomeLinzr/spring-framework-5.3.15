@@ -68,6 +68,7 @@ import org.springframework.core.annotation.AliasFor;
 @EventListener
 public @interface TransactionalEventListener {
 
+	// 事务阶段，默认是 after_commit 提交后
 	/**
 	 * Phase to bind the handling of an event to.
 	 * <p>The default phase is {@link TransactionPhase#AFTER_COMMIT}.
@@ -76,11 +77,13 @@ public @interface TransactionalEventListener {
 	 */
 	TransactionPhase phase() default TransactionPhase.AFTER_COMMIT;
 
+	// 如果没有事务运行，是否需要处理事件
 	/**
 	 * Whether the event should be handled if no transaction is running.
 	 */
 	boolean fallbackExecution() default false;
 
+	// classes 的别名
 	/**
 	 * Alias for {@link #classes}.
 	 */
