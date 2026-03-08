@@ -91,8 +91,10 @@ public class DefaultFormattingConversionService extends FormattingConversionServ
 		if (embeddedValueResolver != null) {
 			setEmbeddedValueResolver(embeddedValueResolver);
 		}
+		// 给 this 这个转换服务添加默认的转换器
 		DefaultConversionService.addDefaultConverters(this);
 		if (registerDefaultFormatters) {
+			// 给 this 添加默认的格式化器，包括日期时间格式化器
 			addDefaultFormatters(this);
 		}
 	}
@@ -107,6 +109,7 @@ public class DefaultFormattingConversionService extends FormattingConversionServ
 	@SuppressWarnings("deprecation")
 	public static void addDefaultFormatters(FormatterRegistry formatterRegistry) {
 		// Default handling of number values
+		// 默认的数字格式化，NumberFormat 注解
 		formatterRegistry.addFormatterForFieldAnnotation(new NumberFormatAnnotationFormatterFactory());
 
 		// Default handling of monetary values
@@ -119,6 +122,7 @@ public class DefaultFormattingConversionService extends FormattingConversionServ
 		// Default handling of date-time values
 
 		// just handling JSR-310 specific date and time types
+		// 注册日期事件格式化器
 		new DateTimeFormatterRegistrar().registerFormatters(formatterRegistry);
 
 		if (jodaTimePresent) {

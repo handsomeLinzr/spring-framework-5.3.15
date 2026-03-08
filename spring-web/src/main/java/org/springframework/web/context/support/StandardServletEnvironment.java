@@ -30,7 +30,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 import org.springframework.web.context.ConfigurableWebEnvironment;
 
-// servlet-web 环境下默认生成的环境对象
+// servlet-web 环境下默认生成的环境对象 ApplicationServletEnvironment 的父类
 /**
  * {@link Environment} implementation to be used by {@code Servlet}-based web
  * applications. All web-related (servlet-based) {@code ApplicationContext} classes

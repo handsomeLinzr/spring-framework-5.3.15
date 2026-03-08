@@ -16,6 +16,7 @@
 
 package org.springframework.core.convert.converter;
 
+// 注册类型转换器
 /**
  * For registering converters with a type conversion system.
  *

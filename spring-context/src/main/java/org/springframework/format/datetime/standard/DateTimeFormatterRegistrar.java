@@ -152,16 +152,21 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 	}
 
 
+	// 注册日期时间格式化器
 	@Override
 	public void registerFormatters(FormatterRegistry registry) {
 		DateTimeConverters.registerConverters(registry);
 
+		// 日期
 		DateTimeFormatter df = getFormatter(Type.DATE);
+		// 时间
 		DateTimeFormatter tf = getFormatter(Type.TIME);
+		// 日期时间
 		DateTimeFormatter dtf = getFormatter(Type.DATE_TIME);
 
 		// Efficient ISO_LOCAL_* variants for printing since they are twice as fast...
 
+		// 注册日期时间格式化器
 		registry.addFormatterForFieldType(LocalDate.class,
 				new TemporalAccessorPrinter(
 						df == DateTimeFormatter.ISO_DATE ? DateTimeFormatter.ISO_LOCAL_DATE : df),
@@ -189,6 +194,7 @@ public class DateTimeFormatterRegistrar implements FormatterRegistrar {
 				new TemporalAccessorPrinter(tf),
 				new TemporalAccessorParser(OffsetTime.class, tf));
 
+		// 注册日期各个组成的格式化器
 		registry.addFormatterForFieldType(Instant.class, new InstantFormatter());
 		registry.addFormatterForFieldType(Period.class, new PeriodFormatter());
 		registry.addFormatterForFieldType(Duration.class, new DurationFormatter());

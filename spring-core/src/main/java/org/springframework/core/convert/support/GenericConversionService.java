@@ -75,6 +75,7 @@ public class GenericConversionService implements ConfigurableConversionService {
 	private static final GenericConverter NO_MATCH = new NoOpConverter("NO_MATCH");
 
 
+	// 注解的转换器
 	private final Converters converters = new Converters();
 
 	private final Map<ConverterCacheKey, GenericConverter> converterCache = new ConcurrentReferenceHashMap<>(64);
@@ -137,13 +138,18 @@ public class GenericConversionService implements ConfigurableConversionService {
 				TypeDescriptor.valueOf(targetType));
 	}
 
+	// 判断是否 sourceType 能转换为 targetType
 	@Override
 	public boolean canConvert(@Nullable TypeDescriptor sourceType, TypeDescriptor targetType) {
+		// 目标类型不能为空
 		Assert.notNull(targetType, "Target type to convert to cannot be null");
+		// 如果原类型是空的，则直接返回 true
 		if (sourceType == null) {
 			return true;
 		}
+		// 获取从 sourceType -> targetType 的类型转换器
 		GenericConverter converter = getConverter(sourceType, targetType);
+		// 如果能拿到，返回 true，否则返回 false
 		return (converter != null);
 	}
 
@@ -239,6 +245,7 @@ public class GenericConversionService implements ConfigurableConversionService {
 		return null;
 	}
 
+	// 获取从 sourceType -> targetType 的类型转换服务器
 	/**
 	 * Hook method to lookup the converter for a given sourceType/targetType pair.
 	 * First queries this ConversionService's converter cache.
@@ -252,22 +259,30 @@ public class GenericConversionService implements ConfigurableConversionService {
 	 */
 	@Nullable
 	protected GenericConverter getConverter(TypeDescriptor sourceType, TypeDescriptor targetType) {
+		// 先根据原类型和目标类型，获取到缓存的 key 的对象
 		ConverterCacheKey key = new ConverterCacheKey(sourceType, targetType);
+		// 先从 converterCache 中获取缓存
 		GenericConverter converter = this.converterCache.get(key);
 		if (converter != null) {
+			// 如果从缓存中获取到，且不是 NO_MATCH，则就是有，返回这个转换器
+			// 否则就是没有，返回 null
 			return (converter != NO_MATCH ? converter : null);
 		}
 
+		// 如果缓存中没有，则通过 converters 寻找对应的转换服务
 		converter = this.converters.find(sourceType, targetType);
 		if (converter == null) {
+			// 如果也没有，则从默认的装换器中寻找
 			converter = getDefaultConverter(sourceType, targetType);
 		}
 
+		// 如果最后拿到了，则添加到缓存中，返回
 		if (converter != null) {
 			this.converterCache.put(key, converter);
 			return converter;
 		}
 
+		// 如果没有，也添加到缓存中，返回 null
 		this.converterCache.put(key, NO_MATCH);
 		return null;
 	}
@@ -504,6 +519,7 @@ public class GenericConversionService implements ConfigurableConversionService {
 
 		private final Map<ConvertiblePair, ConvertersForPair> converters = new ConcurrentHashMap<>(256);
 
+		// 添加转换服务
 		public void add(GenericConverter converter) {
 			Set<ConvertiblePair> convertibleTypes = converter.getConvertibleTypes();
 			if (convertibleTypes == null) {
@@ -526,6 +542,7 @@ public class GenericConversionService implements ConfigurableConversionService {
 			this.converters.remove(new ConvertiblePair(sourceType, targetType));
 		}
 
+		// 根据给定的 source 和 target 类型，获取对应的转换器
 		/**
 		 * Find a {@link GenericConverter} given a source and target type.
 		 * <p>This method will attempt to match all possible converters by working
@@ -537,38 +554,54 @@ public class GenericConversionService implements ConfigurableConversionService {
 		@Nullable
 		public GenericConverter find(TypeDescriptor sourceType, TypeDescriptor targetType) {
 			// Search the full type hierarchy
+			// 获取 sourceType 类的所有对应的类，包括父类
 			List<Class<?>> sourceCandidates = getClassHierarchy(sourceType.getType());
+			// 同样获取 targetType 类的所有类和父类
 			List<Class<?>> targetCandidates = getClassHierarchy(targetType.getType());
+			// 遍历 sourceCandidates 原类型
 			for (Class<?> sourceCandidate : sourceCandidates) {
+				// 遍历 targetCandidates 目标类型
 				for (Class<?> targetCandidate : targetCandidates) {
+					// 将原类型和目标类型，合并成一个 pair 对象
 					ConvertiblePair convertiblePair = new ConvertiblePair(sourceCandidate, targetCandidate);
+					// 尝试获取对应的转换器
 					GenericConverter converter = getRegisteredConverter(sourceType, targetType, convertiblePair);
+					// 如果 converter 不为空，也就是能拿到，则直接返回这个转换器
 					if (converter != null) {
 						return converter;
 					}
 				}
 			}
+			// 否则返回空
 			return null;
 		}
 
+		// 根据原类型和目标类型，获取对应的类型转换器
 		@Nullable
 		private GenericConverter getRegisteredConverter(TypeDescriptor sourceType,
 				TypeDescriptor targetType, ConvertiblePair convertiblePair) {
 
 			// Check specifically registered converters
+			// 先从缓存中通过 convertiblePair 获取 convertersForPair
 			ConvertersForPair convertersForPair = this.converters.get(convertiblePair);
+			// 如果从缓存汇总拿到数据
 			if (convertersForPair != null) {
+				// 则从拿到的 convertersForPair 中获取对应的转换器
 				GenericConverter converter = convertersForPair.getConverter(sourceType, targetType);
 				if (converter != null) {
+					// 如果不为空，则返回这个转换器
 					return converter;
 				}
 			}
 			// Check ConditionalConverters for a dynamic match
+			// 遍历 globalConverters，判断是否能匹配上原类型和目标类型
+			// 如果能匹配上，则返回这个转换器
 			for (GenericConverter globalConverter : this.globalConverters) {
 				if (((ConditionalConverter) globalConverter).matches(sourceType, targetType)) {
 					return globalConverter;
 				}
 			}
+			// 否则返回 null
 			return null;
 		}
 
@@ -578,29 +611,45 @@ public class GenericConversionService implements ConfigurableConversionService {
 		 * @return an ordered list of all classes that the given type extends or implements
 		 */
 		private List<Class<?>> getClassHierarchy(Class<?> type) {
+			// 定义两个集合，hierarchy 和 visited，在下边的遍历中都传进去缓存
 			List<Class<?>> hierarchy = new ArrayList<>(20);
 			Set<Class<?>> visited = new HashSet<>(20);
+			// 添加 type 类型到 hierarchy 和 visited
 			addToClassHierarchy(0, ClassUtils.resolvePrimitiveIfNecessary(type), false, hierarchy, visited);
+			// 判断是否是数组类型
 			boolean array = type.isArray();
 
 			int i = 0;
 			while (i < hierarchy.size()) {
+				// 从 hierarchy 中获取 i 位置的类
 				Class<?> candidate = hierarchy.get(i);
+				// 判断 candidate 是否是数组类型
+				// 如果是数组类型则返回数组对应的实际类型
+				// 如果不是数组类型，则就是对应的类型，基本类型则转为包装类型
 				candidate = (array ? candidate.getComponentType() : ClassUtils.resolvePrimitiveIfNecessary(candidate));
+				// 获取父类
 				Class<?> superclass = candidate.getSuperclass();
 				if (superclass != null && superclass != Object.class && superclass != Enum.class) {
+					// 如果父类不为空，且不是 Object 类和 Enum 类
+					// 则继续添加对应的父类到 hierarchy 和 visited
 					addToClassHierarchy(i + 1, candidate.getSuperclass(), array, hierarchy, visited);
 				}
+				// 对 candidate 的接口进行添加到 hierarchy 和 visited
 				addInterfacesToClassHierarchy(candidate, array, hierarchy, visited);
+				// i 自增
 				i++;
 			}
 
+			// 判断如果是枚举类型
 			if (Enum.class.isAssignableFrom(type)) {
+				// 对枚举类型进行处理添加到 hierarchy 和 visited
 				addToClassHierarchy(hierarchy.size(), Enum.class, array, hierarchy, visited);
 				addToClassHierarchy(hierarchy.size(), Enum.class, false, hierarchy, visited);
+				// 接口处理
 				addInterfacesToClassHierarchy(Enum.class, array, hierarchy, visited);
 			}
 
+			// 处理 Object，添加到 hierarchy 和 visited
 			addToClassHierarchy(hierarchy.size(), Object.class, array, hierarchy, visited);
 			addToClassHierarchy(hierarchy.size(), Object.class, false, hierarchy, visited);
 			return hierarchy;
@@ -609,18 +658,25 @@ public class GenericConversionService implements ConfigurableConversionService {
 		private void addInterfacesToClassHierarchy(Class<?> type, boolean asArray,
 				List<Class<?>> hierarchy, Set<Class<?>> visited) {
 
+			// 遍历 type 的所有接口
 			for (Class<?> implementedInterface : type.getInterfaces()) {
+				// 添加到 hierarchy 和 visited
 				addToClassHierarchy(hierarchy.size(), implementedInterface, asArray, hierarchy, visited);
 			}
 		}
 
+		// 添加 type 到 hierarchy 中 index 的位置，并且添加到 visited 中
 		private void addToClassHierarchy(int index, Class<?> type, boolean asArray,
 				List<Class<?>> hierarchy, Set<Class<?>> visited) {
 
 			if (asArray) {
 				type = Array.newInstance(type, 0).getClass();
 			}
+			// type 添加到 visited 中
+			// 如果能加，则可以继续加到 hierarchy 中
+			// 如果不能，说明已经处理过了，则跳过
 			if (visited.add(type)) {
+				// 将 type 记录到 hierarchy 中 index 的位置
 				hierarchy.add(index, type);
 			}
 		}

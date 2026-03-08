@@ -84,12 +84,14 @@ public abstract class ClassUtils {
 	public static final String CLASS_FILE_SUFFIX = ".class";
 
 
+	// 包装类型到基本类型的映射
 	/**
 	 * Map with primitive wrapper type as key and corresponding primitive
 	 * type as value, for example: Integer.class -> int.class.
 	 */
 	private static final Map<Class<?>, Class<?>> primitiveWrapperTypeMap = new IdentityHashMap<>(9);
 
+	// 基本类型到包装类型的映射
 	/**
 	 * Map with primitive type as key and corresponding wrapper
 	 * type as value, for example: int.class -> Integer.class.
@@ -102,12 +104,14 @@ public abstract class ClassUtils {
 	 */
 	private static final Map<String, Class<?>> primitiveTypeNameMap = new HashMap<>(32);
 
+	// name -> Class，通用的类缓存
 	/**
 	 * Map with common Java language class name as key and corresponding Class as value.
 	 * Primarily for efficient deserialization of remote invocations.
 	 */
 	private static final Map<String, Class<?>> commonClassCache = new HashMap<>(64);
 
+	// java 的内置接口
 	/**
 	 * Common Java language interfaces which are supposed to be ignored
 	 * when searching for 'primary' user-level interfaces.
@@ -121,6 +125,7 @@ public abstract class ClassUtils {
 
 
 	static {
+		// 静态代码块，添加包装类型和基本类型的映射，再加上 void 类型
 		primitiveWrapperTypeMap.put(Boolean.class, boolean.class);
 		primitiveWrapperTypeMap.put(Byte.class, byte.class);
 		primitiveWrapperTypeMap.put(Character.class, char.class);
@@ -133,18 +138,25 @@ public abstract class ClassUtils {
 
 		// Map entry iteration is less expensive to initialize than forEach with lambdas
 		for (Map.Entry<Class<?>, Class<?>> entry : primitiveWrapperTypeMap.entrySet()) {
+			// 把 primitiveWrapperTypeMap 逆转，也就是从基本类型到包装类型的映射
 			primitiveTypeToWrapperMap.put(entry.getValue(), entry.getKey());
 			registerCommonClasses(entry.getKey());
 		}
 
+		// primitiveTypes 中添加所有的基本类型
 		Set<Class<?>> primitiveTypes = new HashSet<>(32);
 		primitiveTypes.addAll(primitiveWrapperTypeMap.values());
+		// primitiveTypes 中添加基本类型的数组类型
+		// primitiveTypes 中添加基本类型的数组类型
 		Collections.addAll(primitiveTypes, boolean[].class, byte[].class, char[].class,
 				double[].class, float[].class, int[].class, long[].class, short[].class);
 		for (Class<?> primitiveType : primitiveTypes) {
+			// 都设置到 primitiveTypeNameMap 中
+			// name 到 类型的映射
 			primitiveTypeNameMap.put(primitiveType.getName(), primitiveType);
 		}
 
+		// 注册通过类，到 commonClassCache 中，java 的通用类
 		registerCommonClasses(Boolean[].class, Byte[].class, Character[].class, Double[].class,
 				Float[].class, Integer[].class, Long[].class, Short[].class);
 		registerCommonClasses(Number.class, Number[].class, String.class, String[].class,
@@ -154,6 +166,7 @@ public abstract class ClassUtils {
 		registerCommonClasses(Enum.class, Iterable.class, Iterator.class, Enumeration.class,
 				Collection.class, List.class, Set.class, Map.class, Map.Entry.class, Optional.class);
 
+		// java 的内置接口
 		Class<?>[] javaLanguageInterfaceArray = {Serializable.class, Externalizable.class,
 				Closeable.class, AutoCloseable.class, Cloneable.class, Comparable.class};
 		registerCommonClasses(javaLanguageInterfaceArray);
@@ -166,6 +179,7 @@ public abstract class ClassUtils {
 	 */
 	private static void registerCommonClasses(Class<?>... commonClasses) {
 		for (Class<?> clazz : commonClasses) {
+			// 遍历传入的类，设置对应的 name -> Class
 			commonClassCache.put(clazz.getName(), clazz);
 		}
 	}
@@ -522,6 +536,7 @@ public abstract class ClassUtils {
 		return (clazz.isArray() && isPrimitiveWrapper(clazz.getComponentType()));
 	}
 
+	// 如果给定的类型是基本数据类型，则返回对应的包装类型
 	/**
 	 * Resolve the given class if it is a primitive class,
 	 * returning the corresponding primitive wrapper type instead.
@@ -530,6 +545,8 @@ public abstract class ClassUtils {
 	 */
 	public static Class<?> resolvePrimitiveIfNecessary(Class<?> clazz) {
 		Assert.notNull(clazz, "Class must not be null");
+		// 判断 clazz 是基本类型且不是 void 类型，则从 primitiveTypeToWrapperMap 中获取对应的包装类型
+		// 否则直接返回原来的 clazz
 		return (clazz.isPrimitive() && clazz != void.class ? primitiveTypeToWrapperMap.get(clazz) : clazz);
 	}
 

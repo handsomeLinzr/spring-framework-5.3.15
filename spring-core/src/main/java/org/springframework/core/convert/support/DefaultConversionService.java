@@ -45,6 +45,7 @@ public class DefaultConversionService extends GenericConversionService {
 	private static volatile DefaultConversionService sharedInstance;
 
 
+	// 默认的服务装换器
 	/**
 	 * Create a new {@code DefaultConversionService} with the set of
 	 * {@linkplain DefaultConversionService#addDefaultConverters(ConverterRegistry) default converters}.
@@ -79,6 +80,7 @@ public class DefaultConversionService extends GenericConversionService {
 		return cs;
 	}
 
+	// 添加适用于大多数情况的默认的类型转换器
 	/**
 	 * Add converters appropriate for most environments.
 	 * @param converterRegistry the registry of converters to add to
@@ -86,7 +88,9 @@ public class DefaultConversionService extends GenericConversionService {
 	 * @throws ClassCastException if the given ConverterRegistry could not be cast to a ConversionService
 	 */
 	public static void addDefaultConverters(ConverterRegistry converterRegistry) {
+		// 添加 scalar 的类型转换器
 		addScalarConverters(converterRegistry);
+		// 添加集合类的类型转换器
 		addCollectionConverters(converterRegistry);
 
 		converterRegistry.addConverter(new ByteBufferConverter((ConversionService) converterRegistry));
@@ -108,8 +112,10 @@ public class DefaultConversionService extends GenericConversionService {
 	 * @since 4.2.3
 	 */
 	public static void addCollectionConverters(ConverterRegistry converterRegistry) {
+		// 强转成 ConversionService 类型
 		ConversionService conversionService = (ConversionService) converterRegistry;
 
+		// 添加
 		converterRegistry.addConverter(new ArrayToCollectionConverter(conversionService));
 		converterRegistry.addConverter(new CollectionToArrayConverter(conversionService));
 

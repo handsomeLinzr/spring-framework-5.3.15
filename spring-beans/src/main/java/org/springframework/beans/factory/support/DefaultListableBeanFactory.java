@@ -721,9 +721,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	@Override
 	public String[] getBeanNamesForAnnotation(Class<? extends Annotation> annotationType) {
 		List<String> result = new ArrayList<>();
+		// 遍历当前 beanFactory 的所有 bd 名称
 		for (String beanName : this.beanDefinitionNames) {
+			// 获取对应的 bd
 			BeanDefinition bd = this.beanDefinitionMap.get(beanName);
+			// 如果 bd 不为空，且不是抽象的，且对应的 bean 有注解 annotationType
 			if (bd != null && !bd.isAbstract() && findAnnotationOnBean(beanName, annotationType) != null) {
+				// 将这个 beanName 添加到 result 中
 				result.add(beanName);
 			}
 		}
@@ -769,37 +773,53 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	private <A extends Annotation> MergedAnnotation<A> findMergedAnnotationOnBean(
 			String beanName, Class<A> annotationType, boolean allowFactoryBeanInit) {
 
+		// 获取 bean 的类型
 		Class<?> beanType = getType(beanName, allowFactoryBeanInit);
 		if (beanType != null) {
+			// 从 beanType 中获取注解 annotationType
 			MergedAnnotation<A> annotation =
 					MergedAnnotations.from(beanType, SearchStrategy.TYPE_HIERARCHY).get(annotationType);
+			// 如果有，则返回这个注解
 			if (annotation.isPresent()) {
 				return annotation;
 			}
 		}
+		// 如果 beanType 是空的
+		// 判断是否当前 beanFactory 中有这个 bd
 		if (containsBeanDefinition(beanName)) {
+			// 获取对应的 beanName 的 bd
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
 			// Check raw bean class, e.g. in case of a proxy.
+			// 判断如果这个 bd 有设置了 beanClass
 			if (bd.hasBeanClass()) {
+				// 或者这个 class 对象
 				Class<?> beanClass = bd.getBeanClass();
+				// 如果这个 beanClass 给定的 beanType 不一样
 				if (beanClass != beanType) {
+					// 通过 beanClass 获取这个注解
 					MergedAnnotation<A> annotation =
 							MergedAnnotations.from(beanClass, SearchStrategy.TYPE_HIERARCHY).get(annotationType);
 					if (annotation.isPresent()) {
+						// 如果找到了，则返回这个注解
 						return annotation;
 					}
 				}
 			}
+			// 最后的 factoryMethod 方法类型的 bean 的处理，获取这个对应的方法
 			// Check annotations declared on factory method, if any.
 			Method factoryMethod = bd.getResolvedFactoryMethod();
 			if (factoryMethod != null) {
+				// 如果方法不为空
+				// 则从方法上获取这个 annotationType 注解
 				MergedAnnotation<A> annotation =
 						MergedAnnotations.from(factoryMethod, SearchStrategy.TYPE_HIERARCHY).get(annotationType);
 				if (annotation.isPresent()) {
+					// 有则返回这个注解
 					return annotation;
 				}
 			}
 		}
+		// 当前 beanFactory 中没有这个 bd，直接返回找不到
 		return MergedAnnotation.missing();
 	}
 

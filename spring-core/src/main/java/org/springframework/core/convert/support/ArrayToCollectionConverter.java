@@ -27,6 +27,7 @@ import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.ConditionalGenericConverter;
 import org.springframework.lang.Nullable;
 
+// 数组->集合的转换
 /**
  * Converts an array to a Collection.
  *
@@ -60,6 +61,7 @@ final class ArrayToCollectionConverter implements ConditionalGenericConverter {
 				sourceType.getElementTypeDescriptor(), targetType.getElementTypeDescriptor(), this.conversionService);
 	}
 
+	// 转换
 	@Override
 	@Nullable
 	public Object convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
