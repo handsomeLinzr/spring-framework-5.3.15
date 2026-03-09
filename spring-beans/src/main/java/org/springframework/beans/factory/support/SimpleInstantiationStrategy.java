@@ -98,6 +98,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 		else {
 			// Must generate CGLIB subclass.
 			// 如果有 methodOverrides，则需要创建代理
+			// 也就是有 Lookup 或者 lookup-method 的情况，需要走代理
 			return instantiateWithMethodInjection(bd, beanName, owner);
 		}
 	}

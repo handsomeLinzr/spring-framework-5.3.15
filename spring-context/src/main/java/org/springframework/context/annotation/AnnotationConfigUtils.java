@@ -305,7 +305,7 @@ public abstract class AnnotationConfigUtils {
 		}
 		// 判断代理模式是不是 TARGET_CLASS
 		boolean proxyTargetClass = scopedProxyMode.equals(ScopedProxyMode.TARGET_CLASS);
-		// 根据代理类型作用域代理模式创建代理对象的包装，还没有正在的创建代理对象
+		// 根据代理类型作用域代理模式创建代理对象的包装，调用 createScopedProxy
 		return ScopedProxyCreator.createScopedProxy(definition, registry, proxyTargetClass);
 	}
 

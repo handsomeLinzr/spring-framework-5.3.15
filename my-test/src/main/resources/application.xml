@@ -14,7 +14,7 @@
 <!--	<bean id="myBean1" class="org.springframework.mytest.bean.MyBean1" />-->
 
 <!--	Component Scan-->
-<!--	<context:component-scan base-package="org.springframework.mytest" />-->
+	<context:component-scan base-package="org.springframework.mytest" />
 
 <!--	 Property Placeholder -->
 	<context:property-placeholder location="classpath:application.properties" />
@@ -24,8 +24,8 @@
 		<my-user:property key="password" value="${password}"/>
 	</my-user:user>
 
-	<bean id="bean1" class="org.springframework.mytest.bean.Bean1" autowire="constructor"/>
+<!--	<bean id="bean1" class="org.springframework.mytest.bean.Bean1" autowire="constructor"/>-->
 
-	<bean id="bean2" class="org.springframework.mytest.bean.Bean2" />
+<!--	<bean id="bean2" class="org.springframework.mytest.bean.Bean2" />-->
 
 </beans>

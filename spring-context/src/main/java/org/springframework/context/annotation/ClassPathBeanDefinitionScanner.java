@@ -322,7 +322,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 				if (checkCandidate(beanName, candidate)) {
 					// 创建对应的 BeanDefinitionHolder
 					BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
-					// todo 作用域？
+					// 作用域代理的处理，如果配置了作用代理类型不是 NO，则需要设置代理，代理后每次获取都重新从 beanFactory 中获取 bean
 					definitionHolder =
 							AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 					// 添加到 beanDefinitions

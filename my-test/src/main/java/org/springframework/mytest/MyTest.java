@@ -6,6 +6,7 @@ import org.springframework.mytest.bean.Bean1;
 import org.springframework.mytest.bean.Bean5;
 import org.springframework.mytest.bean.aop.MyCalculate;
 import org.springframework.mytest.event.*;
+import org.springframework.mytest.lookup.LookupBean1;
 import org.springframework.mytest.tx.BookService;
 import org.springframework.mytest.tx.TxConfig;
 
@@ -16,7 +17,7 @@ import org.springframework.mytest.tx.TxConfig;
 public class MyTest {
 
 	public static void main(String[] args) {
-		txAnno();
+		lookup();
 	}
 
 
@@ -71,6 +72,14 @@ public class MyTest {
 	public static void eventAnno() {
 		AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(EventConfiguration.class);
 		ac.publishEvent(new MyApplicationEvent("发布事件"));
+	}
+
+	public static void lookup() {
+		ClassPathXmlApplicationContext ac = new ClassPathXmlApplicationContext("classpath:lookup-method.xml");
+		LookupBean1 lookupBean1 = ac.getBean(LookupBean1.class);
+		lookupBean1.va();
+		LookupBean1 lookupBean2 = ac.getBean(LookupBean1.class);
+		lookupBean2.va();
 	}
 
 

@@ -59,9 +59,9 @@ public abstract class ScopedProxyUtils {
 
 		// 获取 bean 原始目标名称
 		String originalBeanName = definition.getBeanName();
-		// 获取 bd 对象
+		// 获取源 bd 对象
 		BeanDefinition targetDefinition = definition.getBeanDefinition();
-		// 获取要作用域代理之后的 beanName
+		// 获取要作用域代理之后的 beanName，也就是 scopedTarget. + 原来的 beanName
 		String targetBeanName = getTargetBeanName(originalBeanName);
 
 		// Create a scoped proxy definition for the original bean name,
@@ -74,7 +74,7 @@ public abstract class ScopedProxyUtils {
 		proxyDefinition.setSource(definition.getSource());
 		proxyDefinition.setRole(targetDefinition.getRole());
 
-		// 添加属性 targetBeanName，值是 targetBeanName
+		// 添加属性 targetBeanName，值是 targetBeanName，也就是代理的 beanName，后续需要通过 beanFactory 传入这个 name 获取目标 bean
 		proxyDefinition.getPropertyValues().add("targetBeanName", targetBeanName);
 		if (proxyTargetClass) {
 			// 如果是 TARGET_CLASS 类型

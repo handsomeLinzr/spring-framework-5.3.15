@@ -11,11 +11,13 @@
 	       http://www.springframework.org/schema/my-user http://www.springframework.org/schema/expand/my-user.xsd">
 
 <!--	Component Scan-->
-	<context:component-scan base-package="org.springframework.mytest" />
+	<context:component-scan base-package="org.springframework.mytest.lookup" />
 
-<!--	<bean id="fruid" class="org.springframework.mytest.bean.MyBean1">-->
-<!--		<lookup-method></lookup-method>-->
+<!--	<bean id="lookupBean1" class="org.springframework.mytest.lookup.LookupBean1">-->
+<!--		<lookup-method bean="lookupBean2" name="getLookupBean2"/>-->
 <!--	</bean>-->
+
+<!--	<bean id="lookupBean2" class="org.springframework.mytest.lookup.LookupBean2"/>-->
 
 <!--	 Property Placeholder -->
 	<context:property-placeholder location="classpath:application.properties" />

@@ -1405,7 +1405,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 			// getAutowireCandidateResolver() ==> ContextAnnotationAutowireCandidateResolver
 			// 如果参数是懒加载，则创建一个延迟解析的代理
-			// 如果没有 @Lazy 注解标记，不需要延迟加载，这里范湖 null，如果有则返回代理对象
+			// 如果没有 @Lazy 注解标记，不需要延迟加载，这里返回 null，如果有则返回代理对象
 			Object result = getAutowireCandidateResolver().getLazyResolutionProxyIfNecessary(
 					descriptor, requestingBeanName);
 			if (result == null) {
