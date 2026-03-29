@@ -35,6 +35,7 @@ import org.springframework.lang.Nullable;
 @SuppressWarnings("serial")
 public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSupport implements BeanPostProcessor {
 
+	// AsyncAnnotationAdvisor
 	@Nullable
 	protected Advisor advisor;
 
@@ -62,6 +63,7 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 		return bean;
 	}
 
+	// 后置处理
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) {
 		if (this.advisor == null || bean instanceof AopInfrastructureBean) {
@@ -88,6 +90,7 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 			if (!proxyFactory.isProxyTargetClass()) {
 				evaluateProxyInterfaces(bean.getClass(), proxyFactory);
 			}
+			// 添加当前这个 advisor
 			proxyFactory.addAdvisor(this.advisor);
 			customizeProxyFactory(proxyFactory);
 

@@ -57,6 +57,7 @@ import org.springframework.util.StringUtils;
  */
 public abstract class YamlProcessor {
 
+	// logger 日志
 	private final Log logger = LogFactory.getLog(getClass());
 
 	private ResolutionMethod resolutionMethod = ResolutionMethod.OVERRIDE;
@@ -161,8 +162,11 @@ public abstract class YamlProcessor {
 	 * @see #createYaml()
 	 */
 	protected void process(MatchCallback callback) {
+		// 创建一个 Yaml 工具对象
 		Yaml yaml = createYaml();
+		// 遍历资源文件处理
 		for (Resource resource : this.resources) {
+			// 处理过程
 			boolean found = process(callback, yaml, resource);
 			if (this.resolutionMethod == ResolutionMethod.FIRST_FOUND && found) {
 				return;
@@ -182,19 +186,31 @@ public abstract class YamlProcessor {
 	 * @see LoaderOptions#setAllowDuplicateKeys(boolean)
 	 */
 	protected Yaml createYaml() {
+		// 创建一个 LoaderOptions
 		LoaderOptions loaderOptions = new LoaderOptions();
+		// 设置是否允许重复的 key，默认是不允许
 		loaderOptions.setAllowDuplicateKeys(false);
+		// 创建一个 Yaml
 		return new Yaml(new FilteringConstructor(loaderOptions), new Representer(),
 				new DumperOptions(), loaderOptions);
 	}
 
+	/**
+	 * 解析过程
+	 * @param callback
+	 * @param yaml
+	 * @param resource
+	 * @return
+	 */
 	private boolean process(MatchCallback callback, Yaml yaml, Resource resource) {
 		int count = 0;
 		try {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Loading from YAML: " + resource);
 			}
+			// 通过文件输入流解析
 			try (Reader reader = new UnicodeReader(resource.getInputStream())) {
+				// yaml.loadAll 解析得到对象，比如 linkMap
 				for (Object object : yaml.loadAll(reader)) {
 					if (object != null && process(asMap(object), callback)) {
 						count++;
@@ -251,7 +267,14 @@ public abstract class YamlProcessor {
 		return result;
 	}
 
+	/**
+	 * map 解析得到配置
+	 * @param map
+	 * @param callback
+	 * @return
+	 */
 	private boolean process(Map<String, Object> map, MatchCallback callback) {
+		// 将解析到的结果 map，封装到 properties 中
 		Properties properties = CollectionFactory.createStringAdaptingProperties();
 		properties.putAll(getFlattenedMap(map));
 
@@ -259,6 +282,7 @@ public abstract class YamlProcessor {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Merging document (no matchers set): " + map);
 			}
+			// 调用 callback 处理解析结果
 			callback.process(properties, map);
 			return true;
 		}

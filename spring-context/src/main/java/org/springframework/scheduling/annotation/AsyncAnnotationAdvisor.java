@@ -55,6 +55,7 @@ import org.springframework.util.function.SingletonSupplier;
 @SuppressWarnings("serial")
 public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements BeanFactoryAware {
 
+	// AnnotationAsyncExecutionInterceptor 构造函数的时候设置
 	private Advice advice;
 
 	private Pointcut pointcut;
@@ -95,6 +96,7 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 			@Nullable Supplier<Executor> executor, @Nullable Supplier<AsyncUncaughtExceptionHandler> exceptionHandler) {
 
 		Set<Class<? extends Annotation>> asyncAnnotationTypes = new LinkedHashSet<>(2);
+		// 添加要扫描的注解
 		asyncAnnotationTypes.add(Async.class);
 		try {
 			asyncAnnotationTypes.add((Class<? extends Annotation>)
@@ -149,6 +151,8 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 	protected Advice buildAdvice(
 			@Nullable Supplier<Executor> executor, @Nullable Supplier<AsyncUncaughtExceptionHandler> exceptionHandler) {
 
+		// 返回一个切面 Advice
+		// 这个就是对应的切面拦截类
 		AnnotationAsyncExecutionInterceptor interceptor = new AnnotationAsyncExecutionInterceptor(null);
 		interceptor.configure(executor, exceptionHandler);
 		return interceptor;

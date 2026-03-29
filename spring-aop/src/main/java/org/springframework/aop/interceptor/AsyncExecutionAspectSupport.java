@@ -116,6 +116,7 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	public void configure(@Nullable Supplier<Executor> defaultExecutor,
 			@Nullable Supplier<AsyncUncaughtExceptionHandler> exceptionHandler) {
 
+		// 默认的线程池获取逻辑
 		this.defaultExecutor = new SingletonSupplier<>(defaultExecutor, () -> getDefaultExecutor(this.beanFactory));
 		this.exceptionHandler = new SingletonSupplier<>(exceptionHandler, SimpleAsyncUncaughtExceptionHandler::new);
 	}
@@ -161,23 +162,31 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	 */
 	@Nullable
 	protected AsyncTaskExecutor determineAsyncExecutor(Method method) {
+		// 获取方法对应的线程池
 		AsyncTaskExecutor executor = this.executors.get(method);
+		// 如果是空的
 		if (executor == null) {
+			// 获取方法上的
 			Executor targetExecutor;
+			// 获取注解 Async 的 value 值
 			String qualifier = getExecutorQualifier(method);
 			if (StringUtils.hasLength(qualifier)) {
+				// 如果不为空，则从 beanFactory 中获取到这个线程池
 				targetExecutor = findQualifiedExecutor(this.beanFactory, qualifier);
 			}
 			else {
+				// 如果是空的，则用默认的线程池
 				targetExecutor = this.defaultExecutor.get();
 			}
 			if (targetExecutor == null) {
 				return null;
 			}
+			// 进行适配
 			executor = (targetExecutor instanceof AsyncListenableTaskExecutor ?
 					(AsyncListenableTaskExecutor) targetExecutor : new TaskExecutorAdapter(targetExecutor));
 			this.executors.put(method, executor);
 		}
+		// 返回对应的执行线程池
 		return executor;
 	}
 

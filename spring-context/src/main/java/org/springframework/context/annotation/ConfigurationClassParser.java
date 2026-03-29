@@ -267,6 +267,7 @@ class ConfigurationClassParser {
 	 */
 	protected void processConfigurationClass(ConfigurationClass configClass, Predicate<String> filter) throws IOException {
 		// 当前阶段为配置解析阶段，判断是否需要跳过解析这个bd
+		// 当前正在接地阶段，所以传 PARSE_CONFIGURATION
 		if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
 			// 跳过则直接返回
 			return;

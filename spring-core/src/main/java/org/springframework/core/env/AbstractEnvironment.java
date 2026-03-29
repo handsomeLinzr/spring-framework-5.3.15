@@ -104,8 +104,10 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	// 激活的配置文件
 	private final Set<String> activeProfiles = new LinkedHashSet<>();
 
+	// 默认的配置文件
 	private final Set<String> defaultProfiles = new LinkedHashSet<>(getReservedDefaultProfiles());
 
 	// propertySources 和 propertyResolver 配置和解析器这两个属性，在构造函数就会进行设置
@@ -252,6 +254,7 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 	protected void customizePropertySources(MutablePropertySources propertySources) {
 	}
 
+	// 默认的激活文件 default
 	/**
 	 * Return the set of reserved default profile names. This implementation returns
 	 * {@value #RESERVED_DEFAULT_PROFILE_NAME}. Subclasses may override in order to

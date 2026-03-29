@@ -165,6 +165,7 @@ class ConfigurationClassBeanDefinitionReader {
 		}
         // 这两个都是 import 相关
 		loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
+		// 处理 ImportBeanDefinitionRegistrar 类
 		loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
 	}
 
@@ -217,6 +218,7 @@ class ConfigurationClassBeanDefinitionReader {
 
 		// Do we need to mark the bean as skipped by its condition?
 		// Condition注解，判断是否需要跳过
+		// 当前阶段是注册 bean 的阶段了，所以需要传 REGISTER_BEAN
 		if (this.conditionEvaluator.shouldSkip(metadata, ConfigurationPhase.REGISTER_BEAN)) {
 			// 如果需要跳过，则添加到 skippedBeanMethods 中，直接返回不走下去
 			configClass.skippedBeanMethods.add(methodName);

@@ -51,6 +51,7 @@ public class CustomizableThreadCreator implements Serializable {
 	 * Create a new CustomizableThreadCreator with default thread name prefix.
 	 */
 	public CustomizableThreadCreator() {
+		// 线程名称
 		this.threadNamePrefix = getDefaultThreadNamePrefix();
 	}
 

@@ -151,6 +151,7 @@ public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAd
 			advisor.setAsyncAnnotationType(this.asyncAnnotationType);
 		}
 		advisor.setBeanFactory(beanFactory);
+		// 设置 advisor，也就是拦截的类
 		this.advisor = advisor;
 	}
 

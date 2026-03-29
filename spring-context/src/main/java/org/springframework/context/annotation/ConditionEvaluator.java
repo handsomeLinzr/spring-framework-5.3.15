@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.MultiValueMap;
 
+// Condition 条件判断器
 /**
  * Internal class used to evaluate {@link Conditional} annotations.
  *
@@ -124,17 +125,18 @@ class ConditionEvaluator {
 		for (Condition condition : conditions) {
 			ConfigurationPhase requiredPhase = null;
 			if (condition instanceof ConfigurationCondition) {
-				// 如果条件类属于 ConfigurationCondition 类型，则通过这个类拿到 requiredPhase，这个表示当前 condition 的阶段
+				// 判断如果当前的 condition 条件，属于 ConfigurationCondition 类型
+				// 则可以获取到当前这个条件定义了在那个阶段进行判断处理
+				// 也就是 requiredPhase，表示了这个条件需要进行判断的阶段
 				requiredPhase = ((ConfigurationCondition) condition).getConfigurationPhase();
 			}
-			// 1.如果 requiredPhase 是空的 或者 requiredPhase 和当前传进来的阶段是同一个
-			// 2.调用 condition.matches 方法返回的结果取反（即没命中 condition.matches 方法）
-			//		如果上边两点都为 true，则跳过，否则 不跳过
+			// 如果没有指定阶段，或者是这个阶段和当前判断的阶段一样，则需要进行判断了
 			if ((requiredPhase == null || requiredPhase == phase) && !condition.matches(this.context, metadata)) {
 				return true;
 			}
 		}
 
+		// 否则先跳过，等后边会再统一再判断一次
 		return false;
 	}
 

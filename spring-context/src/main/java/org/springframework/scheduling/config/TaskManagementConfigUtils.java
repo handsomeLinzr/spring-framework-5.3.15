@@ -16,6 +16,7 @@
 
 package org.springframework.scheduling.config;
 
+// 异步线程任务管理的工具类
 /**
  * Configuration constants for internal sharing across subpackages.
  *
