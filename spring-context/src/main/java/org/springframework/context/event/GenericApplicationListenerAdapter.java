@@ -38,12 +38,16 @@ import org.springframework.util.ConcurrentReferenceHashMap;
  */
 public class GenericApplicationListenerAdapter implements GenericApplicationListener {
 
+	// 事件类型缓存
+	// 缓存对应的监听器类型 和 对应的时间类型 缓存
+	// 静态修饰，所以是放在类文件中，内存上存在于方法区，共享，不会每个方法区都存一份
 	private static final Map<Class<?>, ResolvableType> eventTypeCache = new ConcurrentReferenceHashMap<>();
 
 
 	// 具体的监听器对象
 	private final ApplicationListener<ApplicationEvent> delegate;
 
+	// 对应 delegate 这个监听器对应的 事件类型
 	@Nullable
 	private final ResolvableType declaredEventType;
 
@@ -124,12 +128,15 @@ public class GenericApplicationListenerAdapter implements GenericApplicationList
 
 	@Nullable
 	static ResolvableType resolveDeclaredEventType(Class<?> listenerType) {
+		// 先根据监听器类型，从事件缓存只能给获取到对应的事件类型
 		ResolvableType eventType = eventTypeCache.get(listenerType);
 		if (eventType == null) {
-			// 通过监听器类型，解析得到对应监听的事件类型
+			// 如果得到的缓存没有，则需要再根据监听器类型，解析得到对应泛型中的事件类型
 			eventType = ResolvableType.forClass(listenerType).as(ApplicationListener.class).getGeneric();
+			// 添加到缓存中
 			eventTypeCache.put(listenerType, eventType);
 		}
+		// 返回对应的事件类型
 		return (eventType != ResolvableType.NONE ? eventType : null);
 	}
 
