@@ -281,18 +281,23 @@ public abstract class AbstractApplicationEventMulticaster
 			ConfigurableBeanFactory beanFactory = getBeanFactory();
 			for (String listenerBeanName : listenerBeans) {
 				try {
+					// 判断是否符合支持
 					if (supportsEvent(beanFactory, listenerBeanName, eventType)) {
+						// 调用 beanFactory，创建监听器 listener
 						ApplicationListener<?> listener =
 								beanFactory.getBean(listenerBeanName, ApplicationListener.class);
+						// 判断是否是支持当前的事件类型和事件源类型
 						if (!allListeners.contains(listener) && supportsEvent(listener, eventType, sourceType)) {
 							if (retriever != null) {
 								if (beanFactory.isSingleton(listenerBeanName)) {
 									filteredListeners.add(listener);
 								}
 								else {
+									// 添加
 									filteredListenerBeans.add(listenerBeanName);
 								}
 							}
+							// 将创建的 listener 添加到 allListeners 中
 							allListeners.add(listener);
 						}
 					}
@@ -316,6 +321,7 @@ public abstract class AbstractApplicationEventMulticaster
 
 		AnnotationAwareOrderComparator.sort(allListeners);
 		if (retriever != null) {
+			// 设置回去
 			if (filteredListenerBeans.isEmpty()) {
 				retriever.applicationListeners = new LinkedHashSet<>(allListeners);
 				retriever.applicationListenerBeans = filteredListenerBeans;
@@ -345,16 +351,20 @@ public abstract class AbstractApplicationEventMulticaster
 	private boolean supportsEvent(
 			ConfigurableBeanFactory beanFactory, String listenerBeanName, ResolvableType eventType) {
 
+		// 获取这个 listener 的 Class 类型
 		Class<?> listenerType = beanFactory.getType(listenerBeanName);
 		if (listenerType == null || GenericApplicationListener.class.isAssignableFrom(listenerType) ||
 				SmartApplicationListener.class.isAssignableFrom(listenerType)) {
 			return true;
 		}
+		// 判断如果不符合 eventType，返回false
 		if (!supportsEvent(listenerType, eventType)) {
 			return false;
 		}
 		try {
+			// 获取bd
 			BeanDefinition bd = beanFactory.getMergedBeanDefinition(listenerBeanName);
+			// 获取对应的泛型，也就是事件类型，并进行匹配检查，返回结果
 			ResolvableType genericEventType = bd.getResolvableType().as(ApplicationListener.class).getGeneric();
 			return (genericEventType == ResolvableType.NONE || genericEventType.isAssignableFrom(eventType));
 		}

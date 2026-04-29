@@ -86,7 +86,8 @@ public class GenericApplicationListenerAdapter implements GenericApplicationList
 			return (eventClass != null && ((SmartApplicationListener) this.delegate).supportsEventType(eventClass));
 		}
 		else {
-			// 如果没有特殊情况，普通的 ApplicationListener，走的这里，declaredEventType 默认都是空的，返回 true
+			// 如果没有特殊情况，普通的 ApplicationListener，走的这里
+			// declaredEventType 对应的事件类型，判断事件类型是否和当前的类型符合
 			return (this.declaredEventType == null || this.declaredEventType.isAssignableFrom(eventType));
 		}
 	}
