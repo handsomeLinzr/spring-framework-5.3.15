@@ -67,12 +67,14 @@ public abstract class AbstractAsyncConfiguration implements ImportAware {
 		}
 	}
 
+	// 收集当前的所有 AsyncConfigurer 类型的 bean
 	/**
 	 * Collect any {@link AsyncConfigurer} beans through autowiring.
 	 */
 	@Autowired
 	void setConfigurers(ObjectProvider<AsyncConfigurer> configurers) {
 		Supplier<AsyncConfigurer> configurer = SingletonSupplier.of(() -> {
+			// 当前容器下的所有 AsyncConfigurer 类型的 bean
 			List<AsyncConfigurer> candidates = configurers.stream().collect(Collectors.toList());
 			if (CollectionUtils.isEmpty(candidates)) {
 				return null;
@@ -80,12 +82,15 @@ public abstract class AbstractAsyncConfiguration implements ImportAware {
 			if (candidates.size() > 1) {
 				throw new IllegalStateException("Only one AsyncConfigurer may exist");
 			}
+			// 返回第一个
 			return candidates.get(0);
 		});
 		this.executor = adapt(configurer, AsyncConfigurer::getAsyncExecutor);
 		this.exceptionHandler = adapt(configurer, AsyncConfigurer::getAsyncUncaughtExceptionHandler);
 	}
 
+	// 尝试从 supplier 中获取到结果得到 AsyncConfigurer 异步配置
+	// 如果没有，直接返回 nul；如果有，则再调用 provider 的方法，传入 configurer 配置，得到结果返回
 	private <T> Supplier<T> adapt(Supplier<AsyncConfigurer> supplier, Function<AsyncConfigurer, T> provider) {
 		return () -> {
 			AsyncConfigurer configurer = supplier.get();

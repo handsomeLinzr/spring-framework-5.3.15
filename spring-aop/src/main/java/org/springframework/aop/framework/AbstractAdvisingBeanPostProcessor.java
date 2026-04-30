@@ -39,6 +39,7 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	@Nullable
 	protected Advisor advisor;
 
+	// 是否排在其他的 advisor 前边
 	protected boolean beforeExistingAdvisors = false;
 
 	private final Map<Class<?>, Boolean> eligibleBeans = new ConcurrentHashMap<>(256);

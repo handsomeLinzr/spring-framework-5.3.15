@@ -89,6 +89,7 @@ public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAd
 
 
 	public AsyncAnnotationBeanPostProcessor() {
+		// 排在其他的 advisor 前边
 		setBeforeExistingAdvisors(true);
 	}
 
