@@ -17,7 +17,7 @@ import org.springframework.mytest.tx.TxConfig;
 public class MyTest {
 
 	public static void main(String[] args) {
-		lookup();
+		aop();
 	}
 
 

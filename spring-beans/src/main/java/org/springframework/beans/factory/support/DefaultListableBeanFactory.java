@@ -1391,9 +1391,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			return createOptionalDependency(descriptor, requestingBeanName);
 		}
 
-		// ObjectFactory 类型的处理
+		// ObjectFactory 类型的处理，延迟注入的情况
 		else if (ObjectFactory.class == descriptor.getDependencyType() ||
 				ObjectProvider.class == descriptor.getDependencyType()) {
+			// 直接返回 DependencyObjectProvider 类型，传入 descriptor 和 requestingBeanName
+			// 后续延迟加载
 			return new DependencyObjectProvider(descriptor, requestingBeanName);
 		}
 
@@ -1544,7 +1546,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		Class<?> type = descriptor.getDependencyType();
 
+		// 如果是 StreamDependencyDescriptor 类型的情况处理
 		if (descriptor instanceof StreamDependencyDescriptor) {
+			// 获取匹配的结果， 根据 type 找
 			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, type, descriptor);
 			if (autowiredBeanNames != null) {
 				autowiredBeanNames.addAll(matchingBeans.keySet());
@@ -2139,11 +2143,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	}
 
 
+	// 延迟解析依赖的对象
 	/**
 	 * Serializable ObjectFactory/ObjectProvider for lazy resolution of a dependency.
 	 */
 	private class DependencyObjectProvider implements BeanObjectProvider<Object> {
 
+		// NestedDependencyDescriptor
 		private final DependencyDescriptor descriptor;
 
 		private final boolean optional;
@@ -2160,9 +2166,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		@Override
 		public Object getObject() throws BeansException {
 			if (this.optional) {
+				// 可选
 				return createOptionalDependency(this.descriptor, this.beanName);
 			}
 			else {
+				// 必选
+				// 根据 descriptor 和 beanName 获取到对应的注入对象，返回
 				Object result = doResolveDependency(this.descriptor, this.beanName, null, null);
 				if (result == null) {
 					throw new NoSuchBeanDefinitionException(this.descriptor.getResolvableType());
@@ -2292,6 +2301,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		@SuppressWarnings("unchecked")
 		private Stream<Object> resolveStream(boolean ordered) {
 			DependencyDescriptor descriptorToUse = new StreamDependencyDescriptor(this.descriptor, ordered);
+			// 获取对应的依赖 bean
 			Object result = doResolveDependency(descriptorToUse, this.beanName, null, null);
 			return (result instanceof Stream ? (Stream<Object>) result : Stream.of(result));
 		}

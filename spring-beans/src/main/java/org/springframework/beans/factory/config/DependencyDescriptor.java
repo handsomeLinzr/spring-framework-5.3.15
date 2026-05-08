@@ -385,6 +385,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	 */
 	public Class<?> getDependencyType() {
 		if (this.field != null) {
+			// field 的情况，从字段获取
 			if (this.nestingLevel > 1) {
 				Type type = this.field.getGenericType();
 				for (int i = 2; i <= this.nestingLevel; i++) {
@@ -409,6 +410,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 			}
 		}
 		else {
+			// method 的情况，通过 methodParameter 获取得到参数的类型
 			return obtainMethodParameter().getNestedParameterType();
 		}
 	}

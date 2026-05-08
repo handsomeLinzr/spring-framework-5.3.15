@@ -72,10 +72,13 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	// 用map缓存，用于缓存方法和对应的异步执行器
 	private final Map<Method, AsyncTaskExecutor> executors = new ConcurrentHashMap<>(16);
 
+	// 构造函数设置，默认传入空
 	private SingletonSupplier<Executor> defaultExecutor;
 
+	// 异常处理
 	private SingletonSupplier<AsyncUncaughtExceptionHandler> exceptionHandler;
 
 	@Nullable
@@ -90,7 +93,9 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	 * executor will be looked up at invocation time against the enclosing bean factory
 	 */
 	public AsyncExecutionAspectSupport(@Nullable Executor defaultExecutor) {
+		// 默认的执行器获取过程，优先获取 defaultExecutor，如果没有则调用 getDefaultExecutor(this.beanFactory) 获取
 		this.defaultExecutor = new SingletonSupplier<>(defaultExecutor, () -> getDefaultExecutor(this.beanFactory));
+		// 异常处理
 		this.exceptionHandler = SingletonSupplier.of(SimpleAsyncUncaughtExceptionHandler::new);
 	}
 
@@ -116,7 +121,7 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	public void configure(@Nullable Supplier<Executor> defaultExecutor,
 			@Nullable Supplier<AsyncUncaughtExceptionHandler> exceptionHandler) {
 
-		// 默认的线程池获取逻辑
+		// 默认异步线程池执行器
 		this.defaultExecutor = new SingletonSupplier<>(defaultExecutor, () -> getDefaultExecutor(this.beanFactory));
 		this.exceptionHandler = new SingletonSupplier<>(exceptionHandler, SimpleAsyncUncaughtExceptionHandler::new);
 	}
@@ -162,7 +167,7 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	 */
 	@Nullable
 	protected AsyncTaskExecutor determineAsyncExecutor(Method method) {
-		// 获取方法对应的线程池
+		// 现从 executors 缓存中获取当前方法对应的执行器
 		AsyncTaskExecutor executor = this.executors.get(method);
 		// 如果是空的
 		if (executor == null) {
@@ -184,6 +189,7 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 			// 进行适配
 			executor = (targetExecutor instanceof AsyncListenableTaskExecutor ?
 					(AsyncListenableTaskExecutor) targetExecutor : new TaskExecutorAdapter(targetExecutor));
+			// 设置
 			this.executors.put(method, executor);
 		}
 		// 返回对应的执行线程池
@@ -220,6 +226,9 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 		return BeanFactoryAnnotationUtils.qualifiedBeanOfType(beanFactory, Executor.class, qualifier);
 	}
 
+	// 默认的异步执行器的获取过程
+	// 获取 TaskExecutor 类型的bean
+	// 如果没有，获取 taskExecutor 名称的 bean
 	/**
 	 * Retrieve or build a default executor for this advice instance.
 	 * An executor returned from here will be cached for further use.
@@ -236,6 +245,7 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 	protected Executor getDefaultExecutor(@Nullable BeanFactory beanFactory) {
 		if (beanFactory != null) {
 			try {
+				// 尝试从 beanFactory 中获取 TaskExecutor类型的 bean
 				// Search for TaskExecutor bean... not plain Executor since that would
 				// match with ScheduledExecutorService as well, which is unusable for
 				// our purposes here. TaskExecutor is more clearly designed for it.
@@ -244,6 +254,7 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 			catch (NoUniqueBeanDefinitionException ex) {
 				logger.debug("Could not find unique TaskExecutor bean", ex);
 				try {
+					// 如果没有单独的这个bean，则获取 taskExecutor 这个beanName 的 bean
 					return beanFactory.getBean(DEFAULT_TASK_EXECUTOR_BEAN_NAME, Executor.class);
 				}
 				catch (NoSuchBeanDefinitionException ex2) {
@@ -257,6 +268,7 @@ public abstract class AsyncExecutionAspectSupport implements BeanFactoryAware {
 			catch (NoSuchBeanDefinitionException ex) {
 				logger.debug("Could not find default TaskExecutor bean", ex);
 				try {
+					// 如果没有 TaskExecutor 类型的bean，也去获取 taskExecutor 这个 bean
 					return beanFactory.getBean(DEFAULT_TASK_EXECUTOR_BEAN_NAME, Executor.class);
 				}
 				catch (NoSuchBeanDefinitionException ex2) {

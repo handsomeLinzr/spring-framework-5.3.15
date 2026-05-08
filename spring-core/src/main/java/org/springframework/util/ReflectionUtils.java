@@ -684,6 +684,7 @@ public abstract class ReflectionUtils {
 	 * @see #doWithFields
 	 */
 	public static void doWithLocalFields(Class<?> clazz, FieldCallback fc) {
+		// 遍历当前类的所有字段
 		for (Field field : getDeclaredFields(clazz)) {
 			try {
 				fc.doWith(field);

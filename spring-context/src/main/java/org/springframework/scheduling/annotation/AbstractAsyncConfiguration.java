@@ -67,7 +67,6 @@ public abstract class AbstractAsyncConfiguration implements ImportAware {
 		}
 	}
 
-	// 收集当前的所有 AsyncConfigurer 类型的 bean
 	/**
 	 * Collect any {@link AsyncConfigurer} beans through autowiring.
 	 */

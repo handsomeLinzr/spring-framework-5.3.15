@@ -53,6 +53,7 @@ public class ProxyAsyncConfiguration extends AbstractAsyncConfiguration {
 		bpp.configure(this.executor, this.exceptionHandler);
 		Class<? extends Annotation> customAsyncAnnotation = this.enableAsync.getClass("annotation");
 		if (customAsyncAnnotation != AnnotationUtils.getDefaultValue(EnableAsync.class, "annotation")) {
+			// 判断是否自定义异步注解，是则设置自定义注解到当前异步注解
 			bpp.setAsyncAnnotationType(customAsyncAnnotation);
 		}
 		bpp.setProxyTargetClass(this.enableAsync.getBoolean("proxyTargetClass"));

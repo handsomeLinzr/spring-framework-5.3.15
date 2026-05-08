@@ -21,6 +21,9 @@ import java.util.function.Supplier;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
+// 传入3个属性对象
+// 	单例对象   单例对象的获取    默认单例对象的获取
+//  当单例对象是空的，则调用单例队形的获取来尝试得到单例对象，如果还没有则调用默认的来获取
 /**
  * A {@link java.util.function.Supplier} decorator that caches a singleton result and
  * makes it available from {@link #get()} (nullable) and {@link #obtain()} (null-safe).
@@ -81,6 +84,7 @@ public class SingletonSupplier<T> implements Supplier<T> {
 	}
 
 
+	// 获取共享单例对象的逻辑
 	/**
 	 * Get the shared singleton instance for this supplier.
 	 * @return the singleton instance (or {@code null} if none)
@@ -88,21 +92,29 @@ public class SingletonSupplier<T> implements Supplier<T> {
 	@Override
 	@Nullable
 	public T get() {
+		// 先获取传入对象 singletonInstance
 		T instance = this.singletonInstance;
+		// 如果传入的单例对象是空的
 		if (instance == null) {
 			synchronized (this) {
+				// 双重校验，单例模式
 				instance = this.singletonInstance;
 				if (instance == null) {
 					if (this.instanceSupplier != null) {
+						// 调用用一个对象，调用其中的获取方法，获取结果
 						instance = this.instanceSupplier.get();
 					}
 					if (instance == null && this.defaultSupplier != null) {
+						// 如果当前还没有对象，且有设置 defaultSupplier
+						// 则调用 defaultSupplier 得到单例对象
 						instance = this.defaultSupplier.get();
 					}
+					// 将得到的单例对象赋值给 singletonInstance
 					this.singletonInstance = instance;
 				}
 			}
 		}
+		// 返回单例对象
 		return instance;
 	}
 

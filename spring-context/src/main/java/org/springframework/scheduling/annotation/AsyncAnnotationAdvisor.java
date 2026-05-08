@@ -106,6 +106,7 @@ public class AsyncAnnotationAdvisor extends AbstractPointcutAdvisor implements B
 			// If EJB 3.1 API not present, simply ignore.
 		}
 		this.advice = buildAdvice(executor, exceptionHandler);
+		// 设置拦截的切点类型
 		this.pointcut = buildPointcut(asyncAnnotationTypes);
 	}
 

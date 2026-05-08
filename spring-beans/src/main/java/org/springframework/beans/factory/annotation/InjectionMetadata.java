@@ -111,12 +111,14 @@ public class InjectionMetadata {
 		this.checkedElements = checkedElements;
 	}
 
+	// 依赖注入
 	public void inject(Object target, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
 		Collection<InjectedElement> checkedElements = this.checkedElements;
 		Collection<InjectedElement> elementsToIterate =
 				(checkedElements != null ? checkedElements : this.injectedElements);
 		if (!elementsToIterate.isEmpty()) {
 			for (InjectedElement element : elementsToIterate) {
+				// 区分成字段注入还是方法注入，分别是 AutowiredFieldElement 和 AutowiredMethodElement
 				element.inject(target, beanName, pvs);
 			}
 		}

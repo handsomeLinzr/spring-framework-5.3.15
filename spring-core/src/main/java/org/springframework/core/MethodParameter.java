@@ -482,6 +482,7 @@ public class MethodParameter {
 	 * @return the parameter type (never {@code null})
 	 */
 	public Class<?> getParameterType() {
+		// 如果已经设置了，则直接返回
 		Class<?> paramType = this.parameterType;
 		if (paramType != null) {
 			return paramType;
@@ -490,8 +491,10 @@ public class MethodParameter {
 			paramType = ResolvableType.forMethodParameter(this, null, 1).resolve();
 		}
 		if (paramType == null) {
+			// 计算参数类型
 			paramType = computeParameterType();
 		}
+		// 将结果设置到 parameterType，并返回
 		this.parameterType = paramType;
 		return paramType;
 	}
@@ -540,6 +543,8 @@ public class MethodParameter {
 			}
 			return method.getReturnType();
 		}
+		// executable 就是对应的 method
+		// 通过 method + parameterIndex 获取到对应的参数类型
 		return this.executable.getParameterTypes()[this.parameterIndex];
 	}
 
@@ -572,6 +577,7 @@ public class MethodParameter {
 			return Object.class;
 		}
 		else {
+			// 获取参数类型
 			return getParameterType();
 		}
 	}
