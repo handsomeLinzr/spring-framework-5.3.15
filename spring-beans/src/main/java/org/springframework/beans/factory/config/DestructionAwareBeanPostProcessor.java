@@ -18,6 +18,8 @@ package org.springframework.beans.factory.config;
 
 import org.springframework.beans.BeansException;
 
+// bpp 的子类，增加了一个方法用于在调用销毁前的一个回调 before-destruction callback
+// 典型用法是对特定类型的 bean 做自定义的销毁回调，用来匹配与之对应的初始化回调
 /**
  * Subinterface of {@link BeanPostProcessor} that adds a before-destruction callback.
  *
@@ -29,6 +31,7 @@ import org.springframework.beans.BeansException;
  */
 public interface DestructionAwareBeanPostProcessor extends BeanPostProcessor {
 
+	// 销毁前调用
 	/**
 	 * Apply this BeanPostProcessor to the given bean instance before its
 	 * destruction, e.g. invoking custom destruction callbacks.
@@ -43,6 +46,7 @@ public interface DestructionAwareBeanPostProcessor extends BeanPostProcessor {
 	 */
 	void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException;
 
+	// 检测给定的 bean 实例是否需要当前这个 bpp 来进行销毁
 	/**
 	 * Determine whether the given bean instance requires destruction by this
 	 * post-processor.

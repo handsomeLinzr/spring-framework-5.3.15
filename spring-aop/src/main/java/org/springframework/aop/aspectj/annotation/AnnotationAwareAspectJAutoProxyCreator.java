@@ -52,9 +52,11 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 	@Nullable
 	private List<Pattern> includePatterns;
 
+	// 创建 aspectj 切面创建工厂 ReflectiveAspectJAdvisorFactory
 	@Nullable
 	private AspectJAdvisorFactory aspectJAdvisorFactory;
 
+	// BeanFactoryAspectJAdvisorsBuilderAdapter
 	@Nullable
 	private BeanFactoryAspectJAdvisorsBuilder aspectJAdvisorsBuilder;
 
@@ -79,8 +81,10 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 	protected void initBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 		super.initBeanFactory(beanFactory);
 		if (this.aspectJAdvisorFactory == null) {
+			// 创建 ReflectiveAspectJAdvisorFactory 赋值给 aspectJAdvisorFactory 工厂
 			this.aspectJAdvisorFactory = new ReflectiveAspectJAdvisorFactory(beanFactory);
 		}
+		// 构建 aspectJAdvisorsBuilder
 		this.aspectJAdvisorsBuilder =
 				new BeanFactoryAspectJAdvisorsBuilderAdapter(beanFactory, this.aspectJAdvisorFactory);
 	}
@@ -91,6 +95,7 @@ public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorA
 		// Add all the Spring advisors found according to superclass rules.
 		// 获取到当前 beanFactory 中的所有 Advisor 通知管理对象，会进行 getBean 调用创建
 		List<Advisor> advisors = super.findCandidateAdvisors();
+		// 构建所有当前 beanFactory 内的 AspectJ 切面通知
 		// Build Advisors for all AspectJ aspects in the bean factory.
 		if (this.aspectJAdvisorsBuilder != null) {
 			advisors.addAll(this.aspectJAdvisorsBuilder.buildAspectJAdvisors());

@@ -83,26 +83,33 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 	public List<Advisor> buildAspectJAdvisors() {
 		List<String> aspectNames = this.aspectBeanNames;
 
+		// double check 设置 aspectBeanNames，当前所有的 @Aspect 标识的类
 		if (aspectNames == null) {
 			synchronized (this) {
 				aspectNames = this.aspectBeanNames;
 				if (aspectNames == null) {
 					List<Advisor> advisors = new ArrayList<>();
 					aspectNames = new ArrayList<>();
+					// 获得当前 beanFactory 下的所有 beanName
 					String[] beanNames = BeanFactoryUtils.beanNamesForTypeIncludingAncestors(
 							this.beanFactory, Object.class, true, false);
+					// 遍历所有的 beanName
 					for (String beanName : beanNames) {
 						if (!isEligibleBean(beanName)) {
 							continue;
 						}
 						// We must be careful not to instantiate beans eagerly as in this case they
 						// would be cached by the Spring container but would not have been weaved.
+						// 获取这个bean的类型
 						Class<?> beanType = this.beanFactory.getType(beanName, false);
 						if (beanType == null) {
 							continue;
 						}
+						// 如果这个类是 @Aspect 注解的类
 						if (this.advisorFactory.isAspect(beanType)) {
+							// 添加到 aspectNames 中
 							aspectNames.add(beanName);
+							// 构建 AspectMetadata 切面通知元数据
 							AspectMetadata amd = new AspectMetadata(beanType, beanName);
 							if (amd.getAjType().getPerClause().getKind() == PerClauseKind.SINGLETON) {
 								MetadataAwareAspectInstanceFactory factory =
@@ -124,12 +131,16 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 								}
 								MetadataAwareAspectInstanceFactory factory =
 										new PrototypeAspectInstanceFactory(this.beanFactory, beanName);
+								// 设置切面工厂缓存
 								this.aspectFactoryCache.put(beanName, factory);
+								// 获取通知，添加到 advisors 中
 								advisors.addAll(this.advisorFactory.getAdvisors(factory));
 							}
 						}
 					}
+					// 赋值
 					this.aspectBeanNames = aspectNames;
+					// 返回
 					return advisors;
 				}
 			}

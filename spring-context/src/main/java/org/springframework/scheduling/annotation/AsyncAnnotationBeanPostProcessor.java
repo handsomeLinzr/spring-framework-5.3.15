@@ -77,9 +77,13 @@ public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAd
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	// configure 方法设置进来
+	// 异步执行器，从 AsyncConfigurer（有声明了这个 bean 的话）中调用方法 getAsyncExecutor 获取
 	@Nullable
 	private Supplier<Executor> executor;
 
+	// configure 方法设置进来
+	// 异常处理器，也是从 AsyncConfigurer 中获取
 	@Nullable
 	private Supplier<AsyncUncaughtExceptionHandler> exceptionHandler;
 
@@ -94,6 +98,7 @@ public class AsyncAnnotationBeanPostProcessor extends AbstractBeanFactoryAwareAd
 	}
 
 
+	// 配置执行器和异常处理器
 	/**
 	 * Configure this post-processor with the given executor and exception handler suppliers,
 	 * applying the corresponding default if a supplier is not resolvable.

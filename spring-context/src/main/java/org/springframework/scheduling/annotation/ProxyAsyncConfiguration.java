@@ -51,6 +51,7 @@ public class ProxyAsyncConfiguration extends AbstractAsyncConfiguration {
 		AsyncAnnotationBeanPostProcessor bpp = new AsyncAnnotationBeanPostProcessor();
 		// 设置对应的线程池和异常处理器
 		bpp.configure(this.executor, this.exceptionHandler);
+		//
 		Class<? extends Annotation> customAsyncAnnotation = this.enableAsync.getClass("annotation");
 		if (customAsyncAnnotation != AnnotationUtils.getDefaultValue(EnableAsync.class, "annotation")) {
 			// 判断是否自定义异步注解，是则设置自定义注解到当前异步注解

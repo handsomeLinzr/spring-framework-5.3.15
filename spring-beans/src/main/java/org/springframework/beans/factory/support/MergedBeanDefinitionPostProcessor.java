@@ -18,7 +18,7 @@ package org.springframework.beans.factory.support;
 
 import org.springframework.beans.factory.config.BeanPostProcessor;
 
-// 运行时进行后置处理的 bpp
+// 运行时进行后置处理的 bpp，合并 bd
 // postProcessMergedBeanDefinition 方法可以反射得到 bean 定义，并做一些前置准备的缓存工作，也可以
 // 对bean定义的属性进行修改
 // 例如实现类 InitDestroyAnnotationBeanPostProcessor，进行创建后和销毁前的方法定义

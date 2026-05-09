@@ -1080,6 +1080,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		return this.beanPostProcessors;
 	}
 
+	// bpp 分类缓存
 	/**
 	 * Return the internal cache of pre-filtered post-processors,
 	 * freshly (re-)building it if necessary.
@@ -1091,12 +1092,15 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			bpCache = new BeanPostProcessorCache();
 			for (BeanPostProcessor bp : this.beanPostProcessors) {
 				// InstantiationAwareBeanPostProcessor
+				// 实例化 Aware 的 bpp
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
 					bpCache.instantiationAware.add((InstantiationAwareBeanPostProcessor) bp);
+					// SmartInstantiationAwareBeanPostProcessor 类型的 bpp
 					if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
 						bpCache.smartInstantiationAware.add((SmartInstantiationAwareBeanPostProcessor) bp);
 					}
 				}
+				// DestructionAwareBeanPostProcessor 销毁前回调的 bpp
 				if (bp instanceof DestructionAwareBeanPostProcessor) {
 					bpCache.destructionAware.add((DestructionAwareBeanPostProcessor) bp);
 				}
@@ -2352,12 +2356,16 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	static class BeanPostProcessorCache {
 
+		//  before-instantiation callback 实例化前
 		final List<InstantiationAwareBeanPostProcessor> instantiationAware = new ArrayList<>();
 
+		// InstantiationAwareBeanPostProcessor 的基础上，增加 predictBeanType 推断类型
 		final List<SmartInstantiationAwareBeanPostProcessor> smartInstantiationAware = new ArrayList<>();
 
+		// before-destruction callback 销毁前
 		final List<DestructionAwareBeanPostProcessor> destructionAware = new ArrayList<>();
 
+		// postProcessMergedBeanDefinition  合并 bd
 		final List<MergedBeanDefinitionPostProcessor> mergedDefinition = new ArrayList<>();
 	}
 

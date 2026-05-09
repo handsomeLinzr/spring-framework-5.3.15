@@ -21,6 +21,7 @@ import java.lang.reflect.Constructor;
 import org.springframework.beans.BeansException;
 import org.springframework.lang.Nullable;
 
+// InstantiationAwareBeanPostProcessor 的扩展，增加了一个回调方法用于预判最终的类型
 /**
  * Extension of the {@link InstantiationAwareBeanPostProcessor} interface,
  * adding a callback for predicting the eventual type of a processed bean.

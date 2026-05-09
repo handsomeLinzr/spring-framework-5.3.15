@@ -55,6 +55,8 @@ import org.springframework.util.ReflectionUtils.MethodFilter;
 import org.springframework.util.StringUtils;
 import org.springframework.util.comparator.InstanceComparator;
 
+// 工厂类，可以通过给定的 AspectJ 注解和 AspectJ 类，创建Spring AOP advisor 类，
+// 通过反射的方式去调用对应的 advice 方法
 /**
  * Factory that can create Spring AOP Advisors given AspectJ classes from
  * classes honoring AspectJ's annotation syntax, using reflection to invoke the
@@ -85,6 +87,7 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 		// in a corresponding `finally` block.
 		Comparator<Method> adviceKindComparator = new ConvertingComparator<>(
 				new InstanceComparator<>(
+						// 增强方法的注解
 						Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class),
 				(Converter<Method, Annotation>) method -> {
 					AspectJAnnotation<?> ann = AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(method);
